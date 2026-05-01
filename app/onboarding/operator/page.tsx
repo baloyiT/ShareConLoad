@@ -104,6 +104,7 @@ export default function OperatorOnboardingPage() {
                 type="text"
                 name="country"
                 defaultValue="South Africa"
+                required
                 className="input input-bordered w-full"
               />
             </div>
