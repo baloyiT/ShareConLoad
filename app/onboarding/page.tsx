@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { switchToCustomer } from '@/actions/operatorActions';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -68,13 +69,15 @@ export default function OnboardingPage() {
                 Book container space for your cargo quickly and securely
               </p>
             </div>
-            <button
-              onClick={() => router.push('/')}
-              className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90"
-              style={{ backgroundColor: '#f97316' }}
-            >
-              Continue
-            </button>
+            <form action={switchToCustomer}>
+              <button
+                type="submit"
+                className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                Continue
+              </button>
+            </form>
           </div>
 
         </div>
