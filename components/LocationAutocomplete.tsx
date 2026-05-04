@@ -83,7 +83,7 @@ export default function LocationAutocomplete({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef     = useRef<HTMLInputElement>(null);
-  const debounceRef  = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const listRef      = useRef<HTMLUListElement>(null);
 
   // Sync when parent resets controlled value (e.g. clear filters)

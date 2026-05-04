@@ -461,8 +461,8 @@ function StepNode({ state, icon }: { state: StepState; icon: React.ReactNode }) 
   if (state === 'current') {
     return (
       <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 ring-4"
-        style={{ backgroundColor: '#0f2044', ringColor: '#e0e7ff' }}
+        className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 ring-4 ring-indigo-100"
+        style={{ backgroundColor: '#0f2044' }}
       >
         {icon}
       </div>

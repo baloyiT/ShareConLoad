@@ -90,7 +90,7 @@ export default function MyBookingsPage() {
       if (error) {
         setError('Could not load your bookings. Please try again.');
       } else {
-        setBookings(data as BookingRow[]);
+        setBookings(data as unknown as BookingRow[]);
       }
       setLoading(false);
     }
