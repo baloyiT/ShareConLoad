@@ -66,12 +66,14 @@ export async function createOperatorProfile(
     country:             (formData.get('country')             as string) || 'South Africa',
     contact_person:      (formData.get('contact_person')      as string) || null,
     phone_number:        (formData.get('phone_number')        as string) || null,
+    status:              'draft',
   });
 
   if (opError) {
+    console.error('operator_profiles insert failed:', opError);
     // Roll back the profiles row so the user can retry cleanly
     await supabase.from('profiles').delete().eq('id', profile.id);
-    return { error: 'Failed to save operator details. Please try again.' };
+    return { error: `Failed to save operator details: ${opError.message}` };
   }
 
   // Must run before redirect() — redirect() throws and terminates execution

@@ -1,0 +1,794 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { supabase } from '@/services/supabaseClient';
+import { notify } from '@/services/notificationService';
+import { Container } from '@/components/ContainerCard';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ItemForm = {
+  _key: string;
+  description: string;
+  category: string;
+  quantity: string;
+  estimated_value: string;
+  weight_kg: string;
+  volume_cbm: string;
+};
+
+type FormErrors = Partial<{
+  total_cbm: string;
+  items: string;
+  agreed_terms: string;
+  submit: string;
+  [key: string]: string | undefined;
+}>;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const CATEGORIES = [
+  'Electronics',
+  'Clothing & Apparel',
+  'Furniture',
+  'Food & Beverages',
+  'Automotive Parts',
+  'Machinery & Equipment',
+  'Personal Effects',
+  'Building Materials',
+  'Cosmetics & Health',
+  'Other',
+];
+
+function emptyItem(): ItemForm {
+  return {
+    _key: crypto.randomUUID(),
+    description: '',
+    category: '',
+    quantity: '1',
+    estimated_value: '',
+    weight_kg: '',
+    volume_cbm: '',
+  };
+}
+
+function fmt(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function BookingPage() {
+  const { containerId } = useParams<{ containerId: string }>();
+
+  // Container data
+  const [container, setContainer] = useState<Container | null>(null);
+  const [loadingContainer, setLoadingContainer] = useState(true);
+  const [containerError, setContainerError] = useState(false);
+
+  // Form state
+  const [totalCbm, setTotalCbm] = useState('');
+  const [items, setItems] = useState<ItemForm[]>([emptyItem()]);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+
+  // Submission state
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+
+  // ── Fetch container ────────────────────────────────────────────────────────
+  useEffect(() => {
+    async function fetchContainer() {
+      const { data, error } = await supabase
+        .from('containers')
+        .select('*')
+        .eq('id', containerId)
+        .single();
+
+      if (error || !data) {
+        console.error('Failed to fetch container:', error);
+        setContainerError(true);
+      } else {
+        setContainer(data as Container);
+      }
+      setLoadingContainer(false);
+    }
+    if (containerId) fetchContainer();
+  }, [containerId]);
+
+  // ── Derived values ─────────────────────────────────────────────────────────
+  const cbmValue = parseFloat(totalCbm) || 0;
+  const estimatedTotal = container ? cbmValue * container.price_per_cbm : 0;
+  const totalDeclaredValue = items.reduce(
+    (sum, item) => sum + (parseFloat(item.estimated_value) || 0) * (parseInt(item.quantity) || 1),
+    0
+  );
+
+  // ── Item helpers ───────────────────────────────────────────────────────────
+  const addItem = useCallback(() => {
+    setItems((prev) => [...prev, emptyItem()]);
+  }, []);
+
+  const removeItem = useCallback((key: string) => {
+    setItems((prev) => prev.filter((i) => i._key !== key));
+  }, []);
+
+  const updateItem = useCallback(
+    (key: string, field: keyof Omit<ItemForm, '_key'>, value: string) => {
+      setItems((prev) =>
+        prev.map((item) => (item._key === key ? { ...item, [field]: value } : item))
+      );
+    },
+    []
+  );
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  function validate(): FormErrors {
+    const errs: FormErrors = {};
+
+    if (!totalCbm || cbmValue <= 0) {
+      errs.total_cbm = 'Enter the CBM you need (must be greater than 0).';
+    } else if (container && cbmValue > container.available_capacity_cbm) {
+      errs.total_cbm = `Only ${container.available_capacity_cbm} CBM is available.`;
+    }
+
+    if (items.length === 0) {
+      errs.items = 'Add at least one shipment item.';
+    }
+
+    items.forEach((item, i) => {
+      if (!item.description.trim()) {
+        errs[`item_desc_${i}`] = 'Description is required.';
+      }
+      if (!item.estimated_value || parseFloat(item.estimated_value) < 0) {
+        errs[`item_value_${i}`] = 'Enter a valid declared value.';
+      }
+    });
+
+    if (!agreedTerms) {
+      errs.agreed_terms = 'You must confirm the declaration to proceed.';
+    }
+
+    return errs;
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      document.querySelector('[data-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setErrors({});
+    setSubmitting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = `/auth/login?next=/booking/${containerId}`;
+        return;
+      }
+
+      // ── Step 1: Insert booking ───────────────────────────────────────────
+      const { data: booking, error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          container_id: containerId,
+          customer_id: user.id,
+          total_cbm: cbmValue,
+          total_price: estimatedTotal,
+          status: 'pending',
+        })
+        .select('id')
+        .single();
+
+      if (bookingError || !booking) throw bookingError ?? new Error('Booking insert returned no data');
+
+      // ── Step 2: Insert shipment items ────────────────────────────────────
+      const shipmentRows = items.map((item) => ({
+        booking_id: booking.id,
+        description: item.category ? `[${item.category}] ${item.description}` : item.description,
+        declared_value: parseFloat(item.estimated_value) || 0,
+        quantity: parseInt(item.quantity) || 1,
+        weight_kg: item.weight_kg ? parseFloat(item.weight_kg) : null,
+      }));
+
+      const { error: itemsError } = await supabase.from('shipment_items').insert(shipmentRows);
+      if (itemsError) throw itemsError;
+
+      // ── Step 3: Insert declaration ───────────────────────────────────────
+      const goodsDescription = items
+        .map((item) => `${item.description} (${item.category || 'General'})`)
+        .join('; ');
+
+      const { error: declError } = await supabase.from('declarations').insert({
+        booking_id: booking.id,
+        goods_description: goodsDescription,
+        total_declared_value: totalDeclaredValue,
+        agreed_terms: true,
+        submitted_at: new Date().toISOString(),
+      });
+      if (declError) throw declError;
+
+      // ── Step 4: Reduce container available capacity ──────────────────────
+      const { error: capacityError } = await supabase
+        .from('containers')
+        .update({ available_capacity_cbm: container!.available_capacity_cbm - cbmValue })
+        .eq('id', containerId);
+      if (capacityError) throw capacityError;
+
+      // ── Step 5: Fire notification ────────────────────────────────────────
+      await notify('booking.created', {
+        bookingId: booking.id,
+        recipientId: user.id,
+        route: `${container!.origin_city} → ${container!.destination_city}`,
+        totalCbm: cbmValue,
+        totalPrice: estimatedTotal,
+      });
+
+      setBookingId(booking.id);
+      setSubmitted(true);
+    } catch (err) {
+      const msg = (err as { message?: string })?.message ?? JSON.stringify(err);
+      console.error('Booking submission error:', msg);
+      setErrors({ submit: `Booking failed: ${msg}` });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // ── Loading state ──────────────────────────────────────────────────────────
+  if (loadingContainer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+      </div>
+    );
+  }
+
+  // ── Container not found ────────────────────────────────────────────────────
+  if (containerError || !container) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 text-center px-4">
+        <div className="text-6xl">📦</div>
+        <h1 className="text-2xl font-bold text-gray-800">Container not found</h1>
+        <p className="text-gray-400 text-sm max-w-xs">
+          This container may no longer be available.
+        </p>
+        <Link href="/" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0f2044' }}>
+          ← Back to listings
+        </Link>
+      </div>
+    );
+  }
+
+  // ── Success screen ─────────────────────────────────────────────────────────
+  if (submitted && bookingId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-16">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-md w-full text-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ backgroundColor: '#f0fdf4' }}
+          >
+            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          <h1 className="text-2xl font-extrabold text-gray-800 mb-1">Booking Submitted!</h1>
+          <p className="text-gray-500 text-sm mb-1">
+            Your booking is pending operator confirmation.
+          </p>
+          <p className="text-xs text-gray-400 mb-6 font-mono break-all">
+            Ref: {bookingId}
+          </p>
+
+          <div className="bg-gray-50 rounded-xl p-4 text-sm text-left flex flex-col gap-2.5 mb-6">
+            <SummaryRow
+              label="Route"
+              value={`${container!.origin_city} → ${container!.destination_city}`}
+            />
+            <SummaryRow label="Space booked" value={`${cbmValue} CBM`} />
+            <SummaryRow label="Items declared" value={`${items.length}`} />
+            <SummaryRow label="Estimated total" value={`$${estimatedTotal.toFixed(2)}`} />
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Status</span>
+              <span className="badge badge-sm text-white" style={{ backgroundColor: '#f97316' }}>
+                Pending
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Link
+              href="/"
+              className="w-full btn text-white font-bold rounded-xl text-sm hover:opacity-90"
+              style={{ backgroundColor: '#0f2044' }}
+            >
+              Back to Home
+            </Link>
+            <Link
+              href={`/container/${containerId}`}
+              className="w-full btn btn-ghost rounded-xl text-sm text-gray-500"
+            >
+              View Container
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-gray-50 font-sans">
+
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
+            <span className="text-xl font-extrabold tracking-tight">
+              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+            </span>
+          </Link>
+          <Link
+            href={`/container/${containerId}`}
+            className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            ← Back to container
+          </Link>
+        </div>
+      </nav>
+
+      {/* Page header */}
+      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+        <div className="max-w-6xl mx-auto">
+          <p className="text-gray-400 text-sm mb-1">Booking</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+            {container.origin_city}
+            <span className="text-orange-400 mx-3">→</span>
+            {container.destination_city}
+          </h1>
+          <p className="text-gray-400 text-sm mt-1">
+            {container.origin_country} → {container.destination_country} · Departs {fmt(container.departure_date)}
+          </p>
+        </div>
+      </div>
+
+      {/* Global submit error */}
+      {errors.submit && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
+          <div className="alert alert-error text-sm">
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
+            </svg>
+            {errors.submit}
+          </div>
+        </div>
+      )}
+
+      {/* Main layout */}
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+          {/* ── Left column ────────────────────────────────────────────────── */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+
+            {/* ── SECTION 1: Container Summary ─────────────────────────────── */}
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>1</span>
+                <h2 className="font-bold text-gray-800">Container Summary</h2>
+              </div>
+              <div className="p-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <Stat label="Origin" value={container.origin_city} sub={container.origin_country} />
+                <Stat label="Destination" value={container.destination_city} sub={container.destination_country} />
+                <Stat label="Departure" value={fmt(container.departure_date)} />
+                <Stat label="Arrival Est." value={container.arrival_date ? fmt(container.arrival_date) : 'TBC'} />
+                <Stat label="Available" value={`${container.available_capacity_cbm} CBM`} highlight />
+                <Stat label="Price / CBM" value={`$${container.price_per_cbm}`} highlight />
+                {container.operator_name && (
+                  <div className="col-span-2">
+                    <Stat label="Operator" value={container.operator_name} />
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* ── SECTION 2: Booking Input ──────────────────────────────────── */}
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>2</span>
+                <h2 className="font-bold text-gray-800">Booking Details</h2>
+              </div>
+              <div className="p-6">
+                <label className="block mb-1 text-sm font-semibold text-gray-700">
+                  CBM Required <span className="text-red-500">*</span>
+                </label>
+                <p className="text-xs text-gray-400 mb-2">
+                  How much container space do you need? Max {container.available_capacity_cbm} CBM available.
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    placeholder="e.g. 5"
+                    min={0.1}
+                    step={0.1}
+                    max={container.available_capacity_cbm}
+                    value={totalCbm}
+                    onChange={(e) => {
+                      setTotalCbm(e.target.value);
+                      setErrors((prev) => ({ ...prev, total_cbm: undefined }));
+                    }}
+                    className={`input input-bordered w-40 text-sm ${errors.total_cbm ? 'input-error' : ''}`}
+                    data-error={errors.total_cbm ? 'true' : undefined}
+                  />
+                  <span className="text-gray-500 text-sm">CBM</span>
+                  {cbmValue > 0 && container && (
+                    <span className="text-sm font-semibold ml-2" style={{ color: '#f97316' }}>
+                      = ${(cbmValue * container.price_per_cbm).toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                {errors.total_cbm && (
+                  <p className="text-red-500 text-xs mt-1.5" data-error="true">{errors.total_cbm}</p>
+                )}
+              </div>
+            </section>
+
+            {/* ── SECTION 3: Shipment Items ─────────────────────────────────── */}
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>3</span>
+                  <h2 className="font-bold text-gray-800">Shipment Items</h2>
+                  <span className="badge badge-sm bg-gray-100 text-gray-600 border-none">{items.length}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="btn btn-sm text-white gap-1 text-xs"
+                  style={{ backgroundColor: '#0f2044' }}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Item
+                </button>
+              </div>
+
+              <div className="p-6 flex flex-col gap-5">
+                {errors.items && (
+                  <p className="text-red-500 text-xs" data-error="true">{errors.items}</p>
+                )}
+
+                {items.map((item, idx) => (
+                  <div
+                    key={item._key}
+                    className="border border-gray-200 rounded-xl p-4 relative"
+                  >
+                    {/* Item header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-semibold text-gray-600">Item {idx + 1}</span>
+                      {items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item._key)}
+                          className="btn btn-ghost btn-xs text-red-400 hover:text-red-600"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Description */}
+                      <div className="sm:col-span-2">
+                        <label className="label py-0 mb-1">
+                          <span className="label-text text-xs font-semibold text-gray-600">
+                            Description <span className="text-red-500">*</span>
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Samsung 65-inch Smart TV"
+                          value={item.description}
+                          onChange={(e) => {
+                            updateItem(item._key, 'description', e.target.value);
+                            setErrors((prev) => ({ ...prev, [`item_desc_${idx}`]: undefined }));
+                          }}
+                          className={`input input-bordered input-sm w-full text-sm ${errors[`item_desc_${idx}`] ? 'input-error' : ''}`}
+                          data-error={errors[`item_desc_${idx}`] ? 'true' : undefined}
+                        />
+                        {errors[`item_desc_${idx}`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`item_desc_${idx}`]}</p>
+                        )}
+                      </div>
+
+                      {/* Category */}
+                      <div>
+                        <label className="label py-0 mb-1">
+                          <span className="label-text text-xs font-semibold text-gray-600">Category</span>
+                        </label>
+                        <select
+                          value={item.category}
+                          onChange={(e) => updateItem(item._key, 'category', e.target.value)}
+                          className="select select-bordered select-sm w-full text-sm"
+                        >
+                          <option value="">Select category</option>
+                          {CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Quantity */}
+                      <div>
+                        <label className="label py-0 mb-1">
+                          <span className="label-text text-xs font-semibold text-gray-600">Quantity</span>
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="1"
+                          min={1}
+                          value={item.quantity}
+                          onChange={(e) => updateItem(item._key, 'quantity', e.target.value)}
+                          className="input input-bordered input-sm w-full text-sm"
+                        />
+                      </div>
+
+                      {/* Estimated value */}
+                      <div>
+                        <label className="label py-0 mb-1">
+                          <span className="label-text text-xs font-semibold text-gray-600">
+                            Declared Value (USD) <span className="text-red-500">*</span>
+                          </span>
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                          <input
+                            type="number"
+                            placeholder="0.00"
+                            min={0}
+                            step={0.01}
+                            value={item.estimated_value}
+                            onChange={(e) => {
+                              updateItem(item._key, 'estimated_value', e.target.value);
+                              setErrors((prev) => ({ ...prev, [`item_value_${idx}`]: undefined }));
+                            }}
+                            className={`input input-bordered input-sm w-full pl-7 text-sm ${errors[`item_value_${idx}`] ? 'input-error' : ''}`}
+                            data-error={errors[`item_value_${idx}`] ? 'true' : undefined}
+                          />
+                        </div>
+                        {errors[`item_value_${idx}`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`item_value_${idx}`]}</p>
+                        )}
+                      </div>
+
+                      {/* Weight */}
+                      <div>
+                        <label className="label py-0 mb-1">
+                          <span className="label-text text-xs font-semibold text-gray-600">Weight (kg)</span>
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0.0"
+                          min={0}
+                          step={0.1}
+                          value={item.weight_kg}
+                          onChange={(e) => updateItem(item._key, 'weight_kg', e.target.value)}
+                          className="input input-bordered input-sm w-full text-sm"
+                        />
+                      </div>
+
+                      {/* Volume */}
+                      <div>
+                        <label className="label py-0 mb-1">
+                          <span className="label-text text-xs font-semibold text-gray-600">Volume (CBM)</span>
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0.0"
+                          min={0}
+                          step={0.01}
+                          value={item.volume_cbm}
+                          onChange={(e) => updateItem(item._key, 'volume_cbm', e.target.value)}
+                          className="input input-bordered input-sm w-full text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-orange-300 hover:text-orange-400 transition-colors"
+                >
+                  + Add another item
+                </button>
+              </div>
+            </section>
+
+            {/* ── SECTION 4: Goods Declaration ──────────────────────────────── */}
+            <section
+              className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${errors.agreed_terms ? 'border-red-300' : 'border-gray-100'}`}
+              data-error={errors.agreed_terms ? 'true' : undefined}
+            >
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>4</span>
+                <h2 className="font-bold text-gray-800">Goods Declaration</h2>
+                <span className="badge badge-sm badge-error text-white border-none ml-1">Required</span>
+              </div>
+              <div className="p-6">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 text-sm text-amber-800">
+                  <p className="font-semibold mb-1">Declaration Notice</p>
+                  <p className="text-xs leading-relaxed">
+                    By submitting this booking you declare that the goods described are accurate,
+                    legally owned, and do not include any prohibited, restricted, or hazardous materials
+                    as defined by international shipping regulations.
+                  </p>
+                </div>
+
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={agreedTerms}
+                    onChange={(e) => {
+                      setAgreedTerms(e.target.checked);
+                      setErrors((prev) => ({ ...prev, agreed_terms: undefined }));
+                    }}
+                    className="checkbox checkbox-sm mt-0.5 shrink-0"
+                    style={{ accentColor: '#f97316' }}
+                  />
+                  <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors leading-relaxed">
+                    I confirm that all information provided is accurate, complete, and that the shipment
+                    contains{' '}
+                    <strong>no prohibited, restricted, or hazardous goods</strong>. I understand that
+                    false declarations may result in cancellation and legal liability.
+                  </span>
+                </label>
+
+                {errors.agreed_terms && (
+                  <p className="text-red-500 text-xs mt-3 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    {errors.agreed_terms}
+                  </p>
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* ── Right column: Order Summary ─────────────────────────────────── */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-24">
+              <h2 className="font-bold text-gray-800 mb-5">Order Summary</h2>
+
+              {/* Route */}
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-4">
+                <span>{container.origin_city}</span>
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+                <span>{container.destination_city}</span>
+              </div>
+
+              <div className="flex flex-col gap-3 text-sm mb-5">
+                <SummaryRow label="Price / CBM" value={`$${container.price_per_cbm}`} />
+                <SummaryRow
+                  label="Space requested"
+                  value={cbmValue > 0 ? `${cbmValue} CBM` : '—'}
+                />
+                <SummaryRow
+                  label="Shipment items"
+                  value={`${items.length} item${items.length !== 1 ? 's' : ''}`}
+                />
+                <SummaryRow
+                  label="Total declared value"
+                  value={totalDeclaredValue > 0 ? `$${totalDeclaredValue.toFixed(2)}` : '—'}
+                />
+                <div className="divider my-0" />
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-800">Estimated Total</span>
+                  <span className="text-xl font-extrabold" style={{ color: '#f97316' }}>
+                    {estimatedTotal > 0 ? `$${estimatedTotal.toFixed(2)}` : '—'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">Final price confirmed after operator review.</p>
+              </div>
+
+              {/* Status indicators */}
+              <div className="flex flex-col gap-1.5 mb-6">
+                <StatusRow ok={cbmValue > 0} label="CBM entered" />
+                <StatusRow ok={items.some((i) => i.description.trim())} label="Shipment items added" />
+                <StatusRow ok={agreedTerms} label="Declaration confirmed" />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting || submitted}
+                className="w-full btn text-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                {submitting ? (
+                  <span className="loading loading-spinner loading-sm" />
+                ) : (
+                  'Submit Booking'
+                )}
+              </button>
+
+              <p className="text-xs text-gray-400 text-center mt-3">
+                No payment charged until the operator confirms.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ─── Small reusable sub-components ────────────────────────────────────────────
+
+function Stat({
+  label,
+  value,
+  sub,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+      <p className={`font-semibold text-sm ${highlight ? 'text-orange-500' : 'text-gray-800'}`}>
+        {value}
+      </p>
+      {sub && <p className="text-xs text-gray-400">{sub}</p>}
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-gray-600">
+      <span>{label}</span>
+      <span className="font-medium text-gray-800">{value}</span>
+    </div>
+  );
+}
+
+function StatusRow({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      {ok ? (
+        <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" strokeWidth={2} />
+        </svg>
+      )}
+      <span className={ok ? 'text-gray-700' : 'text-gray-400'}>{label}</span>
+    </div>
+  );
+}

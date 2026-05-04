@@ -1,65 +1,157 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useMemo } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import type { User } from '@supabase/supabase-js';
-import { supabase } from '@/services/supabaseClient';
-import ContainerList from '@/components/ContainerList';
-import { Container } from '@/components/ContainerCard';
+import { useEffect, useState, useMemo } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
+import { supabase } from "@/services/supabaseClient";
+import ContainerList from "@/components/ContainerList";
+import { Container } from "@/components/ContainerCard";
+import LocationAutocomplete from "@/components/LocationAutocomplete";
 
-const NAV_LINKS = [
-  { label: 'Browse Containers', href: '#listings' },
-  { label: 'How It Works',      href: '/how-it-works' },
-  { label: 'For Operators',     href: '/operator' },
-  { label: 'Pricing',           href: '#' },
-  { label: 'About Us',          href: '#' },
-];
+// ─── Brand data ───────────────────────────────────────────────────────────────
 
 const FEATURES = [
   {
-    icon: '🔒',
-    title: 'Secure Bookings',
-    desc: 'Your booking and data are safe with us.',
+    icon: (
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        viewBox="0 0 24 24"
+      >
+        <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+    title: "Smarter Connections",
+    desc: "Match capacity with real demand",
   },
   {
-    icon: '🕐',
-    title: '24/7 Support',
-    desc: 'We are here to help you with anything, anytime.',
+    icon: (
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        viewBox="0 0 24 24"
+      >
+        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    title: "Reduce Empty Miles",
+    desc: "Optimize routes and maximize utilization",
   },
   {
-    icon: '📋',
-    title: 'Flexible Bookings',
-    desc: 'Cancel or change your booking with ease.',
+    icon: (
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        viewBox="0 0 24 24"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+      </svg>
+    ),
+    title: "Global Reach",
+    desc: "Connect across ports, countries & continents",
   },
   {
-    icon: '💡',
-    title: 'Transparent Pricing',
-    desc: 'You always know exactly what you pay.',
+    icon: (
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        viewBox="0 0 24 24"
+      >
+        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
+    title: "Trusted Operators",
+    desc: "Verified & reliable logistics partners",
   },
 ];
+
+const TRUST = [
+  {
+    icon: "🔒",
+    title: "Secure Bookings",
+    desc: "Your booking and data are safe with us.",
+  },
+  {
+    icon: "🕐",
+    title: "24/7 Support",
+    desc: "We are here to help you with anything, anytime.",
+  },
+  {
+    icon: "📋",
+    title: "Flexible Bookings",
+    desc: "Cancel or change your booking with ease.",
+  },
+  {
+    icon: "💡",
+    title: "Transparent Pricing",
+    desc: "You always know exactly what you pay.",
+  },
+];
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const router = useRouter();
 
-  const [user, setUser]           = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isOperator, setIsOperator] = useState(false);
   const [switchingRole, setSwitchingRole] = useState(false);
   const [containers, setContainers] = useState<Container[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [originFilter, setOriginFilter] = useState('');
-  const [destinationFilter, setDestinationFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [originFilter, setOriginFilter] = useState("");
+  const [destinationFilter, setDestinationFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [searched, setSearched] = useState(false);
 
-  // ── Auth state ─────────────────────────────────────────────────────────────
+  // ── Auth ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    async function resolveUser(u: User | null) {
+      setUser(u);
+      if (!u) {
+        setIsOperator(false);
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", u.id)
+        .eq("role_type", "operator")
+        .maybeSingle();
+      setIsOperator(!!data);
+    }
+
+    supabase.auth.getUser().then(({ data }) => resolveUser(data.user));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_e, session) => {
+      resolveUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -69,37 +161,26 @@ export default function HomePage() {
     router.refresh();
   }
 
-  async function handleSwitchToOperator() {
-    if (!user || switchingRole) return;
-    setSwitchingRole(true);
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('role_type', 'operator')
-      .maybeSingle();
-
-    setSwitchingRole(false);
-
-    if (profile) {
-      router.push('/operator');
-    } else {
-      router.push('/onboarding/operator');
+  function handleSwitchToOperator() {
+    if (!user) {
+      router.push("/auth/login");
+      return;
     }
+    if (switchingRole) return;
+    setSwitchingRole(true);
+    router.push(isOperator ? "/operator" : "/onboarding/operator");
   }
 
+  // ── Containers ─────────────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchContainers() {
       const { data, error } = await supabase
-        .from('containers')
-        .select('*')
-        .eq('status', 'open')
-        .order('departure_date', { ascending: true });
-
+        .from("containers")
+        .select("*")
+        .eq("status", "open")
+        .order("departure_date", { ascending: true });
       if (error) {
-        console.error('Failed to fetch containers:', error);
-        setError('Could not load containers. Please try again later.');
+        setError("Could not load containers. Please try again later.");
       } else {
         setContainers(data as Container[]);
       }
@@ -111,95 +192,161 @@ export default function HomePage() {
   const filteredContainers = useMemo(() => {
     if (!searched) return containers;
     return containers.filter((c) => {
-      const originMatch =
-        !originFilter ||
-        c.origin_city.toLowerCase().includes(originFilter.toLowerCase()) ||
-        c.origin_country.toLowerCase().includes(originFilter.toLowerCase());
-
-      const destMatch =
-        !destinationFilter ||
-        c.destination_city.toLowerCase().includes(destinationFilter.toLowerCase()) ||
-        c.destination_country.toLowerCase().includes(destinationFilter.toLowerCase());
-
-      const dateMatch =
-        !dateFilter || c.departure_date >= dateFilter;
-
-      const priceMatch =
-        !maxPrice || c.price_per_cbm <= parseFloat(maxPrice);
-
+      const matchLoc = (filter: string, city: string, country: string) => {
+        if (!filter.trim()) return true;
+        const f = filter.trim().toLowerCase();
+        return (
+          city.toLowerCase().includes(f) ||
+          country.toLowerCase().includes(f) ||
+          `${city}, ${country}`.toLowerCase().includes(f)
+        );
+      };
+      const originMatch = matchLoc(
+        originFilter,
+        c.origin_city,
+        c.origin_country,
+      );
+      const destMatch = matchLoc(
+        destinationFilter,
+        c.destination_city,
+        c.destination_country,
+      );
+      const dateMatch = !dateFilter || c.departure_date >= dateFilter;
+      const priceMatch = !maxPrice || c.price_per_cbm <= parseFloat(maxPrice);
       return originMatch && destMatch && dateMatch && priceMatch;
     });
-  }, [containers, originFilter, destinationFilter, dateFilter, maxPrice, searched]);
+  }, [
+    containers,
+    originFilter,
+    destinationFilter,
+    dateFilter,
+    maxPrice,
+    searched,
+  ]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setSearched(true);
   }
-
   function handleReset() {
-    setOriginFilter('');
-    setDestinationFilter('');
-    setDateFilter('');
-    setMaxPrice('');
+    setOriginFilter("");
+    setDestinationFilter("");
+    setDateFilter("");
+    setMaxPrice("");
     setSearched(false);
   }
 
+  const userInitials = user
+    ? ((user.user_metadata?.full_name as string | undefined)
+        ?.split(" ")
+        .map((n: string) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase() ??
+      user.email?.[0]?.toUpperCase() ??
+      "")
+    : "";
+  const userName =
+    (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "";
+
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Navbar */}
+    <div className="min-h-screen bg-[#f8fafc] font-sans">
+      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <Image src="/logo_v4.png" alt="ShareConLoad" width={36} height={36} className="rounded-md" />
-            <span className="text-xl font-bold" style={{ color: '#0f2044' }}>
-              ShareConLoad
+        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+            <Image
+              src="/logo1.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-9 w-auto"
+            />
+            <span className="text-xl font-extrabold tracking-tight">
+              <span style={{ color: "#0f2044" }}>Share</span>
+              <span style={{ color: "#f97316" }}>Con</span>
+              <span style={{ color: "#0f2044" }}>Load</span>
             </span>
+          </Link>
+
+          {/* Nav links (desktop) */}
+          <div className="hidden lg:flex items-center gap-5 text-sm font-medium text-gray-600">
+            <Link
+              href="/how-it-works"
+              className="hover:text-gray-900 transition-colors whitespace-nowrap"
+            >
+              How It Works
+            </Link>
+            {/*
+            <a
+              href="#listings"
+              className="hover:text-gray-900 transition-colors whitespace-nowrap"
+            >
+              I Need Container Space
+            </a>
+            
+            <button
+              onClick={handleSwitchToOperator}
+              className="hover:text-gray-900 transition-colors whitespace-nowrap"
+            >
+              I Have Container Space
+            </button>
+
+*/}
+
+            <Link href="#" className="hover:text-gray-900 transition-colors">
+              About Us
+            </Link>
+            <Link href="#" className="hover:text-gray-900 transition-colors">
+              Contact
+            </Link>
           </div>
 
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-            {NAV_LINKS.map(({ label, href }) => (
-              <Link key={label} href={href} className="hover:text-gray-900 transition-colors">
-                {label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3">
+          {/* Auth / user section */}
+          <div className="flex items-center gap-2">
             {user ? (
               <>
-                {/* Switch to Operator */}
+                <Link
+                  href="/bookings"
+                  className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  📦 My Bookings
+                </Link>
                 <button
                   onClick={handleSwitchToOperator}
                   disabled={switchingRole}
-                  className="hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-60"
-                  style={{ backgroundColor: '#fff7ed', color: '#f97316', borderColor: '#fed7aa' }}
+                  className="hidden md:flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+                  style={{ backgroundColor: "#f97316" }}
                 >
                   {switchingRole ? (
                     <span className="loading loading-spinner loading-xs" />
                   ) : (
-                    <>🚢 Switch to Operator</>
+                    "🚢 I Have Container Space"
                   )}
                 </button>
 
-                {/* Avatar + name */}
-                <div className="flex items-center gap-2">
+                {/* Avatar + name + badge */}
+                <div className="flex items-center gap-2 pl-1">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ backgroundColor: '#0f2044' }}
+                    style={{ backgroundColor: "#0f2044" }}
                   >
-                    {(user.user_metadata?.full_name as string | undefined)
-                      ?.split(' ')
-                      .map((n: string) => n[0])
-                      .slice(0, 2)
-                      .join('')
-                      .toUpperCase() ?? user.email?.[0]?.toUpperCase()}
+                    {userInitials}
                   </div>
-                  <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[140px] truncate">
-                    {(user.user_metadata?.full_name as string | undefined) ?? user.email}
-                  </span>
+                  <div className="hidden sm:flex flex-col leading-tight">
+                    <span className="text-sm font-medium text-gray-700 max-w-[130px] truncate">
+                      {userName}
+                    </span>
+                    <span
+                      className="text-xs font-semibold px-1.5 py-0.5 rounded-full w-fit mt-0.5"
+                      style={{ backgroundColor: "#e8eef8", color: "#0f2044" }}
+                    >
+                      👤 Shipper
+                    </span>
+                  </div>
                 </div>
 
-                {/* Sign out */}
                 <button
                   onClick={handleSignOut}
                   className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
@@ -211,16 +358,16 @@ export default function HomePage() {
               <>
                 <Link
                   href="/auth/login"
-                  className="text-sm font-medium text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg transition-colors"
+                  className="text-sm font-medium text-gray-700 hover:text-gray-900 px-4 py-1.5 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
                 >
-                  Log in
+                  Login
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="text-sm font-semibold text-white px-4 py-1.5 rounded-lg transition-colors"
-                  style={{ backgroundColor: '#f97316' }}
+                  className="text-sm font-semibold text-white px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: "#f97316" }}
                 >
-                  Sign up
+                  Sign Up
                 </Link>
               </>
             )}
@@ -228,162 +375,244 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section
-        className="relative py-20 px-4"
-        style={{
-          background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 60%, #0f2044 100%)',
-        }}
-      >
-        {/* Subtle grid overlay */}
+      {/* ── Hero ───────────────────────────────────────────────────────────── */}
+      <section className="relative bg-white overflow-hidden">
+        {/* Background: port photo at 30% opacity */}
         <div
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px)',
-          }}
-        />
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ opacity: 0.3 }}
+        >
+          <Image
+            src="/hero-port.png"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+        </div>
 
-        <div className="relative max-w-5xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-4">
-            Ship Globally.{' '}
-            <span style={{ color: '#f97316' }}>Save Together.</span>
-          </h1>
-          <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-            Find shared container space on trusted routes worldwide and ship your goods affordably.
-          </p>
+        {/* Background: world map overlay at 20% opacity */}
+        <div
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ opacity: 0.2 }}
+        >
+          <Image
+            src="/world-map-overlay.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover object-top"
+          />
+        </div>
 
-          {/* Trust badges */}
-          <div className="flex flex-wrap justify-center gap-6 mb-10 text-sm text-gray-300">
-            {[
-              { icon: '🌍', label: 'Global Reach', sub: '50+ countries & ports' },
-              { icon: '✅', label: 'Trusted Operators', sub: 'Verified and reviewed' },
-              { icon: '🛡️', label: 'Secure & Reliable', sub: 'Your cargo, protected' },
-            ].map(({ icon, label, sub }) => (
-              <div key={label} className="flex items-center gap-2">
-                <span className="text-2xl">{icon}</span>
-                <div className="text-left">
-                  <p className="font-semibold text-white text-xs">{label}</p>
-                  <p className="text-gray-400 text-xs">{sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Text content */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 xl:px-14 py-20 lg:py-28">
+          <div className="max-w-2xl">
+            <h1
+              className="font-extrabold leading-[1.1] mb-5 text-gray-900"
+              style={{ fontSize: "clamp(2.25rem, 4vw, 3.5rem)" }}
+            >
+              Share the Load.
+              <br />
+              <span style={{ color: "#f97316" }}>Connect the World.</span>
+            </h1>
+            <p
+              className="text-gray-700 text-base lg:text-lg mb-8 max-w-lg leading-relaxed"
+              style={{ textShadow: "0 1px 4px rgba(255,255,255,0.9)" }}
+            >
+              ShareConLoad connects shippers and carriers to move containers
+              smarter, reduce empty miles, and build a more efficient logistics
+              network.
+            </p>
 
-          {/* Search form */}
-          <form
-            onSubmit={handleSearch}
-            className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-left"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                  Origin Country or City
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. China, Shanghai"
-                  value={originFilter}
-                  onChange={(e) => setOriginFilter(e.target.value)}
-                  className="input input-bordered w-full text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                  Destination Country or City
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Nigeria, Lagos"
-                  value={destinationFilter}
-                  onChange={(e) => setDestinationFilter(e.target.value)}
-                  className="input input-bordered w-full text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                  Departure Date
-                </label>
-                <input
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="input input-bordered w-full text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                  Max Price per CBM ($)
-                </label>
-                <input
-                  type="number"
-                  placeholder="e.g. 200"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  className="input input-bordered w-full text-sm"
-                  min={0}
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              {searched && (
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="text-sm text-gray-400 hover:text-gray-600 underline"
-                >
-                  Clear filters
-                </button>
-              )}
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-3 mb-12">
               <button
-                type="submit"
-                className="ml-auto text-white font-semibold px-8 py-2.5 rounded-xl transition-colors text-sm"
-                style={{ backgroundColor: '#0f2044' }}
+                onClick={handleSwitchToOperator}
+                disabled={switchingRole}
+                className="inline-flex items-center gap-2 text-sm font-bold text-white px-7 py-3.5 rounded-xl shadow-md hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: "#f97316" }}
               >
-                Search
+                {switchingRole ? (
+                  <span className="loading loading-spinner loading-xs" />
+                ) : (
+                  "I Have Container Space →"
+                )}
               </button>
+
+              <a
+                href="#listings"
+                className="inline-flex items-center gap-2 text-sm font-bold px-7 py-3.5 rounded-xl border-2 bg-white/70 backdrop-blur-sm hover:bg-white transition-colors disabled:opacity-60"
+                style={{ borderColor: "#0f2044", color: "#0f2044" }}
+              >
+                I Need Container Space →
+              </a>
             </div>
-          </form>
+
+            {/* Feature grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-5">
+              {FEATURES.map(({ icon, title, desc }) => (
+                <div key={title} className="flex flex-col gap-2">
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-white"
+                    style={{ backgroundColor: "#f97316" }}
+                  >
+                    {icon}
+                  </div>
+                  <p className="text-sm font-bold text-gray-800">{title}</p>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    {desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Container listing */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+      {/* ── Search + Listings ──────────────────────────────────────────────── */}
+      <section id="listings" className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        {/* Search form */}
+        <p
+          className="text-xs font-semibold uppercase tracking-widest mb-3"
+          style={{ color: "#f97316" }}
+        >
+          Find Container Space
+        </p>
+        <form
+          onSubmit={handleSearch}
+          className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-10"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
+                Origin
+              </label>
+              <LocationAutocomplete
+                id="origin"
+                placeholder="e.g. Shanghai, China"
+                value={originFilter}
+                onChange={setOriginFilter}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
+                Destination
+              </label>
+              <LocationAutocomplete
+                id="destination"
+                placeholder="e.g. Lagos, Nigeria"
+                value={destinationFilter}
+                onChange={setDestinationFilter}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
+                Departure Date
+              </label>
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="input input-bordered w-full text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
+                Max Price / CBM ($)
+              </label>
+              <input
+                type="number"
+                placeholder="e.g. 200"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                className="input input-bordered w-full text-sm"
+                min={0}
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            {searched && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-sm text-gray-400 hover:text-gray-600 underline"
+              >
+                Clear filters
+              </button>
+            )}
+            <button
+              type="submit"
+              className="ml-auto text-white font-semibold px-8 py-2 rounded-xl text-sm hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: "#0f2044" }}
+            >
+              Search
+            </button>
+          </div>
+        </form>
+
+        {/* Heading */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Available Containers</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Available Containers
+              </h2>
+              {!loading && (
+                <span
+                  className="text-xs font-bold px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: "#fff7ed", color: "#f97316" }}
+                >
+                  {filteredContainers.length} {searched ? "result" : "open"}
+                  {filteredContainers.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
             {searched && !loading && (
               <p className="text-sm text-gray-400 mt-0.5">
-                {filteredContainers.length} result{filteredContainers.length !== 1 ? 's' : ''} found
+                Showing filtered results —{" "}
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="underline hover:text-gray-600"
+                >
+                  clear filters
+                </button>
               </p>
             )}
           </div>
-          <Link href="#" className="text-sm font-semibold hover:underline" style={{ color: '#f97316' }}>
-            View all containers →
-          </Link>
         </div>
 
         {loading && (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span
+              className="loading loading-spinner loading-lg"
+              style={{ color: "#f97316" }}
+            />
           </div>
         )}
-
         {error && (
           <div className="alert alert-error max-w-lg mx-auto">
             <span>{error}</span>
           </div>
         )}
-
-        {!loading && !error && <ContainerList containers={filteredContainers} />}
+        {!loading && !error && (
+          <ContainerList containers={filteredContainers} />
+        )}
       </section>
 
-      {/* Features */}
+      {/* ── Trust strip ────────────────────────────────────────────────────── */}
       <section className="border-t border-gray-100 bg-white py-14 px-4">
         <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-          {FEATURES.map(({ icon, title, desc }) => (
+          {TRUST.map(({ icon, title, desc }) => (
             <div key={title} className="flex flex-col items-center gap-3">
-              <span className="text-4xl">{icon}</span>
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+                style={{ backgroundColor: "#fff7ed" }}
+              >
+                {icon}
+              </div>
               <h3 className="font-bold text-gray-800">{title}</h3>
               <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
             </div>
@@ -391,9 +620,46 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-6 text-center text-xs text-gray-400 border-t border-gray-100">
-        © {new Date().getFullYear()} ShareConLoad. All rights reserved.
+      {/* ── Operator CTA ───────────────────────────────────────────────────── */}
+      <section style={{ backgroundColor: "#0f2044" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
+              style={{ backgroundColor: "rgba(249,115,22,0.15)" }}
+            >
+              🚢
+            </div>
+            <div>
+              <p className="text-white font-bold text-lg leading-tight">
+                Got container space? List it globally.
+              </p>
+              <p className="text-gray-400 text-sm mt-1">
+                Reach verified shippers on every route and fill your container
+                faster.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSwitchToOperator}
+            disabled={switchingRole}
+            className="shrink-0 text-sm font-bold px-8 py-3 rounded-xl text-white hover:opacity-90 disabled:opacity-60 transition-opacity whitespace-nowrap"
+            style={{ backgroundColor: "#f97316" }}
+          >
+            {switchingRole ? (
+              <span className="loading loading-spinner loading-sm" />
+            ) : (
+              "I Have Container Space →"
+            )}
+          </button>
+        </div>
+      </section>
+
+      {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      <footer className="bg-white border-t border-gray-100 py-6 px-4 text-center">
+        <p className="text-xs text-gray-400">
+          © {new Date().getFullYear()} ShareConLoad. All rights reserved.
+        </p>
       </footer>
     </div>
   );

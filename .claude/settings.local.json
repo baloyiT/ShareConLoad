@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(mkdir -p \"C:\\\\T-Script_v3\\\\shareconloadapp\\\\shareconload\\\\services\")",
+      "Bash(mkdir -p \"C:\\\\T-Script_v3\\\\shareconloadapp\\\\shareconload\\\\components\")",
+      "Bash(npx tsc *)",
+      "Bash(cp \"C:/T-Script_v3/shareconloadapp/shareconload/MyAsset/logo_v4.png\" \"C:/T-Script_v3/shareconloadapp/shareconload/public/logo_v4.png\")",
+      "Bash(sed -i 's|\"/logo_v3\\\\.jpg\"|\"/logo_v4.png\"|g' app/page.tsx app/auth/login/page.tsx app/auth/register/page.tsx app/admin/page.tsx 'app/container/[id]/page.tsx' 'app/booking/[containerId]/page.tsx' 'app/booking/track/[id]/page.tsx' app/operator/page.tsx app/operator/create/page.tsx)",
+      "Bash(npm init *)",
+      "Bash(npx playwright *)",
+      "WebSearch",
+      "Bash(claude mcp *)",
+      "Bash(claude plugin *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(cd C:\\\\\\\\T-Script_v3\\\\\\\\shareconloadapp\\\\\\\\shareconload)",
+      "Bash(node -c services/supabaseServer.ts)",
+      "Bash(git -C /c/T-Script_v3/shareconloadapp/shareconload add services/supabaseServer.ts)",
+      "Bash(git -C /c/T-Script_v3/shareconloadapp/shareconload commit -m \"feat: add createServerActionClient to supabaseServer\")",
+      "Bash(git *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(npm run *)",
+      "Bash(del *)",
+      "PowerShell(Get-ChildItem \"C:\\\\T-Script_v3\\\\shareconloadapp\\\\shareconload\\\\public\" -Force | ForEach-Object { $_.FullName })",
+      "PowerShell(Copy-Item *)",
+      "Bash(Copy-Item \"C:\\\\T-Script_v3\\\\shareconloadapp\\\\shareconload\\\\MyAsset\\\\logo.png\" \"C:\\\\T-Script_v3\\\\shareconloadapp\\\\shareconload\\\\public\\\\logo.png\" -Force)",
+      "Bash(Write-Host \"Copied\")",
+      "Bash(node *)"
+    ]
+  }
+}

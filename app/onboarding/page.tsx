@@ -16,8 +16,9 @@ export default function OnboardingPage() {
       {/* Nav */}
       <nav className="flex items-center px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
-          <Image src="/logo_v4.png" alt="ShareConLoad" width={36} height={36} className="rounded-md" />
-          <span className="text-xl font-bold text-white">ShareConLoad</span>
+          <span className="text-2xl font-extrabold tracking-tight">
+            <span className="text-white">Share</span><span style={{ color: '#f97316' }}>Con</span><span className="text-white">Load</span>
+          </span>
         </Link>
       </nav>
 
@@ -55,7 +56,7 @@ export default function OnboardingPage() {
             </button>
           </div>
 
-          {/* Customer card */}
+          {/* Shipper card */}
           <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
