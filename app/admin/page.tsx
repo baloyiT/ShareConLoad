@@ -94,7 +94,7 @@ export default function AdminDashboard() {
       } else {
         setUsers(usersRes.data as Profile[]);
         setContainers(containersRes.data as Container[]);
-        setBookings(bookingsRes.data as Booking[]);
+        setBookings(bookingsRes.data as unknown as Booking[]);
       }
       setLoading(false);
     }
