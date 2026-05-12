@@ -6,7 +6,14 @@ import { supabase } from '@/services/supabaseClient';
 
 type DocStatus = 'under_review' | 'approved' | 'rejected';
 
-type DocType = 'identity' | 'business_registration' | 'proof_of_address' | 'tax_clearance' | 'banking_confirmation';
+type DocType =
+  | 'identity'
+  | 'business_registration'
+  | 'proof_of_warehouse_address'
+  | 'tax_clearance'
+  | 'banking_confirmation'
+  | 'cargo_insurance'
+  | 'freight_forwarding_license';
 
 type DocRecord = {
   id: string;
@@ -21,17 +28,20 @@ type DocSlot = {
   type: DocType;
   label: string;
   desc: string;
+  optional: boolean;
   record: DocRecord | null;
   uploading: boolean;
   error: string | null;
 };
 
-const DOC_DEFS: { type: DocType; label: string; desc: string }[] = [
-  { type: 'identity',              label: 'Proof of Identity',         desc: 'Valid passport or national ID (director/owner)' },
-  { type: 'business_registration', label: 'Business Registration',     desc: 'Certificate of incorporation or CIPC document' },
-  { type: 'proof_of_address',      label: 'Proof of Address',          desc: 'Utility bill or bank statement (not older than 3 months)' },
-  { type: 'tax_clearance',         label: 'Tax Clearance Certificate', desc: 'Issued by SARS — required for payout approval' },
-  { type: 'banking_confirmation',  label: 'Banking Confirmation',      desc: 'Official letter from your bank confirming your account details' },
+const DOC_DEFS: { type: DocType; label: string; desc: string; optional?: boolean }[] = [
+  { type: 'identity',                   label: 'Proof of Identity',           desc: 'Valid passport or national ID of the director or owner' },
+  { type: 'business_registration',      label: 'Business Registration',       desc: "Certificate of incorporation or registration from your country's business registry" },
+  { type: 'proof_of_warehouse_address', label: 'Proof of Warehouse Address',  desc: 'Lease agreement, rates account, or utility bill confirming your warehouse or storage facility address' },
+  { type: 'tax_clearance',              label: 'Tax Clearance Certificate',   desc: "Tax compliance certificate from your country's revenue authority — required for payout approval" },
+  { type: 'banking_confirmation',       label: 'Banking Confirmation',        desc: 'Official letter from your bank confirming your account details' },
+  { type: 'cargo_insurance',            label: 'Cargo Insurance Certificate', desc: 'Valid cargo or freight insurance policy covering goods in your care, custody, and control' },
+  { type: 'freight_forwarding_license', label: 'Freight Forwarding License',  desc: "Freight forwarding or customs broker license issued by your country's relevant authority (if applicable)", optional: true },
 ];
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -55,7 +65,7 @@ export default function ComplianceDocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
   const [slots, setSlots] = useState<DocSlot[]>(
-    DOC_DEFS.map((d) => ({ ...d, record: null, uploading: false, error: null }))
+    DOC_DEFS.map((d) => ({ ...d, optional: d.optional ?? false, record: null, uploading: false, error: null }))
   );
 
   useEffect(() => {
@@ -85,6 +95,7 @@ export default function ComplianceDocumentsPage() {
 
       setSlots(DOC_DEFS.map((d) => ({
         ...d,
+        optional: d.optional ?? false,
         record: recordMap[d.type] ?? null,
         uploading: false,
         error: null,
@@ -186,7 +197,7 @@ export default function ComplianceDocumentsPage() {
                 )}
                 {!slot.record && !slot.uploading && (
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 bg-gray-100 text-gray-500">
-                    Not uploaded
+                    {slot.optional ? 'Optional' : 'Not uploaded'}
                   </span>
                 )}
               </div>
