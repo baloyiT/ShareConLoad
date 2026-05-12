@@ -322,7 +322,7 @@ export default function HomePage() {
                   {switchingRole ? (
                     <span className="loading loading-spinner loading-xs" />
                   ) : (
-                    "🚢 I Have Container Space"
+                    "🚢 Operator Portal"
                   )}
                 </button>
 
@@ -377,10 +377,10 @@ export default function HomePage() {
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="relative bg-white overflow-hidden">
-        {/* Background: port photo at 30% opacity */}
+        {/* Background: port photo */}
         <div
           className="absolute inset-0 z-0 pointer-events-none"
-          style={{ opacity: 0.3 }}
+          style={{ opacity: 0.35 }}
         >
           <Image
             src="/hero-port.png"
@@ -392,19 +392,11 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Background: world map overlay at 20% opacity */}
+        {/* Gradient overlay for text legibility */}
         <div
           className="absolute inset-0 z-0 pointer-events-none"
-          style={{ opacity: 0.2 }}
-        >
-          <Image
-            src="/world-map-overlay.png"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover object-top"
-          />
-        </div>
+          style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.92) 45%, rgba(255,255,255,0.1) 100%)' }}
+        />
 
         {/* Text content */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 xl:px-14 py-20 lg:py-28">
@@ -419,35 +411,36 @@ export default function HomePage() {
             </h1>
             <p
               className="text-gray-700 text-base lg:text-lg mb-8 max-w-lg leading-relaxed"
-              style={{ textShadow: "0 1px 4px rgba(255,255,255,0.9)" }}
             >
               ShareConLoad connects shippers and carriers to move containers
               smarter, reduce empty miles, and build a more efficient logistics
               network.
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap gap-3 mb-12">
+            {/* CTA buttons */}
+            <div className="flex flex-wrap gap-3 mb-10">
+              <a
+                href="#listings"
+                className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl text-white hover:opacity-90 transition-opacity shadow-sm"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                Find Container Space
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </a>
               <button
                 onClick={handleSwitchToOperator}
                 disabled={switchingRole}
-                className="inline-flex items-center gap-2 text-sm font-bold text-white px-7 py-3.5 rounded-xl shadow-md hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: "#f97316" }}
+                className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl border-2 hover:bg-gray-50 transition-colors disabled:opacity-60"
+                style={{ borderColor: '#0f2044', color: '#0f2044' }}
               >
                 {switchingRole ? (
                   <span className="loading loading-spinner loading-xs" />
                 ) : (
-                  "I Have Container Space →"
+                  <>List Your Container</>
                 )}
               </button>
-
-              <a
-                href="#listings"
-                className="inline-flex items-center gap-2 text-sm font-bold px-7 py-3.5 rounded-xl border-2 bg-white/70 backdrop-blur-sm hover:bg-white transition-colors disabled:opacity-60"
-                style={{ borderColor: "#0f2044", color: "#0f2044" }}
-              >
-                I Need Container Space →
-              </a>
             </div>
 
             {/* Feature grid */}

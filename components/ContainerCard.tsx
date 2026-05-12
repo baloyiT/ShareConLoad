@@ -79,11 +79,22 @@ export default function ContainerCard({ container }: ContainerCardProps) {
         </div>
 
         {/* Capacity */}
-        <div className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
-          <span className="text-gray-500">Available space</span>
-          <span className="font-semibold text-gray-800">
-            {container.available_capacity_cbm} CBM
-          </span>
+        <div className="bg-gray-50 rounded-lg px-3 py-2.5">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-gray-500">Available space</span>
+            <span className="font-semibold text-gray-800">
+              {container.available_capacity_cbm} / {container.total_capacity_cbm} CBM
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${((container.total_capacity_cbm - container.available_capacity_cbm) / container.total_capacity_cbm) * 100}%`,
+                backgroundColor: container.available_capacity_cbm / container.total_capacity_cbm < 0.2 ? '#ef4444' : '#f97316',
+              }}
+            />
+          </div>
         </div>
 
         {/* Operator + CTA */}
