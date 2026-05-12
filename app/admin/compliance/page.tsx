@@ -126,6 +126,14 @@ export default function AdminCompliancePage() {
     setResolving(null);
   }
 
+  async function viewDoc(fileUrl: string) {
+    const { data, error: err } = await supabase.storage
+      .from('compliance-documents')
+      .createSignedUrl(fileUrl, 60);
+    if (err || !data?.signedUrl) { setDocsError(err?.message ?? 'Could not generate view link.'); return; }
+    window.open(data.signedUrl, '_blank');
+  }
+
   async function approveDoc(id: string) {
     setActionBusy(id);
     const { error: err } = await supabase
@@ -143,11 +151,14 @@ export default function AdminCompliancePage() {
       .from('compliance_documents')
       .update({ status: 'rejected', admin_notes: rejectNotes.trim() || null, reviewed_at: new Date().toISOString() })
       .eq('id', id);
-    if (!err) setDocs((prev) => prev.map((d) => d.id === id ? { ...d, status: 'rejected', admin_notes: rejectNotes.trim() || null } : d));
-    else setDocsError(err.message);
+    if (!err) {
+      setDocs((prev) => prev.map((d) => d.id === id ? { ...d, status: 'rejected', admin_notes: rejectNotes.trim() || null } : d));
+      setRejectTarget(null);
+      setRejectNotes('');
+    } else {
+      setDocsError(err.message);
+    }
     setActionBusy(null);
-    setRejectTarget(null);
-    setRejectNotes('');
   }
 
   const filtered = flags.filter((f) => showResolved || !f.resolved);
@@ -298,6 +309,15 @@ export default function AdminCompliancePage() {
                               Uploaded: {fmt(doc.uploaded_at)}
                               {doc.reviewed_at && ` · Reviewed: ${fmt(doc.reviewed_at)}`}
                             </p>
+                            {doc.file_url && (
+                              <button
+                                onClick={() => viewDoc(doc.file_url)}
+                                className="text-xs font-semibold mt-1 inline-flex items-center gap-1"
+                                style={{ color: '#f97316' }}
+                              >
+                                View document →
+                              </button>
+                            )}
                             {doc.admin_notes && (
                               <p className="text-xs text-red-500 mt-1 bg-red-50 rounded-lg px-2.5 py-1.5">{doc.admin_notes}</p>
                             )}
@@ -307,7 +327,7 @@ export default function AdminCompliancePage() {
                             <div className="flex gap-2 shrink-0">
                               <button
                                 onClick={() => approveDoc(doc.id)}
-                                disabled={!!actionBusy}
+                                disabled={actionBusy === doc.id}
                                 className="btn btn-sm rounded-xl font-semibold"
                                 style={{ backgroundColor: '#f0fdf4', color: '#22c55e', border: '1px solid #bbf7d0' }}
                               >
@@ -315,7 +335,7 @@ export default function AdminCompliancePage() {
                               </button>
                               <button
                                 onClick={() => { setRejectTarget(doc.id); setRejectNotes(''); }}
-                                disabled={!!actionBusy}
+                                disabled={actionBusy === doc.id}
                                 className="btn btn-sm rounded-xl font-semibold"
                                 style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}
                               >
@@ -337,7 +357,7 @@ export default function AdminCompliancePage() {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => rejectDoc(doc.id)}
-                                disabled={!!actionBusy}
+                                disabled={actionBusy === doc.id}
                                 className="btn btn-sm rounded-xl font-semibold text-white"
                                 style={{ backgroundColor: '#ef4444' }}
                               >
