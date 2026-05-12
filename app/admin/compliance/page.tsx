@@ -49,11 +49,13 @@ const FLAG_COLOURS: Record<string, string> = {
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
-  identity:              'Proof of Identity',
-  business_registration: 'Business Registration',
-  proof_of_address:      'Proof of Address',
-  tax_clearance:         'Tax Clearance Certificate',
-  banking_confirmation:  'Banking Confirmation',
+  identity:                   'Proof of Identity',
+  business_registration:      'Business Registration',
+  proof_of_warehouse_address: 'Proof of Warehouse Address',
+  tax_clearance:              'Tax Clearance Certificate',
+  banking_confirmation:       'Banking Confirmation',
+  cargo_insurance:            'Cargo Insurance Certificate',
+  freight_forwarding_license: 'Freight Forwarding License',
 };
 
 function fmt(d: string) {
