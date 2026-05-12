@@ -142,6 +142,7 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [isOperator, setIsOperator] = useState(false);
   const [switchingRole, setSwitchingRole] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [containers, setContainers] = useState<Container[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -327,6 +328,16 @@ export default function HomePage() {
 
           {/* Auth / user section */}
           <div className="flex items-center gap-2">
+            {/* Hamburger (mobile only) */}
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors ml-1"
+              aria-label="Open menu"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             {user ? (
               <>
                 <Link
@@ -396,6 +407,112 @@ export default function HomePage() {
           </div>
         </div>
       </nav>
+
+      {/* ── Mobile nav drawer ──────────────────────────────────────────────── */}
+      {mobileNavOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+            onClick={() => setMobileNavOpen(false)}
+          />
+
+          {/* Drawer */}
+          <aside className="fixed top-0 right-0 h-full w-72 bg-white z-50 shadow-xl flex flex-col lg:hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <span className="text-base font-extrabold tracking-tight">
+                <span style={{ color: '#0f2044' }}>Share</span>
+                <span style={{ color: '#f97316' }}>Con</span>
+                <span style={{ color: '#0f2044' }}>Load</span>
+              </span>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Close menu"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Nav links */}
+            <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
+              <Link
+                href="/how-it-works"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                How It Works
+              </Link>
+              <Link
+                href="#"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                About Us
+              </Link>
+              <Link
+                href="#"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Contact
+              </Link>
+
+              {user && (
+                <>
+                  <div className="border-t border-gray-100 my-2" />
+                  <Link
+                    href="/bookings"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    📦 My Bookings
+                  </Link>
+                  <button
+                    onClick={() => { setMobileNavOpen(false); handleSwitchToOperator(); }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    🚢 Operator Portal
+                  </button>
+                </>
+              )}
+            </nav>
+
+            {/* Auth footer */}
+            <div className="px-4 py-4 border-t border-gray-100 flex flex-col gap-2">
+              {user ? (
+                <button
+                  onClick={() => { setMobileNavOpen(false); handleSignOut(); }}
+                  className="w-full text-sm font-medium text-gray-500 hover:text-gray-800 px-4 py-2.5 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="w-full text-center text-sm font-medium text-gray-700 px-4 py-2.5 rounded-xl border border-gray-200 hover:border-gray-400 transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="w-full text-center text-sm font-semibold text-white px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
+                    style={{ backgroundColor: '#f97316' }}
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </div>
+          </aside>
+        </>
+      )}
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="relative bg-white overflow-hidden">
