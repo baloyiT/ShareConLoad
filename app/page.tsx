@@ -849,8 +849,8 @@ export default function HomePage() {
           {/* Legal links */}
           <div className="flex flex-col gap-2">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Legal</p>
-            <Link href="#" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Privacy Policy</Link>
-            <Link href="#" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Terms of Service</Link>
+            <Link href="/privacy" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Terms of Service</Link>
             <Link href="#" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Cookie Policy</Link>
           </div>
         </div>
