@@ -6,7 +6,7 @@ import { supabase } from '@/services/supabaseClient';
 
 type DocStatus = 'under_review' | 'approved' | 'rejected';
 
-type DocType = 'identity' | 'business_registration' | 'proof_of_address' | 'tax_clearance';
+type DocType = 'identity' | 'business_registration' | 'proof_of_address' | 'tax_clearance' | 'banking_confirmation';
 
 type DocRecord = {
   id: string;
@@ -31,6 +31,7 @@ const DOC_DEFS: { type: DocType; label: string; desc: string }[] = [
   { type: 'business_registration', label: 'Business Registration',     desc: 'Certificate of incorporation or CIPC document' },
   { type: 'proof_of_address',      label: 'Proof of Address',          desc: 'Utility bill or bank statement (not older than 3 months)' },
   { type: 'tax_clearance',         label: 'Tax Clearance Certificate', desc: 'Issued by SARS — required for payout approval' },
+  { type: 'banking_confirmation',  label: 'Banking Confirmation',      desc: 'Official letter from your bank confirming your account details' },
 ];
 
 const MIME_TO_EXT: Record<string, string> = {

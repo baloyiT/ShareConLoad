@@ -53,6 +53,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   business_registration: 'Business Registration',
   proof_of_address:      'Proof of Address',
   tax_clearance:         'Tax Clearance Certificate',
+  banking_confirmation:  'Banking Confirmation',
 };
 
 function fmt(d: string) {
