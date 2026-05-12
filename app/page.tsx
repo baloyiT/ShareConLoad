@@ -729,7 +729,33 @@ export default function HomePage() {
             <span>{error}</span>
           </div>
         )}
-        {!loading && !error && (
+        {!loading && !error && searched && filteredContainers.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+              style={{ backgroundColor: '#f3f4f6' }}
+            >
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 11h6M11 8v6" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">No results found</h3>
+            <p className="text-sm text-gray-400 max-w-xs leading-relaxed mb-5">
+              No containers match your filters. Try a different route, date, or price range.
+            </p>
+            <button
+              onClick={handleReset}
+              className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: '#f97316' }}
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && !(searched && filteredContainers.length === 0) && (
           <ContainerList containers={filteredContainers} />
         )}
       </section>
