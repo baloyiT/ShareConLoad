@@ -788,10 +788,52 @@ export default function HomePage() {
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="bg-white border-t border-gray-100 py-6 px-4 text-center">
-        <p className="text-xs text-gray-400">
-          © {new Date().getFullYear()} ShareConLoad. All rights reserved.
-        </p>
+      <footer className="bg-white border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8">
+
+          {/* Brand */}
+          <div className="flex flex-col gap-3">
+            <Link href="/" className="flex items-center gap-2.5">
+              <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
+              <span className="text-base font-extrabold tracking-tight">
+                <span style={{ color: '#0f2044' }}>Share</span>
+                <span style={{ color: '#f97316' }}>Con</span>
+                <span style={{ color: '#0f2044' }}>Load</span>
+              </span>
+            </Link>
+            <p className="text-xs text-gray-400 leading-relaxed max-w-[220px]">
+              The smarter way to move goods globally — shared container logistics for everyone.
+            </p>
+          </div>
+
+          {/* Platform links */}
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Platform</p>
+            <Link href="/how-it-works" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">How It Works</Link>
+            <a href="#listings"        className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Browse Containers</a>
+            <button
+              onClick={handleSwitchToOperator}
+              className="text-sm text-gray-500 hover:text-gray-800 transition-colors text-left"
+            >
+              List Your Container
+            </button>
+            <Link href="/auth/register" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Create Account</Link>
+          </div>
+
+          {/* Legal links */}
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Legal</p>
+            <Link href="#" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Privacy Policy</Link>
+            <Link href="#" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Terms of Service</Link>
+            <Link href="#" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Cookie Policy</Link>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100 px-6 sm:px-10 py-4">
+          <p className="text-xs text-gray-400 text-center">
+            © {new Date().getFullYear()} ShareConLoad. All rights reserved.
+          </p>
+        </div>
       </footer>
     </div>
   );
