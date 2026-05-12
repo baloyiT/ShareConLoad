@@ -6,9 +6,11 @@ import { supabase } from '@/services/supabaseClient';
 
 type DocStatus = 'under_review' | 'approved' | 'rejected';
 
+type DocType = 'identity' | 'business_registration' | 'proof_of_address' | 'tax_clearance' | 'banking_confirmation';
+
 type DocRecord = {
   id: string;
-  doc_type: string;
+  doc_type: DocType;
   file_url: string;
   status: DocStatus;
   admin_notes: string | null;
@@ -16,7 +18,7 @@ type DocRecord = {
 };
 
 type DocSlot = {
-  type: string;
+  type: DocType;
   label: string;
   desc: string;
   record: DocRecord | null;
@@ -24,13 +26,20 @@ type DocSlot = {
   error: string | null;
 };
 
-const DOC_DEFS: { type: string; label: string; desc: string }[] = [
+const DOC_DEFS: { type: DocType; label: string; desc: string }[] = [
   { type: 'identity',              label: 'Proof of Identity',         desc: 'Valid passport or national ID (director/owner)' },
   { type: 'business_registration', label: 'Business Registration',     desc: 'Certificate of incorporation or CIPC document' },
   { type: 'proof_of_address',      label: 'Proof of Address',          desc: 'Utility bill or bank statement (not older than 3 months)' },
   { type: 'tax_clearance',         label: 'Tax Clearance Certificate', desc: 'Issued by SARS — required for payout approval' },
   { type: 'banking_confirmation',  label: 'Banking Confirmation',      desc: 'Official bank letter confirming account details' },
 ];
+
+const MIME_TO_EXT: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'image/jpeg':      'jpg',
+  'image/png':       'png',
+  'image/webp':      'webp',
+};
 
 const STATUS_BADGE: Record<DocStatus, { label: string; className: string }> = {
   under_review: { label: 'Under Review', className: 'bg-amber-100 text-amber-700' },
@@ -44,6 +53,7 @@ export default function ComplianceDocumentsPage() {
 
   const [operatorProfileId, setOperatorProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [slots, setSlots] = useState<DocSlot[]>(
     DOC_DEFS.map((d) => ({ ...d, record: null, uploading: false, error: null }))
   );
@@ -56,12 +66,12 @@ export default function ComplianceDocumentsPage() {
       const { data: profile } = await supabase
         .from('profiles').select('id')
         .eq('user_id', user.id).eq('role_type', 'operator').single();
-      if (!profile) { setLoading(false); return; }
+      if (!profile) { setPageError('Operator profile not found.'); setLoading(false); return; }
 
       const { data: op } = await supabase
         .from('operator_profiles').select('id')
         .eq('profile_id', profile.id).single();
-      if (!op) { setLoading(false); return; }
+      if (!op) { setPageError('Operator details not found.'); setLoading(false); return; }
 
       setOperatorProfileId(op.id);
 
@@ -84,11 +94,11 @@ export default function ComplianceDocumentsPage() {
     load();
   }, [router]);
 
-  function setSlot(type: string, patch: Partial<DocSlot>) {
+  function setSlot(type: DocType, patch: Partial<DocSlot>) {
     setSlots((prev) => prev.map((s) => s.type === type ? { ...s, ...patch } : s));
   }
 
-  async function handleFile(docType: string, file: File) {
+  async function handleFile(docType: DocType, file: File) {
     if (!operatorProfileId) return;
 
     const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
@@ -103,7 +113,7 @@ export default function ComplianceDocumentsPage() {
 
     setSlot(docType, { uploading: true, error: null });
 
-    const ext  = file.name.split('.').pop();
+    const ext  = MIME_TO_EXT[file.type];
     const path = `${operatorProfileId}/${docType}.${ext}`;
 
     const { error: storageErr } = await supabase.storage
@@ -153,6 +163,8 @@ export default function ComplianceDocumentsPage() {
         <h1 className="text-xl font-extrabold text-gray-800">Documents</h1>
         <p className="text-sm text-gray-400 mt-0.5">Required documents for KYC and payout eligibility.</p>
       </div>
+
+      {pageError && <div className="alert alert-error text-sm mb-4">{pageError}</div>}
 
       <div className="flex flex-col gap-4">
         {slots.map((slot) => {
