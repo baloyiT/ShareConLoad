@@ -91,22 +91,44 @@ const FEATURES = [
 
 const TRUST = [
   {
-    icon: "🔒",
+    icon: (
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
     title: "Secure Bookings",
     desc: "Your booking and data are safe with us.",
   },
   {
-    icon: "🕐",
+    icon: (
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    ),
     title: "24/7 Support",
     desc: "We are here to help you with anything, anytime.",
   },
   {
-    icon: "📋",
+    icon: (
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
+      </svg>
+    ),
     title: "Flexible Bookings",
     desc: "Cancel or change your booking with ease.",
   },
   {
-    icon: "💡",
+    icon: (
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+      </svg>
+    ),
     title: "Transparent Pricing",
     desc: "You always know exactly what you pay.",
   },
@@ -601,8 +623,8 @@ export default function HomePage() {
           {TRUST.map(({ icon, title, desc }) => (
             <div key={title} className="flex flex-col items-center gap-3">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
-                style={{ backgroundColor: "#fff7ed" }}
+                className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                style={{ backgroundColor: "#fff7ed", color: "#f97316" }}
               >
                 {icon}
               </div>
