@@ -12,22 +12,23 @@ type ComplianceFlag = {
   flag_type: string;
   description: string | null;
   resolved: boolean;
+  resolved_at: string | null;
   created_at: string;
-  raised_by_profile: { full_name: string | null } | null;
+  raised_by_name: string | null;
+  raised_by_email: string | null;
 };
 
 type ComplianceDoc = {
   id: string;
+  operator_profile_id: string;
   doc_type: string;
   file_url: string;
   status: 'under_review' | 'approved' | 'rejected';
   admin_notes: string | null;
   uploaded_at: string;
   reviewed_at: string | null;
-  operator_profile: {
-    id: string;
-    profile: { full_name: string | null } | null;
-  } | null;
+  operator_name: string | null;
+  operator_email: string | null;
 };
 
 const FLAG_TYPE_LABELS: Record<string, string> = {
@@ -78,33 +79,16 @@ export default function AdminCompliancePage() {
   const [rejectNotes,  setRejectNotes]  = useState('');
 
   async function fetchFlags() {
-    const { data, error: err } = await supabase
-      .from('compliance_flags')
-      .select(`
-        id, target_type, target_id, flag_type, description, resolved, created_at,
-        raised_by_profile:profiles!compliance_flags_raised_by_fkey(full_name)
-      `)
-      .order('created_at', { ascending: false });
-
+    const { data, error: err } = await supabase.rpc('admin_get_compliance_flags');
     if (err) { setError(err.message); }
-    else { setFlags((data ?? []) as unknown as ComplianceFlag[]); }
+    else { setFlags((data ?? []) as ComplianceFlag[]); }
     setLoading(false);
   }
 
   async function fetchDocs() {
-    const { data, error: err } = await supabase
-      .from('compliance_documents')
-      .select(`
-        id, doc_type, file_url, status, admin_notes, uploaded_at, reviewed_at,
-        operator_profile:operator_profiles!compliance_documents_operator_profile_id_fkey(
-          id,
-          profile:profiles!operator_profiles_profile_id_fkey(full_name)
-        )
-      `)
-      .order('uploaded_at', { ascending: false });
-
+    const { data, error: err } = await supabase.rpc('admin_get_compliance_docs');
     if (err) { setDocsError(err.message); }
-    else { setDocs((data ?? []) as unknown as ComplianceDoc[]); }
+    else { setDocs((data ?? []) as ComplianceDoc[]); }
     setDocsLoading(false);
   }
 
@@ -252,7 +236,9 @@ export default function AdminCompliancePage() {
                         {flag.description && <p className="text-sm text-gray-700 mb-2">{flag.description}</p>}
                         <div className="flex gap-4 text-xs text-gray-400">
                           <span>Raised: {fmt(flag.created_at)}</span>
-                          {flag.raised_by_profile?.full_name && <span>By: {flag.raised_by_profile.full_name}</span>}
+                          {(flag.raised_by_name || flag.raised_by_email) && (
+                            <span>By: {flag.raised_by_name ?? flag.raised_by_email}</span>
+                          )}
                         </div>
                       </div>
                       <button onClick={() => toggleResolve(flag)} disabled={resolving === flag.id}
@@ -287,7 +273,7 @@ export default function AdminCompliancePage() {
             ) : (
               <div className="flex flex-col gap-4">
                 {docs.map((doc) => {
-                  const operatorName = doc.operator_profile?.profile?.full_name ?? 'Unknown operator';
+                  const operatorName = doc.operator_name ?? doc.operator_email ?? 'Unknown operator';
                   const statusColour = doc.status === 'approved' ? '#22c55e' : doc.status === 'rejected' ? '#ef4444' : '#f59e0b';
                   const statusLabel  = doc.status === 'approved' ? 'Approved' : doc.status === 'rejected' ? 'Rejected' : 'Under Review';
                   const isRejecting  = rejectTarget === doc.id;
