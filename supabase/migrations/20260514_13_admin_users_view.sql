@@ -1,3 +1,5 @@
+-- Exposes auth.users.email to admin users.
+-- Admin check uses both is_admin (frontend convention) and role_type (DB/RLS convention).
 create or replace function public.admin_get_users()
 returns table (
   id          uuid,
@@ -25,7 +27,7 @@ as $$
   where exists (
     select 1 from public.profiles admin_check
     where admin_check.user_id = auth.uid()
-      and admin_check.is_admin = true
+      and (admin_check.is_admin = true or admin_check.role_type = 'admin')
   )
   order by p.created_at desc;
 $$;
