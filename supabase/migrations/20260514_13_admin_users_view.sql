@@ -1,4 +1,5 @@
 -- Exposes auth.users.email to admin users.
+-- Requires: profiles.is_admin boolean (not versioned in migrations — must exist in DB).
 -- Admin check uses both is_admin (frontend convention) and role_type (DB/RLS convention).
 create or replace function public.admin_get_users()
 returns table (
