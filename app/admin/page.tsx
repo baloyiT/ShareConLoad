@@ -10,10 +10,10 @@ import { supabase } from '@/services/supabaseClient';
 type Profile = {
   id: string;
   user_id: string;
-  full_name: string | null;
-  active_role: string;
+  role_type: string | null;
   is_admin: boolean | null;
   email: string | null;
+  full_name: string | null;
   created_at: string;
 };
 
@@ -107,8 +107,8 @@ export default function AdminDashboard() {
   // ── Derived stats ──────────────────────────────────────────────────────────
   const stats = {
     totalUsers:      users.length,
-    customers:       users.filter((u) => u.active_role === 'customer').length,
-    operators:       users.filter((u) => u.active_role === 'operator').length,
+    customers:       users.filter((u) => u.role_type === 'customer').length,
+    operators:       users.filter((u) => u.role_type === 'operator').length,
     totalContainers: containers.length,
     openContainers:  containers.filter((c) => c.status === 'open').length,
     totalBookings:   bookings.length,
@@ -290,7 +290,7 @@ export default function AdminDashboard() {
                             className="w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0"
                             style={{ backgroundColor: '#0f2044' }}
                           >
-                            {(u.full_name ?? '?').charAt(0).toUpperCase()}
+                            {(u.email ?? u.full_name ?? '?').charAt(0).toUpperCase()}
                           </div>
                           <span className="font-medium text-gray-800 text-sm">
                             {u.full_name ?? <span className="text-gray-400 italic">No name</span>}
@@ -303,9 +303,9 @@ export default function AdminDashboard() {
                       <Td>
                         <span
                           className="badge badge-sm text-white font-semibold"
-                          style={{ backgroundColor: u.active_role === 'operator' ? '#f97316' : '#0f2044' }}
+                          style={{ backgroundColor: u.role_type === 'operator' ? '#f97316' : '#0f2044' }}
                         >
-                          {u.active_role}
+                          {u.role_type ?? '—'}
                         </span>
                       </Td>
                       <Td><span className="text-gray-500 text-sm">{fmt(u.created_at)}</span></Td>
