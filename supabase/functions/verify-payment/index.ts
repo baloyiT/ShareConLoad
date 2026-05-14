@@ -6,13 +6,40 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PLATFORM_COMMISSION = 0.05;
-
 const PAYOUT_STAGE_MAP: Record<string, string> = {
   deposit_20:       'deposit_release',
   pre_departure_50: 'departure_release',
   final_release_30: 'final_release',
 };
+
+// ── Commission helpers ─────────────────────────────────────────────────────────
+
+type Tier = { min: number; max: number | null; rate: number };
+type CommissionConfig = {
+  commission_type: 'fixed' | 'tiered';
+  fixed_rate: number | null;
+  tiers: Tier[];
+};
+
+const DEFAULT_TIERS: Tier[] = [
+  { min: 0,     max: 5000,  rate: 0.12 },
+  { min: 5001,  max: 20000, rate: 0.10 },
+  { min: 20001, max: 50000, rate: 0.08 },
+  { min: 50001, max: null,  rate: 0.06 },
+];
+
+function calcCommission(gross: number, config: CommissionConfig | null): number {
+  if (config?.commission_type === 'fixed') {
+    return Math.round(gross * (config.fixed_rate ?? 0.05) * 100) / 100;
+  }
+  const tiers = config?.tiers?.length ? config.tiers : DEFAULT_TIERS;
+  const tier = tiers.find((t) => gross >= t.min && (t.max === null || gross <= t.max));
+  return Math.round(gross * (tier?.rate ?? 0.06) * 100) / 100;
+}
+
+function effectiveRate(commission: number, gross: number): number {
+  return Math.round((commission / gross) * 10000) / 10000;
+}
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -26,6 +53,12 @@ serve(async (req: Request) => {
 
     const { reference } = await req.json();
     if (!reference) return json({ error: 'reference is required' }, 400);
+
+    // ── Fetch commission config ────────────────────────────────────────────────
+    const { data: commConfig } = await supabase
+      .from('platform_commission_config')
+      .select('commission_type, fixed_rate, tiers')
+      .single();
 
     // ── Verify with Paystack ───────────────────────────────────────────────────
     const paystackRes = await fetch(
@@ -44,7 +77,7 @@ serve(async (req: Request) => {
     const meta      = paystackData.data.metadata ?? {};
     const paymentId = meta.payment_id;
     const bookingId = meta.booking_id;
-    const stage     = meta.stage; // 'deposit_20' | 'pre_departure_50' | 'final_release_30'
+    const stage     = meta.stage;
 
     if (!paymentId) return json({ error: 'Payment metadata missing' }, 400);
 
@@ -78,14 +111,14 @@ serve(async (req: Request) => {
       .eq('id', paymentId);
 
     // ── Create payout record ───────────────────────────────────────────────────
-    // Route: booking → container → operator auth uid → profiles.id (= payouts.operator_id)
     const bkId = bookingId ?? payment?.booking_id;
     if (bkId && payment) {
       await createPayoutRecord(supabase, {
-        bookingId:  bkId,
+        bookingId:   bkId,
         paymentId,
         stage,
         grossAmount: payment.amount,
+        commConfig:  commConfig as CommissionConfig | null,
       });
     }
 
@@ -104,15 +137,15 @@ serve(async (req: Request) => {
   }
 });
 
-// ── Shared payout creation helper ─────────────────────────────────────────────
 // deno-lint-ignore no-explicit-any
 async function createPayoutRecord(supabase: any, opts: {
   bookingId:   string;
   paymentId:   string;
   stage:       string;
   grossAmount: number;
+  commConfig:  CommissionConfig | null;
 }): Promise<void> {
-  const { bookingId, paymentId, stage, grossAmount } = opts;
+  const { bookingId, paymentId, stage, grossAmount, commConfig } = opts;
 
   const { data: booking } = await supabase
     .from('bookings')
@@ -128,7 +161,6 @@ async function createPayoutRecord(supabase: any, opts: {
     .single();
   if (!container) return;
 
-  // operator_id in containers = auth.uid(); match to profiles.user_id → profiles.id
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
@@ -136,9 +168,9 @@ async function createPayoutRecord(supabase: any, opts: {
     .single();
   if (!profile) return;
 
-  const commissionAmount = Math.round(grossAmount * PLATFORM_COMMISSION * 100) / 100;
+  const commissionAmount = calcCommission(grossAmount, commConfig);
   const netAmount        = Math.round((grossAmount - commissionAmount) * 100) / 100;
-  // Stage 1 deposits are held for 48h to cover the refund window
+  const rate             = effectiveRate(commissionAmount, grossAmount);
   const eligibleAfter    = stage === 'deposit_20'
     ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
     : null;
@@ -150,7 +182,7 @@ async function createPayoutRecord(supabase: any, opts: {
     payout_stage:      PAYOUT_STAGE_MAP[stage] ?? 'deposit_release',
     stage,
     gross_amount:      grossAmount,
-    commission_rate:   PLATFORM_COMMISSION,
+    commission_rate:   rate,
     commission_amount: commissionAmount,
     platform_fee:      commissionAmount,
     net_amount:        netAmount,

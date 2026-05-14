@@ -6,7 +6,30 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PLATFORM_COMMISSION = 0.05;
+// ── Commission helpers ─────────────────────────────────────────────────────────
+
+type Tier = { min: number; max: number | null; rate: number };
+type CommissionConfig = {
+  commission_type: 'fixed' | 'tiered';
+  fixed_rate: number | null;
+  tiers: Tier[];
+};
+
+const DEFAULT_TIERS: Tier[] = [
+  { min: 0,     max: 5000,  rate: 0.12 },
+  { min: 5001,  max: 20000, rate: 0.10 },
+  { min: 20001, max: 50000, rate: 0.08 },
+  { min: 50001, max: null,  rate: 0.06 },
+];
+
+function calcCommission(gross: number, config: CommissionConfig | null): number {
+  if (config?.commission_type === 'fixed') {
+    return Math.round(gross * (config.fixed_rate ?? 0.05) * 100) / 100;
+  }
+  const tiers = config?.tiers?.length ? config.tiers : DEFAULT_TIERS;
+  const tier = tiers.find((t) => gross >= t.min && (t.max === null || gross <= t.max));
+  return Math.round(gross * (tier?.rate ?? 0.06) * 100) / 100;
+}
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -21,14 +44,21 @@ serve(async (req: Request) => {
     const { payoutId } = await req.json();
     if (!payoutId) return json({ error: 'payoutId is required' }, 400);
 
-    // ── Load payout record ─────────────────────────────────────────────────────
-    const { data: payout, error: pErr } = await supabase
-      .from('payouts')
-      .select('id, booking_id, operator_id, gross_amount, status, eligible_after')
-      .eq('id', payoutId)
-      .single();
+    // ── Load payout + commission config in parallel ────────────────────────────
+    const [payoutRes, commRes] = await Promise.all([
+      supabase
+        .from('payouts')
+        .select('id, booking_id, operator_id, gross_amount, status, eligible_after')
+        .eq('id', payoutId)
+        .single(),
+      supabase
+        .from('platform_commission_config')
+        .select('commission_type, fixed_rate, tiers')
+        .single(),
+    ]);
 
-    if (pErr || !payout) return json({ error: 'Payout record not found' }, 404);
+    const payout = payoutRes.data;
+    if (payoutRes.error || !payout) return json({ error: 'Payout record not found' }, 404);
     if (payout.status !== 'pending') return json({ error: `Payout is already ${payout.status}` }, 400);
 
     // ── 48h refund window check ────────────────────────────────────────────────
@@ -40,7 +70,6 @@ serve(async (req: Request) => {
     }
 
     // ── Load operator profile ──────────────────────────────────────────────────
-    // payouts.operator_id = profiles.id; operator_profiles links via profile_id
     const { data: opProfile, error: opErr } = await supabase
       .from('operator_profiles')
       .select('paystack_recipient_code, payout_enabled, payout_hold')
@@ -48,7 +77,6 @@ serve(async (req: Request) => {
       .single();
 
     if (opErr || !opProfile) return json({ error: 'Operator profile not found' }, 404);
-
     if (!opProfile.payout_enabled)          return json({ error: 'Payouts are not enabled for this operator' }, 400);
     if (opProfile.payout_hold)              return json({ error: 'Operator payout is on hold' }, 400);
     if (!opProfile.paystack_recipient_code) return json({ error: 'Operator has no registered bank account' }, 400);
@@ -64,12 +92,13 @@ serve(async (req: Request) => {
 
     if (activeDispute) return json({ error: 'Cannot pay out while an active dispute exists' }, 400);
 
-    // ── Calculate net amount ───────────────────────────────────────────────────
-    const grossAmount     = payout.gross_amount;
-    const commissionAmount = Math.round(grossAmount * PLATFORM_COMMISSION * 100) / 100;
-    const netAmount       = Math.round((grossAmount - commissionAmount) * 100) / 100;
-    const amountKobo      = Math.round(netAmount * 100);
-    const transferRef     = `SCL-PAYOUT-${payoutId.slice(0, 8)}-${Date.now()}`.toUpperCase();
+    // ── Calculate commission using live config ─────────────────────────────────
+    const grossAmount      = payout.gross_amount;
+    const commConfig       = commRes.data as CommissionConfig | null;
+    const commissionAmount = calcCommission(grossAmount, commConfig);
+    const netAmount        = Math.round((grossAmount - commissionAmount) * 100) / 100;
+    const amountKobo       = Math.round(netAmount * 100);
+    const transferRef      = `SCL-PAYOUT-${payoutId.slice(0, 8)}-${Date.now()}`.toUpperCase();
 
     // ── Execute Paystack transfer ──────────────────────────────────────────────
     const paystackRes = await fetch('https://api.paystack.co/transfer', {

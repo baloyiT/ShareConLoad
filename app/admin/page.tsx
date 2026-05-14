@@ -182,6 +182,7 @@ export default function AdminDashboard() {
                   { href: '/admin/bookings',   label: 'Bookings',    icon: '📋', desc: 'Manage all bookings'         },
                   { href: '/admin/operators',  label: 'Operators',   icon: '🚢', desc: 'Payout controls'             },
                   { href: '/admin/payouts',    label: 'Payouts',     icon: '💳', desc: 'Payout history'              },
+                  { href: '/admin/commission', label: 'Commission',  icon: '💹', desc: 'Tiered & fixed rates'         },
                   { href: '/admin/disputes',   label: 'Disputes',    icon: '⚖️', desc: 'Resolve disputes'            },
                   { href: '/admin/compliance', label: 'Compliance',  icon: '🚩', desc: 'Compliance flags'            },
                   { href: '/admin/release',    label: 'Release',     icon: '🔓', desc: 'Cargo release auth'          },
