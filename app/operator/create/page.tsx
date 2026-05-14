@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -45,6 +45,49 @@ export default function CreateContainerPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
+
+  const [compliance, setCompliance] = useState<'loading' | 'ok' | 'blocked'>('loading');
+
+  useEffect(() => {
+    async function checkCompliance() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push('/auth/login?next=/operator/create'); return; }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role_type', 'operator')
+        .single();
+
+      if (!profile) { setCompliance('blocked'); return; }
+
+      const { data: op } = await supabase
+        .from('operator_profiles')
+        .select('id, legal_name, phone_number, paystack_recipient_code, service_agreement_signed_at')
+        .eq('profile_id', profile.id)
+        .single();
+
+      if (!op) { setCompliance('blocked'); return; }
+
+      const { count } = await supabase
+        .from('compliance_documents')
+        .select('id', { count: 'exact', head: true })
+        .eq('operator_profile_id', op.id)
+        .in('doc_type', ['identity', 'business_registration', 'proof_of_warehouse_address', 'tax_clearance', 'banking_confirmation', 'cargo_insurance'])
+        .eq('status', 'approved');
+
+      const compliant =
+        !!op.legal_name &&
+        !!op.phone_number &&
+        !!op.paystack_recipient_code &&
+        !!op.service_agreement_signed_at &&
+        (count ?? 0) === 6;
+
+      setCompliance(compliant ? 'ok' : 'blocked');
+    }
+    checkCompliance();
+  }, [router]);
 
   // ── Field update ────────────────────────────────────────────────────────────
   function update(field: keyof ContainerForm, value: string) {
@@ -127,10 +170,66 @@ export default function CreateContainerPage() {
     }
   }
 
+  // ── Compliance loading ──────────────────────────────────────────────────────
+  if (compliance === 'loading') {
+    return (
+      <div className="flex items-center justify-center py-24 min-h-[60vh]">
+        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+      </div>
+    );
+  }
+
+  // ── Compliance blocked ──────────────────────────────────────────────────────
+  if (compliance === 'blocked') {
+    return (
+      <div className="bg-[#f8fafc] min-h-screen">
+        <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
+            <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
+          </div>
+          <div className="relative max-w-4xl mx-auto z-10">
+            <p className="text-gray-400 text-sm mb-1 font-medium">Operator Portal</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Create a Container</h1>
+          </div>
+        </div>
+        <div className="max-w-md mx-auto px-4 py-16">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+              style={{ backgroundColor: '#fff7ed' }}
+            >
+              <svg className="w-8 h-8" style={{ color: '#f97316' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-6V7m0 0a5 5 0 00-5 5v1H5a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2h-2v-1a5 5 0 00-5-5z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-extrabold text-gray-800 mb-2">Compliance Required</h2>
+            <p className="text-gray-500 text-sm mb-1">
+              You must complete your compliance profile before listing containers.
+            </p>
+            <p className="text-xs text-gray-400 mb-6">
+              All five steps must be approved: Profile, Contact, Account, Documents, and Service Agreement.
+            </p>
+            <Link
+              href="/operator/compliance/profile"
+              className="btn text-white font-bold rounded-xl w-full hover:opacity-90"
+              style={{ backgroundColor: '#f97316' }}
+            >
+              Go to Compliance →
+            </Link>
+            <Link href="/operator" className="btn btn-ghost text-gray-400 rounded-xl w-full mt-2 text-sm">
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Success screen ──────────────────────────────────────────────────────────
   if (createdId) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center px-4 py-16">
+      <div className="flex items-center justify-center px-4 py-16 min-h-[70vh]">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-md w-full text-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
@@ -184,27 +283,12 @@ export default function CreateContainerPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans">
-
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
-            <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
-            </span>
-          </Link>
-          <Link href="/operator" className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-            ← My Containers
-          </Link>
-        </div>
-      </nav>
+    <div className="bg-[#f8fafc]">
 
       {/* Page header */}
       <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
-          <Image src="/world-map-overlay.png" alt="" fill className="object-cover" />
+          <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
         </div>
         <div className="relative max-w-4xl mx-auto z-10">
           <p className="text-gray-400 text-sm mb-1 font-medium">Operator Portal</p>
