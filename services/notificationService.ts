@@ -23,6 +23,41 @@ export type NotificationEventMap = {
     recipientId: string;
     route: string;
   };
+  'payment.due': {
+    bookingId: string;
+    recipientId: string;
+    stage: string;
+    amount: number;
+    dueDate: string;
+  };
+  'payment.confirmed': {
+    bookingId: string;
+    recipientId: string;
+    stage: string;
+    amount: number;
+  };
+  'container.departure_notice': {
+    bookingId:     string;
+    recipientId:   string;
+    route:         string;
+    departureDate: string;
+  };
+  'customs.alert': {
+    bookingId: string;
+    recipientId: string;
+    eventType: string;
+    description: string;
+  };
+  'cargo.released': {
+    bookingId: string;
+    recipientId: string;
+    route: string;
+  };
+  'dispute.update': {
+    disputeId: string;
+    recipientId: string;
+    newStatus: string;
+  };
 };
 
 export type NotificationEvent = keyof NotificationEventMap;
@@ -69,6 +104,53 @@ function buildMessage(event: NotificationEvent, payload: NotificationEventMap[ty
         title: 'Booking Cancelled',
         body: `Your booking for ${(payload as NotificationEventMap['booking.cancelled']).route} has been cancelled.`,
       };
+    case 'payment.due': {
+      const p = payload as NotificationEventMap['payment.due'];
+      const stageLabel: Record<string, string> = {
+        deposit_20:       '20% deposit',
+        pre_departure_50: '50% pre-departure',
+        final_release_30: '30% final release',
+      };
+      return {
+        title: 'Payment Due',
+        body:  `Your ${stageLabel[p.stage] ?? p.stage} payment of R${p.amount.toFixed(2)} is due by ${new Date(p.dueDate).toLocaleDateString('en-GB')}.`,
+      };
+    }
+    case 'payment.confirmed': {
+      const p = payload as NotificationEventMap['payment.confirmed'];
+      return {
+        title: 'Payment Confirmed',
+        body:  `Your payment of R${p.amount.toFixed(2)} has been confirmed for booking ${p.bookingId.slice(0, 8).toUpperCase()}.`,
+      };
+    }
+    case 'customs.alert': {
+      const p = payload as NotificationEventMap['customs.alert'];
+      return {
+        title: 'Customs Alert',
+        body:  `A customs event (${p.eventType.replace('_', ' ')}) has been recorded for your shipment. ${p.description}`,
+      };
+    }
+    case 'cargo.released': {
+      const p = payload as NotificationEventMap['cargo.released'];
+      return {
+        title: 'Cargo Released',
+        body:  `Your cargo on ${p.route} has been authorized for release. You may now collect your goods.`,
+      };
+    }
+    case 'dispute.update': {
+      const p = payload as NotificationEventMap['dispute.update'];
+      return {
+        title: 'Dispute Updated',
+        body:  `Your dispute has been updated to status: ${p.newStatus.replace('_', ' ')}.`,
+      };
+    }
+    case 'container.departure_notice': {
+      const p = payload as NotificationEventMap['container.departure_notice'];
+      return {
+        title: 'Departure in 7 Days — Payment Due',
+        body:  `Your container on ${p.route} departs on ${new Date(p.departureDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}. Please complete your 50% pre-departure payment to ensure your cargo is loaded.`,
+      };
+    }
     default:
       return { title: 'Notification', body: '' };
   }

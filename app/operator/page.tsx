@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 // Image is still used for the hero world-map overlay
 import { supabase } from '@/services/supabaseClient';
+import { notify } from '@/services/notificationService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ type Container = {
   price_per_cbm: number;
   status: string;
   created_at: string;
+  departure_notice_sent_at: string | null;
 };
 
 type StatusFilter = 'all' | 'open' | 'closed' | 'in_transit' | 'delivered';
@@ -59,6 +61,9 @@ export default function OperatorDashboard() {
   const [userName, setUserName]         = useState('');
   const [userInitials, setUserInitials] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
+  const [sendingNotice,  setSendingNotice]  = useState<string | null>(null);
+  const [noticeError,    setNoticeError]    = useState<string | null>(null);
+  const [noticeSent,     setNoticeSent]     = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchContainers() {
@@ -98,6 +103,46 @@ export default function OperatorDashboard() {
     }
     fetchContainers();
   }, [router]);
+
+  async function sendDepartureNotice(container: Container) {
+    setSendingNotice(container.id);
+    setNoticeError(null);
+    setNoticeSent(null);
+
+    const { error: updateErr } = await supabase
+      .from('containers')
+      .update({ departure_notice_sent_at: new Date().toISOString() })
+      .eq('id', container.id);
+
+    if (updateErr) {
+      setNoticeError(updateErr.message);
+      setSendingNotice(null);
+      return;
+    }
+
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('id, customer_id')
+      .eq('container_id', container.id)
+      .in('status', ['confirmed', 'loaded']);
+
+    for (const b of bookings ?? []) {
+      await notify('container.departure_notice', {
+        bookingId:     b.id,
+        recipientId:   b.customer_id,
+        route:         `${container.origin_city} → ${container.destination_city}`,
+        departureDate: container.departure_date,
+      });
+    }
+
+    setContainers((prev) =>
+      prev.map((c) =>
+        c.id === container.id ? { ...c, departure_notice_sent_at: new Date().toISOString() } : c,
+      ),
+    );
+    setNoticeSent(container.id);
+    setSendingNotice(null);
+  }
 
   const filtered = statusFilter === 'all' ? containers : containers.filter((c) => c.status === statusFilter);
 
@@ -158,6 +203,15 @@ export default function OperatorDashboard() {
           </div>
         )}
 
+        {noticeError && (
+          <div className="alert alert-error text-sm">{noticeError}</div>
+        )}
+        {noticeSent && (
+          <div className="alert text-sm font-semibold" style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+            ✓ Departure notice sent — customers have been notified.
+          </div>
+        )}
+
         {/* Loading / Error */}
         {loading && <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} /></div>}
         {error   && <div className="alert alert-error text-sm max-w-lg">{error}</div>}
@@ -194,6 +248,7 @@ export default function OperatorDashboard() {
                     <th className="font-semibold py-3 px-4">Status</th>
                     <th className="font-semibold py-3 px-4">Capacity</th>
                     <th className="font-semibold py-3 px-4">Price / CBM</th>
+                    <th className="font-semibold py-3 px-4">Notice</th>
                     <th className="py-3 px-4" />
                   </tr>
                 </thead>
@@ -222,6 +277,22 @@ export default function OperatorDashboard() {
                           <progress className="progress w-28 h-1.5" style={{ accentColor: pctFull > 80 ? '#f97316' : '#0f2044' }} value={pctFull} max={100} />
                         </td>
                         <td className="py-4 px-4 font-semibold text-sm" style={{ color: '#f97316' }}>R{c.price_per_cbm}</td>
+                        <td className="py-4 px-4">
+                          {c.departure_notice_sent_at ? (
+                            <span className="text-xs font-semibold text-green-600 flex items-center gap-1">✓ Sent</span>
+                          ) : (
+                            <button
+                              onClick={() => sendDepartureNotice(c)}
+                              disabled={sendingNotice === c.id || c.status === 'delivered' || c.status === 'closed'}
+                              className="btn btn-xs rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-50"
+                              style={{ backgroundColor: '#f97316' }}
+                            >
+                              {sendingNotice === c.id
+                                ? <span className="loading loading-spinner loading-xs" />
+                                : '7-Day Notice'}
+                            </button>
+                          )}
+                        </td>
                         <td className="py-4 px-4">
                           <Link href={`/container/${c.id}`} className="btn btn-ghost btn-xs text-gray-500 hover:text-gray-800 rounded-lg">View →</Link>
                         </td>
@@ -266,6 +337,20 @@ export default function OperatorDashboard() {
                       <p className="text-xs text-gray-400 mb-1">{c.available_capacity_cbm} / {c.total_capacity_cbm} CBM available</p>
                       <progress className="progress w-full h-1.5" style={{ accentColor: pctFull > 80 ? '#f97316' : '#0f2044' }} value={pctFull} max={100} />
                     </div>
+                    {!c.departure_notice_sent_at ? (
+                      <button
+                        onClick={() => sendDepartureNotice(c)}
+                        disabled={sendingNotice === c.id}
+                        className="btn btn-sm rounded-xl text-white font-semibold hover:opacity-90 disabled:opacity-50 w-full"
+                        style={{ backgroundColor: '#f97316' }}
+                      >
+                        {sendingNotice === c.id
+                          ? <span className="loading loading-spinner loading-sm" />
+                          : '📢 Send 7-Day Departure Notice'}
+                      </button>
+                    ) : (
+                      <p className="text-xs text-green-600 font-semibold text-center">✓ Departure notice sent</p>
+                    )}
                     <Link href={`/container/${c.id}`} className="btn btn-sm btn-ghost rounded-xl text-sm font-semibold border border-gray-200 mt-1">
                       View Details →
                     </Link>
