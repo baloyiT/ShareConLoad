@@ -43,6 +43,7 @@ as $$
   order by f.created_at desc;
 $$;
 
+revoke execute on function public.admin_get_compliance_flags() from public;
 grant execute on function public.admin_get_compliance_flags() to authenticated;
 
 -- ── Function 2: Compliance documents with operator identity ────────────────────
@@ -87,4 +88,5 @@ as $$
   order by d.uploaded_at desc;
 $$;
 
+revoke execute on function public.admin_get_compliance_docs() from public;
 grant execute on function public.admin_get_compliance_docs() to authenticated;
