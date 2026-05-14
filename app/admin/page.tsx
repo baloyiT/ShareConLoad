@@ -9,8 +9,11 @@ import { supabase } from '@/services/supabaseClient';
 
 type Profile = {
   id: string;
+  user_id: string;
   full_name: string | null;
   active_role: string;
+  is_admin: boolean | null;
+  email: string | null;
   created_at: string;
 };
 
@@ -79,7 +82,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function loadAll() {
       const [usersRes, containersRes, bookingsRes] = await Promise.all([
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.rpc('admin_get_users'),
         supabase.from('containers').select('*').order('created_at', { ascending: false }),
         supabase
           .from('bookings')
@@ -171,6 +174,31 @@ export default function AdminDashboard() {
 
         {!loading && !error && (
           <>
+            {/* ── Operations links ────────────────────────────────────────── */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Operations</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {[
+                  { href: '/admin/bookings',   label: 'Bookings',    icon: '📋', desc: 'Manage all bookings'         },
+                  { href: '/admin/operators',  label: 'Operators',   icon: '🚢', desc: 'Payout controls'             },
+                  { href: '/admin/payouts',    label: 'Payouts',     icon: '💳', desc: 'Payout history'              },
+                  { href: '/admin/disputes',   label: 'Disputes',    icon: '⚖️', desc: 'Resolve disputes'            },
+                  { href: '/admin/compliance', label: 'Compliance',  icon: '🚩', desc: 'Compliance flags'            },
+                  { href: '/admin/release',    label: 'Release',     icon: '🔓', desc: 'Cargo release auth'          },
+                ].map(({ href, label, icon, desc }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50 transition-colors text-center group"
+                  >
+                    <span className="text-2xl">{icon}</span>
+                    <span className="text-sm font-bold text-gray-800 group-hover:text-orange-600 transition-colors">{label}</span>
+                    <span className="text-xs text-gray-400">{desc}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             {/* ── Stat cards ──────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <StatCard label="Total Users"      value={stats.totalUsers}                         />
@@ -250,7 +278,7 @@ export default function AdminDashboard() {
                 emptyMessage="No users registered yet."
               >
                 <thead>
-                  <Th cols={['User ID', 'Name', 'Role', 'Joined']} />
+                  <Th cols={['User ID', 'Name', 'Email', 'Role', 'Joined']} />
                 </thead>
                 <tbody>
                   {users.map((u) => (
@@ -268,6 +296,9 @@ export default function AdminDashboard() {
                             {u.full_name ?? <span className="text-gray-400 italic">No name</span>}
                           </span>
                         </div>
+                      </Td>
+                      <Td>
+                        <span className="text-sm text-gray-600">{u.email ?? '—'}</span>
                       </Td>
                       <Td>
                         <span
