@@ -49,6 +49,14 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function daysUntil(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dep   = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((dep.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OperatorDashboard() {
@@ -168,6 +176,29 @@ export default function OperatorDashboard() {
             + Create Container
           </Link>
         </div>
+        {/* Urgency alert: containers departing within 10 days with no notice sent */}
+        {(() => {
+          const urgent = containers.filter((c) => {
+            const d = daysUntil(c.departure_date);
+            return !c.departure_notice_sent_at && d >= 0 && d <= 10;
+          });
+          if (urgent.length === 0) return null;
+          return (
+            <div className="relative max-w-6xl mx-auto w-full mt-4">
+              <div className="flex items-start gap-3 bg-amber-500/20 border border-amber-400/30 rounded-xl px-4 py-3">
+                <span className="text-2xl shrink-0">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-white font-bold text-sm">
+                    {urgent.length} container{urgent.length !== 1 ? 's' : ''} departing within 10 days — notice not yet sent
+                  </p>
+                  <p className="text-amber-200 text-xs mt-0.5">
+                    The system auto-sends customer notices at T-7 days (daily at 06:00 UTC). You can also send manually now.
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
@@ -280,18 +311,22 @@ export default function OperatorDashboard() {
                         <td className="py-4 px-4">
                           {c.departure_notice_sent_at ? (
                             <span className="text-xs font-semibold text-green-600 flex items-center gap-1">✓ Sent</span>
-                          ) : (
-                            <button
-                              onClick={() => sendDepartureNotice(c)}
-                              disabled={sendingNotice === c.id || c.status === 'delivered' || c.status === 'closed'}
-                              className="btn btn-xs rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-50"
-                              style={{ backgroundColor: '#f97316' }}
-                            >
-                              {sendingNotice === c.id
-                                ? <span className="loading loading-spinner loading-xs" />
-                                : '7-Day Notice'}
-                            </button>
-                          )}
+                          ) : (() => {
+                            const d = daysUntil(c.departure_date);
+                            const urgent = d >= 0 && d <= 7;
+                            return (
+                              <button
+                                onClick={() => sendDepartureNotice(c)}
+                                disabled={sendingNotice === c.id || c.status === 'delivered' || c.status === 'closed'}
+                                className="btn btn-xs rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-50"
+                                style={{ backgroundColor: urgent ? '#ef4444' : '#f97316' }}
+                              >
+                                {sendingNotice === c.id
+                                  ? <span className="loading loading-spinner loading-xs" />
+                                  : urgent ? `⚠️ T-${d}d` : '7-Day Notice'}
+                              </button>
+                            );
+                          })()}
                         </td>
                         <td className="py-4 px-4">
                           <Link href={`/container/${c.id}`} className="btn btn-ghost btn-xs text-gray-500 hover:text-gray-800 rounded-lg">View →</Link>
@@ -337,18 +372,24 @@ export default function OperatorDashboard() {
                       <p className="text-xs text-gray-400 mb-1">{c.available_capacity_cbm} / {c.total_capacity_cbm} CBM available</p>
                       <progress className="progress w-full h-1.5" style={{ accentColor: pctFull > 80 ? '#f97316' : '#0f2044' }} value={pctFull} max={100} />
                     </div>
-                    {!c.departure_notice_sent_at ? (
-                      <button
-                        onClick={() => sendDepartureNotice(c)}
-                        disabled={sendingNotice === c.id}
-                        className="btn btn-sm rounded-xl text-white font-semibold hover:opacity-90 disabled:opacity-50 w-full"
-                        style={{ backgroundColor: '#f97316' }}
-                      >
-                        {sendingNotice === c.id
-                          ? <span className="loading loading-spinner loading-sm" />
-                          : '📢 Send 7-Day Departure Notice'}
-                      </button>
-                    ) : (
+                    {!c.departure_notice_sent_at ? (() => {
+                      const d = daysUntil(c.departure_date);
+                      const urgent = d >= 0 && d <= 7;
+                      return (
+                        <button
+                          onClick={() => sendDepartureNotice(c)}
+                          disabled={sendingNotice === c.id}
+                          className="btn btn-sm rounded-xl text-white font-semibold hover:opacity-90 disabled:opacity-50 w-full"
+                          style={{ backgroundColor: urgent ? '#ef4444' : '#f97316' }}
+                        >
+                          {sendingNotice === c.id
+                            ? <span className="loading loading-spinner loading-sm" />
+                            : urgent
+                              ? `⚠️ Urgent — Send Notice (T-${d}d)`
+                              : '📢 Send 7-Day Departure Notice'}
+                        </button>
+                      );
+                    })() : (
                       <p className="text-xs text-green-600 font-semibold text-center">✓ Departure notice sent</p>
                     )}
                     <Link href={`/container/${c.id}`} className="btn btn-sm btn-ghost rounded-xl text-sm font-semibold border border-gray-200 mt-1">

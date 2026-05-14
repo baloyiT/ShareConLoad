@@ -42,6 +42,13 @@ export type NotificationEventMap = {
     route:         string;
     departureDate: string;
   };
+  'container.departure_date_changed': {
+    bookingId:        string;
+    recipientId:      string;
+    route:            string;
+    oldDepartureDate: string;
+    newDepartureDate: string;
+  };
   'customs.alert': {
     bookingId: string;
     recipientId: string;
@@ -149,6 +156,13 @@ function buildMessage(event: NotificationEvent, payload: NotificationEventMap[ty
       return {
         title: 'Departure in 7 Days — Payment Due',
         body:  `Your container on ${p.route} departs on ${new Date(p.departureDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}. Please complete your 50% pre-departure payment to ensure your cargo is loaded.`,
+      };
+    }
+    case 'container.departure_date_changed': {
+      const p = payload as NotificationEventMap['container.departure_date_changed'];
+      return {
+        title: 'Departure Date Updated',
+        body:  `The departure date for your shipment on ${p.route} has been updated to ${new Date(p.newDepartureDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}. Please update your plans accordingly.`,
       };
     }
     default:
