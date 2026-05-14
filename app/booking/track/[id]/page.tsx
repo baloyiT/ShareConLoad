@@ -308,6 +308,17 @@ export default function BookingTrackPage() {
             </div>
           </div>
 
+          {/* Payment CTA */}
+          {!['cancelled', 'delivered'].includes(booking.status) && (
+            <Link
+              href={`/payments/${booking.id}`}
+              className="btn text-white font-bold rounded-xl hover:opacity-90 w-full"
+              style={{ backgroundColor: '#f97316' }}
+            >
+              Make Payment →
+            </Link>
+          )}
+
         </div>
 
         {/* ── Right: timeline ──────────────────────────────────────────────── */}

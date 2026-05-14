@@ -135,7 +135,7 @@ export default function MyBookingsPage() {
       {/* ── Hero header ── */}
       <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
-          <Image src="/world-map-overlay.png" alt="" fill className="object-cover" />
+          <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
         </div>
         <div className="relative max-w-6xl mx-auto z-10">
           <p className="text-gray-400 text-sm mb-1 font-medium">Shipper Portal</p>
@@ -233,7 +233,7 @@ function BookingCard({ booking }: { booking: BookingRow }) {
             <div className="flex flex-wrap gap-2">
               {c && <Chip label={`Departs ${fmt(c.departure_date)}`} />}
               <Chip label={`${booking.total_cbm} CBM`} />
-              <Chip label={`$${booking.total_price.toFixed(2)}`} />
+              <Chip label={`R${booking.total_price.toFixed(2)}`} />
               <Chip label={`Booked ${fmt(booking.created_at)}`} muted />
             </div>
           </div>
@@ -246,6 +246,29 @@ function BookingCard({ booking }: { booking: BookingRow }) {
             <span className="text-xs text-gray-400 font-mono">#{shortId(booking.id)}</span>
             <Link href={`/booking/track/${booking.id}`} className="btn btn-sm text-white font-semibold rounded-lg hover:opacity-90 text-xs" style={{ backgroundColor: '#0f2044' }}>
               View Details →
+            </Link>
+            {!['cancelled', 'delivered'].includes(booking.status) && (
+              <Link
+                href={`/payments/${booking.id}`}
+                className="btn btn-sm font-semibold rounded-lg hover:opacity-90 text-xs text-white"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                Make Payment
+              </Link>
+            )}
+            {['confirmed', 'loaded', 'in_transit', 'delivered'].includes(booking.status) && (
+              <Link
+                href={`/disputes/new?bookingId=${booking.id}`}
+                className="btn btn-sm btn-ghost rounded-lg text-xs text-red-400 hover:bg-red-50 border border-red-100"
+              >
+                Raise Dispute
+              </Link>
+            )}
+            <Link
+              href="/support/new"
+              className="btn btn-sm btn-ghost rounded-lg text-xs text-gray-400 hover:bg-gray-100 border border-gray-200"
+            >
+              Support
             </Link>
           </div>
         </div>
