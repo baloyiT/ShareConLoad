@@ -89,8 +89,9 @@ export default function PaymentPage() {
 
     if (idx === 1) {
       const stage1Paid = payments.find((p) => p.stage === 'deposit_20')?.status === 'paid';
+      const isLoaded   = ['loaded', 'in_transit', 'delivered'].includes(booking?.status ?? '');
       const noticeSent = booking?.containers?.departure_notice_sent_at != null;
-      return stage1Paid && noticeSent;
+      return stage1Paid && isLoaded && noticeSent;
     }
 
     if (idx === 2) {
@@ -109,6 +110,8 @@ export default function PaymentPage() {
     if (idx === 1) {
       const stage1Paid = payments.find((p) => p.stage === 'deposit_20')?.status === 'paid';
       if (!stage1Paid) return 'Complete the 20% deposit first';
+      const isLoaded = ['loaded', 'in_transit', 'delivered'].includes(booking?.status ?? '');
+      if (!isLoaded) return 'Awaiting cargo loading confirmation from operator';
       return 'Awaiting operator 7-day departure notice';
     }
 
