@@ -46,7 +46,7 @@ export default function AdminOperatorsPage() {
         .from('profiles')
         .select(`
           id, created_at,
-          operator_profile:operator_profiles(
+          operator_profile:operator_profiles!profile_id(
             id, legal_name, payout_enabled, payout_hold, payout_hold_reason,
             paystack_recipient_code, bank_account_name, bank_account_number
           )
