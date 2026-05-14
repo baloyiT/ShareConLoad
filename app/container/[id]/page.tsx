@@ -226,12 +226,12 @@ export default function ContainerDetailsPage() {
 
             <div className="flex items-baseline gap-1 mb-1">
               <span className="text-5xl font-extrabold" style={{ color: '#f97316' }}>
-                ${container.price_per_cbm}
+                R{container.price_per_cbm}
               </span>
               <span className="text-gray-400 text-sm">/ CBM</span>
             </div>
             <p className="text-xs text-gray-400 mb-6">
-              e.g. 5 CBM = ${(container.price_per_cbm * 5).toFixed(2)}
+              e.g. 5 CBM = R{(container.price_per_cbm * 5).toFixed(2)}
             </p>
 
             <div className="flex flex-col gap-2 text-sm text-gray-600 mb-6">

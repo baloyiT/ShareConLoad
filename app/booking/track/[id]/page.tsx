@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import MilestoneTimeline from '@/components/MilestoneTimeline';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,13 @@ type HistoryEntry = {
   status: string;
   notes: string | null;
   changed_at: string;
+};
+
+type ShipmentMilestone = {
+  id: string;
+  milestone: string;
+  notes: string | null;
+  occurred_at: string;
 };
 
 // ─── Timeline definition ──────────────────────────────────────────────────────
@@ -110,14 +118,15 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
 export default function BookingTrackPage() {
   const { id } = useParams<{ id: string }>();
 
-  const [booking, setBooking]   = useState<Booking | null>(null);
-  const [history, setHistory]   = useState<HistoryEntry[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [booking,    setBooking]    = useState<Booking | null>(null);
+  const [history,    setHistory]    = useState<HistoryEntry[]>([]);
+  const [milestones, setMilestones] = useState<ShipmentMilestone[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [notFound,   setNotFound]   = useState(false);
 
   useEffect(() => {
     async function load() {
-      const [bookingRes, historyRes] = await Promise.all([
+      const [bookingRes, historyRes, milestonesRes] = await Promise.all([
         supabase
           .from('bookings')
           .select('*, containers(*)')
@@ -128,6 +137,11 @@ export default function BookingTrackPage() {
           .select('*')
           .eq('booking_id', id)
           .order('changed_at', { ascending: true }),
+        supabase
+          .from('shipment_milestones')
+          .select('id, milestone, notes, occurred_at')
+          .eq('booking_id', id)
+          .order('occurred_at', { ascending: true }),
       ]);
 
       if (bookingRes.error || !bookingRes.data) {
@@ -136,6 +150,7 @@ export default function BookingTrackPage() {
       } else {
         setBooking(bookingRes.data as Booking);
         setHistory((historyRes.data ?? []) as HistoryEntry[]);
+        setMilestones((milestonesRes.data ?? []) as ShipmentMilestone[]);
       }
       setLoading(false);
     }
@@ -260,12 +275,12 @@ export default function BookingTrackPage() {
                 <span className="font-semibold">{booking.total_cbm} CBM</span>
               </DetailRow>
               <DetailRow label="Price / CBM">
-                ${container.price_per_cbm}
+                R{container.price_per_cbm}
               </DetailRow>
               <div className="pt-1 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-gray-500 font-medium">Total Price</span>
                 <span className="text-lg font-extrabold" style={{ color: '#f97316' }}>
-                  ${booking.total_price.toFixed(2)}
+                  R{booking.total_price.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -296,7 +311,7 @@ export default function BookingTrackPage() {
         </div>
 
         {/* ── Right: timeline ──────────────────────────────────────────────── */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 flex flex-col gap-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-6">
               Shipment Timeline
@@ -435,6 +450,16 @@ export default function BookingTrackPage() {
               </div>
             )}
           </div>
+
+          {/* Shipment milestones card */}
+          {milestones.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-6">
+                Shipment Milestones
+              </h2>
+              <MilestoneTimeline milestones={milestones} />
+            </div>
+          )}
         </div>
 
       </div>

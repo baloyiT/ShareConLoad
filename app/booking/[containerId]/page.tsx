@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
@@ -67,6 +67,7 @@ function fmt(dateStr: string) {
 
 export default function BookingPage() {
   const { containerId } = useParams<{ containerId: string }>();
+  const router = useRouter();
 
   // Container data
   const [container, setContainer] = useState<Container | null>(null);
@@ -81,8 +82,6 @@ export default function BookingPage() {
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [bookingId, setBookingId] = useState<string | null>(null);
 
   // ── Fetch container ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -236,8 +235,7 @@ export default function BookingPage() {
         totalPrice: estimatedTotal,
       });
 
-      setBookingId(booking.id);
-      setSubmitted(true);
+      router.push(`/payments/${booking.id}`);
     } catch (err) {
       const msg = (err as { message?: string })?.message ?? JSON.stringify(err);
       console.error('Booking submission error:', msg);
@@ -268,64 +266,6 @@ export default function BookingPage() {
         <Link href="/" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0f2044' }}>
           ← Back to listings
         </Link>
-      </div>
-    );
-  }
-
-  // ── Success screen ─────────────────────────────────────────────────────────
-  if (submitted && bookingId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-16">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-md w-full text-center">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: '#f0fdf4' }}
-          >
-            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-
-          <h1 className="text-2xl font-extrabold text-gray-800 mb-1">Booking Submitted!</h1>
-          <p className="text-gray-500 text-sm mb-1">
-            Your booking is pending operator confirmation.
-          </p>
-          <p className="text-xs text-gray-400 mb-6 font-mono break-all">
-            Ref: {bookingId}
-          </p>
-
-          <div className="bg-gray-50 rounded-xl p-4 text-sm text-left flex flex-col gap-2.5 mb-6">
-            <SummaryRow
-              label="Route"
-              value={`${container!.origin_city} → ${container!.destination_city}`}
-            />
-            <SummaryRow label="Space booked" value={`${cbmValue} CBM`} />
-            <SummaryRow label="Items declared" value={`${items.length}`} />
-            <SummaryRow label="Estimated total" value={`$${estimatedTotal.toFixed(2)}`} />
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Status</span>
-              <span className="badge badge-sm text-white" style={{ backgroundColor: '#f97316' }}>
-                Pending
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Link
-              href="/"
-              className="w-full btn text-white font-bold rounded-xl text-sm hover:opacity-90"
-              style={{ backgroundColor: '#0f2044' }}
-            >
-              Back to Home
-            </Link>
-            <Link
-              href={`/container/${containerId}`}
-              className="w-full btn btn-ghost rounded-xl text-sm text-gray-500"
-            >
-              View Container
-            </Link>
-          </div>
-        </div>
       </div>
     );
   }
@@ -398,7 +338,7 @@ export default function BookingPage() {
                 <Stat label="Departure" value={fmt(container.departure_date)} />
                 <Stat label="Arrival Est." value={container.arrival_date ? fmt(container.arrival_date) : 'TBC'} />
                 <Stat label="Available" value={`${container.available_capacity_cbm} CBM`} highlight />
-                <Stat label="Price / CBM" value={`$${container.price_per_cbm}`} highlight />
+                <Stat label="Price / CBM" value={`R${container.price_per_cbm}`} highlight />
                 {container.operator_name && (
                   <div className="col-span-2">
                     <Stat label="Operator" value={container.operator_name} />
@@ -438,7 +378,7 @@ export default function BookingPage() {
                   <span className="text-gray-500 text-sm">CBM</span>
                   {cbmValue > 0 && container && (
                     <span className="text-sm font-semibold ml-2" style={{ color: '#f97316' }}>
-                      = ${(cbmValue * container.price_per_cbm).toFixed(2)}
+                      = R{(cbmValue * container.price_per_cbm).toFixed(2)}
                     </span>
                   )}
                 </div>
@@ -553,11 +493,11 @@ export default function BookingPage() {
                       <div>
                         <label className="label py-0 mb-1">
                           <span className="label-text text-xs font-semibold text-gray-600">
-                            Declared Value (USD) <span className="text-red-500">*</span>
+                            Declared Value (ZAR) <span className="text-red-500">*</span>
                           </span>
                         </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">R</span>
                           <input
                             type="number"
                             placeholder="0.00"
@@ -688,7 +628,7 @@ export default function BookingPage() {
               </div>
 
               <div className="flex flex-col gap-3 text-sm mb-5">
-                <SummaryRow label="Price / CBM" value={`$${container.price_per_cbm}`} />
+                <SummaryRow label="Price / CBM" value={`R${container.price_per_cbm}`} />
                 <SummaryRow
                   label="Space requested"
                   value={cbmValue > 0 ? `${cbmValue} CBM` : '—'}
@@ -699,13 +639,13 @@ export default function BookingPage() {
                 />
                 <SummaryRow
                   label="Total declared value"
-                  value={totalDeclaredValue > 0 ? `$${totalDeclaredValue.toFixed(2)}` : '—'}
+                  value={totalDeclaredValue > 0 ? `R${totalDeclaredValue.toFixed(2)}` : '—'}
                 />
                 <div className="divider my-0" />
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-gray-800">Estimated Total</span>
                   <span className="text-xl font-extrabold" style={{ color: '#f97316' }}>
-                    {estimatedTotal > 0 ? `$${estimatedTotal.toFixed(2)}` : '—'}
+                    {estimatedTotal > 0 ? `R${estimatedTotal.toFixed(2)}` : '—'}
                   </span>
                 </div>
                 <p className="text-xs text-gray-400">Final price confirmed after operator review.</p>
@@ -720,7 +660,7 @@ export default function BookingPage() {
 
               <button
                 type="submit"
-                disabled={submitting || submitted}
+                disabled={submitting}
                 className="w-full btn text-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
                 style={{ backgroundColor: '#f97316' }}
               >

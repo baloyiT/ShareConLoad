@@ -204,7 +204,7 @@ export default function AdminDashboard() {
               <StatCard label="Total Users"      value={stats.totalUsers}                         />
               <StatCard label="Open Containers"  value={stats.openContainers}  highlight          />
               <StatCard label="Total Bookings"   value={stats.totalBookings}                      />
-              <StatCard label="Platform Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} highlight />
+              <StatCard label="Platform Revenue" value={`R${stats.totalRevenue.toLocaleString()}`} highlight />
             </div>
 
             {/* ── Tabs ────────────────────────────────────────────────────── */}
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
                       </Td>
                       <Td>
                         <span className="font-semibold text-sm" style={{ color: '#f97316' }}>
-                          ${c.price_per_cbm}
+                          R{c.price_per_cbm}
                         </span>
                       </Td>
                       <Td>
@@ -396,7 +396,7 @@ export default function AdminDashboard() {
                       <Td><span className="text-sm text-gray-700">{b.total_cbm} CBM</span></Td>
                       <Td>
                         <span className="font-semibold text-sm" style={{ color: '#f97316' }}>
-                          ${b.total_price.toFixed(2)}
+                          R{b.total_price.toFixed(2)}
                         </span>
                       </Td>
                       <Td><StatusBadge status={b.status} /></Td>

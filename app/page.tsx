@@ -652,7 +652,7 @@ export default function HomePage() {
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                Max Price / CBM ($)
+                Max Price / CBM (ZAR)
               </label>
               <input
                 type="number"

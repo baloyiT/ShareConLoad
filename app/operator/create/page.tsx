@@ -251,7 +251,7 @@ export default function CreateContainerPage() {
             <Row label="Countries" value={`${form.origin_country} → ${form.destination_country}`} />
             <Row label="Departure" value={new Date(form.departure_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} />
             <Row label="Capacity"  value={`${form.total_capacity_cbm} CBM`} />
-            <Row label="Price"     value={`$${parseFloat(form.price_per_cbm).toFixed(2)} / CBM`} />
+            <Row label="Price"     value={`R${parseFloat(form.price_per_cbm).toFixed(2)} / CBM`} />
             <div className="flex items-center justify-between">
               <span className="text-gray-500">Status</span>
               <span className="badge badge-sm text-white" style={{ backgroundColor: '#22c55e' }}>Open</span>
@@ -424,12 +424,12 @@ export default function CreateContainerPage() {
               </Field>
 
               <Field
-                label="Price per CBM (USD)"
+                label="Price per CBM (ZAR)"
                 required
                 error={errors.price_per_cbm}
               >
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">R</span>
                   <input
                     type="number"
                     placeholder="e.g. 150"
@@ -455,12 +455,12 @@ export default function CreateContainerPage() {
                   />
                   <PricingPreviewTile
                     label="Price / CBM"
-                    value={`$${parseFloat(form.price_per_cbm).toFixed(2)}`}
+                    value={`R${parseFloat(form.price_per_cbm).toFixed(2)}`}
                     highlight
                   />
                   <PricingPreviewTile
                     label="Max revenue"
-                    value={`$${(parseFloat(form.total_capacity_cbm) * parseFloat(form.price_per_cbm)).toFixed(2)}`}
+                    value={`R${(parseFloat(form.total_capacity_cbm) * parseFloat(form.price_per_cbm)).toFixed(2)}`}
                   />
                 </div>
               )}

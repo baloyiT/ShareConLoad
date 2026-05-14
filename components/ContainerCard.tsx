@@ -44,7 +44,7 @@ export default function ContainerCard({ container }: ContainerCardProps) {
           </span>
           <div className="text-right">
             <span className="text-2xl font-bold" style={{ color: '#f97316' }}>
-              ${container.price_per_cbm}
+              R{container.price_per_cbm}
             </span>
             <span className="text-xs text-gray-400 block">/CBM</span>
           </div>
