@@ -1,0 +1,302 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { supabase } from '@/services/supabaseClient';
+
+type OperatorProfile = {
+  legal_name:              string | null;
+  payout_enabled:          boolean;
+  payout_hold:             boolean;
+  paystack_recipient_code: string | null;
+};
+
+type Payout = {
+  id:                      string;
+  booking_id:              string;
+  operator_id:             string;
+  gross_amount:            number;
+  net_amount:              number | null;
+  commission_amount:       number | null;
+  status:                  string;
+  eligible_after:          string | null;
+  paystack_transfer_code:  string | null;
+  failure_reason:          string | null;
+  completed_at:            string | null;
+  created_at:              string;
+  operator_profile:        OperatorProfile | null;
+  booking:                 { containers: { origin_city: string; destination_city: string } | null } | null;
+};
+
+const STATUS_COLOURS: Record<string, string> = {
+  pending:    '#f59e0b',
+  processing: '#3b82f6',
+  completed:  '#22c55e',
+  failed:     '#ef4444',
+};
+
+type StatusFilter = 'all' | 'pending' | 'processing' | 'completed' | 'failed';
+
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function ZAR(n: number) {
+  return `R ${n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function eligibilityReason(op: OperatorProfile | null, eligibleAfter: string | null): string | null {
+  if (!op) return 'No operator profile';
+  if (!op.paystack_recipient_code) return 'No bank account registered';
+  if (!op.payout_enabled) return 'Payouts disabled by admin';
+  if (op.payout_hold) return 'Operator on payout hold';
+  if (eligibleAfter && new Date(eligibleAfter) > new Date()) {
+    const hoursLeft = Math.ceil((new Date(eligibleAfter).getTime() - Date.now()) / (1000 * 60 * 60));
+    return `In 48h refund window — eligible in ${hoursLeft}h`;
+  }
+  return null;
+}
+
+export default function AdminPayoutsPage() {
+  const [payouts,      setPayouts]      = useState<Payout[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [triggering,   setTriggering]   = useState<string | null>(null);
+  const [triggerError, setTriggerError] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    async function fetchPayouts() {
+      const { data, error: err } = await supabase
+        .from('payouts')
+        .select(`
+          id, booking_id, operator_id,
+          gross_amount, net_amount, commission_amount,
+          status, eligible_after, paystack_transfer_code, failure_reason,
+          completed_at, created_at,
+          operator_profile:operator_profiles!payouts_operator_id_fkey(
+            legal_name, payout_enabled, payout_hold, paystack_recipient_code
+          ),
+          booking:bookings(containers(origin_city, destination_city))
+        `)
+        .order('created_at', { ascending: false });
+
+      if (err) { setError(err.message); }
+      else { setPayouts((data ?? []) as unknown as Payout[]); }
+      setLoading(false);
+    }
+    fetchPayouts();
+  }, []);
+
+  async function handleTrigger(payoutId: string) {
+    setTriggering(payoutId);
+    setTriggerError((prev) => { const n = { ...prev }; delete n[payoutId]; return n; });
+
+    const { data, error: fnErr } = await supabase.functions.invoke('trigger-payout', {
+      body: { payoutId },
+    });
+
+    if (fnErr || !data?.success) {
+      const msg = data?.error ?? fnErr?.message ?? 'Payout trigger failed.';
+      setTriggerError((prev) => ({ ...prev, [payoutId]: msg }));
+      setTriggering(null);
+      return;
+    }
+
+    setPayouts((prev) =>
+      prev.map((p) =>
+        p.id === payoutId
+          ? { ...p, status: 'processing', paystack_transfer_code: data.transferCode ?? p.paystack_transfer_code, net_amount: data.netAmount ?? p.net_amount }
+          : p
+      )
+    );
+    setTriggering(null);
+  }
+
+  const filtered = statusFilter === 'all' ? payouts : payouts.filter((p) => p.status === statusFilter);
+
+  const totalPaid    = payouts.filter((p) => p.status === 'completed').reduce((s, p) => s + (p.net_amount ?? p.gross_amount), 0);
+  const pendingAmt   = payouts.filter((p) => p.status === 'pending').reduce((s, p) => s + p.gross_amount, 0);
+  const totalRecords = payouts.length;
+  const failedCount  = payouts.filter((p) => p.status === 'failed').length;
+
+  const STATUS_TABS: StatusFilter[] = ['all', 'pending', 'processing', 'completed', 'failed'];
+
+  return (
+    <div className="min-h-screen bg-gray-50 font-sans">
+
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
+            <span className="text-xl font-extrabold tracking-tight">
+              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+            </span>
+          </Link>
+          <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-800">← Admin</Link>
+        </div>
+      </nav>
+
+      {/* Header */}
+      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+        <div className="max-w-6xl mx-auto">
+          <p className="text-gray-400 text-sm mb-1">Admin</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Payouts</h1>
+          <p className="text-gray-400 text-sm mt-1">Approve and trigger operator payout transfers via Paystack.</p>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {error && <div className="alert alert-error text-sm mb-4">{error}</div>}
+
+        {/* Summary cards */}
+        {!loading && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Paid Out</p>
+              <p className="text-xl font-extrabold" style={{ color: '#22c55e' }}>{ZAR(totalPaid)}</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Pending</p>
+              <p className="text-xl font-extrabold" style={{ color: '#f59e0b' }}>{ZAR(pendingAmt)}</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Records</p>
+              <p className="text-xl font-extrabold text-gray-800">{totalRecords}</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Failed</p>
+              <p className="text-xl font-extrabold" style={{ color: '#ef4444' }}>{failedCount}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Status filter */}
+        <div className="flex gap-2 flex-wrap mb-6">
+          {STATUS_TABS.map((s) => {
+            const count  = s === 'all' ? payouts.length : payouts.filter((p) => p.status === s).length;
+            const active = statusFilter === s;
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors"
+                style={active
+                  ? { backgroundColor: '#0f2044', color: '#fff', borderColor: '#0f2044' }
+                  : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {count > 0 && (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full font-bold"
+                    style={active
+                      ? { backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }
+                      : { backgroundColor: '#f3f4f6', color: '#374151' }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-24">
+            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20">
+            <p className="text-gray-400 text-sm">No payouts found.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    {['Operator', 'Route', 'Gross', 'Net (after 5%)', 'Status', 'Transfer Code', 'Date', 'Action'].map((h) => (
+                      <th key={h} className="py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((p) => {
+                    const route     = p.booking?.containers
+                      ? `${p.booking.containers.origin_city} → ${p.booking.containers.destination_city}`
+                      : '—';
+                    const blockReason = p.status === 'pending' ? eligibilityReason(p.operator_profile, p.eligible_after) : null;
+                    const isTriggering = triggering === p.id;
+
+                    return (
+                      <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <p className="text-sm font-semibold text-gray-800">
+                            {p.operator_profile?.legal_name ?? <span className="text-gray-400 italic">Unknown</span>}
+                          </p>
+                          <p className="text-xs font-mono text-gray-400">{p.id.slice(0, 8)}…</p>
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-gray-700 whitespace-nowrap">{route}</td>
+                        <td className="py-3.5 px-4 text-sm font-semibold text-gray-800 whitespace-nowrap">
+                          {ZAR(p.gross_amount)}
+                        </td>
+                        <td className="py-3.5 px-4 text-sm whitespace-nowrap">
+                          {p.net_amount != null ? (
+                            <span className="font-semibold" style={{ color: '#22c55e' }}>{ZAR(p.net_amount)}</span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                          {p.commission_amount != null && (
+                            <p className="text-xs text-gray-400">commission: {ZAR(p.commission_amount)}</p>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="badge badge-sm text-white font-semibold capitalize"
+                            style={{ backgroundColor: STATUS_COLOURS[p.status] ?? '#6b7280' }}>
+                            {p.status}
+                          </span>
+                          {p.failure_reason && (
+                            <p className="text-xs text-red-400 mt-1 max-w-[140px] truncate">{p.failure_reason}</p>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-gray-400 whitespace-nowrap">
+                          {p.paystack_transfer_code ?? '—'}
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-gray-500 whitespace-nowrap">{fmt(p.created_at)}</td>
+                        <td className="py-3.5 px-4">
+                          {p.status === 'pending' && (
+                            <div>
+                              <button
+                                onClick={() => handleTrigger(p.id)}
+                                disabled={!!blockReason || isTriggering}
+                                title={blockReason ?? undefined}
+                                className="btn btn-sm text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-40 whitespace-nowrap"
+                                style={{ backgroundColor: '#0f2044' }}
+                              >
+                                {isTriggering
+                                  ? <span className="loading loading-spinner loading-xs" />
+                                  : 'Trigger →'}
+                              </button>
+                              {blockReason && (
+                                <p className="text-xs text-amber-600 mt-1 max-w-[120px]">{blockReason}</p>
+                              )}
+                              {triggerError[p.id] && (
+                                <p className="text-xs text-red-500 mt-1 max-w-[120px]">{triggerError[p.id]}</p>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
