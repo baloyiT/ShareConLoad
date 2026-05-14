@@ -37,6 +37,15 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   cancelled:  { label: 'Cancelled',  color: '#6b7280', bg: '#f9fafb', dot: '#9ca3af' },
 };
 
+const STATUS_MESSAGE: Record<string, { icon: string; text: string; color: string; bg: string; border: string }> = {
+  pending:    { icon: '⏳', text: 'Awaiting operator confirmation — your space is reserved but not yet accepted.', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  confirmed:  { icon: '✅', text: 'Booking confirmed by operator. Proceed with your payment schedule.', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  loaded:     { icon: '📦', text: 'Your cargo has been loaded into the container.', color: '#5b21b6', bg: '#f5f3ff', border: '#ddd6fe' },
+  in_transit: { icon: '🚢', text: 'Your container is on its way to the destination.', color: '#0e7490', bg: '#ecfeff', border: '#a5f3fc' },
+  delivered:  { icon: '🎉', text: 'Your cargo has arrived. Ensure all final payments are complete for release.', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  cancelled:  { icon: '❌', text: 'This booking was cancelled. Contact support if you need assistance.', color: '#374151', bg: '#f9fafb', border: '#e5e7eb' },
+};
+
 const STATUS_TABS: { value: StatusFilter; label: string }[] = [
   { value: 'all',        label: 'All'        },
   { value: 'pending',    label: 'Pending'    },
@@ -273,11 +282,21 @@ function BookingCard({ booking }: { booking: BookingRow }) {
           </div>
         </div>
 
-        {booking.status !== 'cancelled' && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <StatusProgress status={booking.status} />
-          </div>
-        )}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          {STATUS_MESSAGE[booking.status] && (() => {
+            const msg = STATUS_MESSAGE[booking.status];
+            return (
+              <div
+                className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-medium mb-4"
+                style={{ backgroundColor: msg.bg, color: msg.color, border: `1px solid ${msg.border}` }}
+              >
+                <span className="text-sm shrink-0">{msg.icon}</span>
+                <span>{msg.text}</span>
+              </div>
+            );
+          })()}
+          {booking.status !== 'cancelled' && <StatusProgress status={booking.status} />}
+        </div>
       </div>
     </div>
   );

@@ -34,6 +34,21 @@ type PendingAction = {
   newStatus: string;
 };
 
+type MilestoneModal = {
+  booking: OperatorBooking;
+};
+
+const OPERATOR_MILESTONES: { value: string; label: string }[] = [
+  { value: 'cargo_received',    label: 'Cargo Received'    },
+  { value: 'container_loaded',  label: 'Container Loaded'  },
+  { value: 'vessel_departed',   label: 'Vessel Departed'   },
+  { value: 'destination_arrival', label: 'Arrived at Destination' },
+  { value: 'customs_cleared',   label: 'Customs Cleared'   },
+  { value: 'release_authorized',label: 'Release Authorized'},
+  { value: 'cargo_collected',   label: 'Cargo Collected'   },
+  { value: 'shipment_completed',label: 'Shipment Completed'},
+];
+
 type StatusFilter = 'all' | 'pending' | 'confirmed' | 'loaded' | 'in_transit' | 'delivered' | 'cancelled';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -122,6 +137,14 @@ export default function OperatorBookingsPage() {
   const [updating, setUpdating]           = useState(false);
   const [updateError, setUpdateError]     = useState<string | null>(null);
 
+  // Milestone modal state
+  const [milestoneModal,   setMilestoneModal]   = useState<MilestoneModal | null>(null);
+  const [milestoneType,    setMilestoneType]    = useState(OPERATOR_MILESTONES[0].value);
+  const [milestoneNotes,   setMilestoneNotes]   = useState('');
+  const [milestoneError,   setMilestoneError]   = useState<string | null>(null);
+  const [recordingMilestone, setRecordingMilestone] = useState(false);
+  const [operatorProfileId,  setOperatorProfileId]  = useState<string | null>(null);
+
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchBookings = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -134,6 +157,9 @@ export default function OperatorBookingsPage() {
         ? name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
         : name[0]?.toUpperCase() ?? '',
     );
+
+    const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single();
+    if (profile) setOperatorProfileId(profile.id);
 
     // Step 1: operator's containers
     const { data: containerRows, error: cErr } = await supabase
@@ -212,6 +238,29 @@ export default function OperatorBookingsPage() {
     setPendingAction({ booking: { ...booking, status: booking.status }, newStatus: 'cancelled' });
   }
 
+  async function recordMilestone() {
+    if (!milestoneModal) return;
+    setRecordingMilestone(true);
+    setMilestoneError(null);
+
+    const { error } = await supabase.from('shipment_milestones').insert({
+      booking_id:   milestoneModal.booking.id,
+      milestone:    milestoneType,
+      notes:        milestoneNotes.trim() || null,
+      occurred_at:  new Date().toISOString(),
+      recorded_by:  operatorProfileId,
+    });
+
+    if (error) {
+      setMilestoneError(error.message);
+    } else {
+      setMilestoneModal(null);
+      setMilestoneNotes('');
+      setMilestoneType(OPERATOR_MILESTONES[0].value);
+    }
+    setRecordingMilestone(false);
+  }
+
   // ── Derived ────────────────────────────────────────────────────────────────
   const filtered = statusFilter === 'all'
     ? bookings
@@ -221,42 +270,12 @@ export default function OperatorBookingsPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans">
-
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
-            <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-3">
-            {userName && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#f97316' }}>
-                  {userInitials}
-                </div>
-                <div className="hidden sm:flex flex-col leading-tight">
-                  <span className="text-sm font-medium text-gray-700 max-w-[130px] truncate">{userName}</span>
-                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full w-fit mt-0.5" style={{ backgroundColor: '#fff7ed', color: '#f97316' }}>
-                    🚢 Operator
-                  </span>
-                </div>
-              </div>
-            )}
-            <Link href="/operator" className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-              ← My Containers
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="bg-[#f8fafc]">
 
       {/* Hero */}
       <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
-          <Image src="/world-map-overlay.png" alt="" fill className="object-cover" />
+          <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
         </div>
         <div className="relative max-w-5xl mx-auto z-10">
           <p className="text-gray-400 text-sm mb-1 font-medium">Operator Portal</p>
@@ -364,11 +383,74 @@ export default function OperatorBookingsPage() {
                 booking={booking}
                 onAction={(b, newStatus) => { setUpdateError(null); setPendingAction({ booking: b, newStatus }); }}
                 onCancel={cancelBooking}
+                onRecordMilestone={(b) => { setMilestoneModal({ booking: b }); setMilestoneType(OPERATOR_MILESTONES[0].value); setMilestoneNotes(''); setMilestoneError(null); }}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* ── Milestone Modal ───────────────────────────────────────────────── */}
+      {milestoneModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-gray-800">Record Milestone</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {milestoneModal.booking.container
+                    ? `${milestoneModal.booking.container.origin_city} → ${milestoneModal.booking.container.destination_city}`
+                    : `Booking #${shortId(milestoneModal.booking.id)}`}
+                </p>
+              </div>
+              <button onClick={() => setMilestoneModal(null)} className="btn btn-ghost btn-sm btn-circle text-gray-400">✕</button>
+            </div>
+
+            <div className="px-6 py-4 flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-gray-700">Milestone</label>
+                <select
+                  className="select select-bordered w-full"
+                  value={milestoneType}
+                  onChange={(e) => setMilestoneType(e.target.value)}
+                >
+                  {OPERATOR_MILESTONES.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-gray-700">Notes <span className="font-normal text-gray-400">(optional)</span></label>
+                <textarea
+                  className="textarea textarea-bordered w-full h-20 resize-none"
+                  placeholder="Any additional notes about this milestone…"
+                  value={milestoneNotes}
+                  onChange={(e) => setMilestoneNotes(e.target.value)}
+                />
+              </div>
+
+              {milestoneError && (
+                <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{milestoneError}</p>
+              )}
+            </div>
+
+            <div className="px-6 pb-6 flex gap-3">
+              <button onClick={() => setMilestoneModal(null)} className="btn btn-ghost flex-1 rounded-xl text-gray-500">
+                Cancel
+              </button>
+              <button
+                onClick={recordMilestone}
+                disabled={recordingMilestone}
+                className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                {recordingMilestone ? <span className="loading loading-spinner loading-sm" /> : 'Record'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Confirmation Modal ─────────────────────────────────────────────── */}
       {pendingAction && (
@@ -420,7 +502,7 @@ export default function OperatorBookingsPage() {
                   </div>
                   <div className="flex gap-4 text-xs text-gray-500">
                     <span>📦 {pendingAction.booking.total_cbm} CBM</span>
-                    <span>💵 ${pendingAction.booking.total_price.toFixed(2)}</span>
+                    <span>💵 R{pendingAction.booking.total_price.toFixed(2)}</span>
                     <span>📅 Departs {fmt(pendingAction.booking.container.departure_date)}</span>
                   </div>
                 </>
@@ -482,10 +564,12 @@ function BookingCard({
   booking,
   onAction,
   onCancel,
+  onRecordMilestone,
 }: {
   booking: OperatorBooking;
   onAction: (b: OperatorBooking, newStatus: string) => void;
   onCancel: (b: OperatorBooking) => void;
+  onRecordMilestone: (b: OperatorBooking) => void;
 }) {
   const nextStatus = NEXT_STATUS[booking.status];
   const actionCfg  = nextStatus ? ACTION_CONFIG[nextStatus] : null;
@@ -520,7 +604,7 @@ function BookingCard({
             <div className="flex flex-wrap gap-2 mb-4">
               {c && <Chip icon="📅" label={`Departs ${fmt(c.departure_date)}`} />}
               <Chip icon="📦" label={`${booking.total_cbm} CBM`} />
-              <Chip icon="💵" label={`$${booking.total_price.toFixed(2)}`} />
+              <Chip icon="💵" label={`R${booking.total_price.toFixed(2)}`} />
               <Chip icon="🕐" label={`Booked ${fmt(booking.created_at)}`} muted />
               <Chip icon="👤" label={`Ref #${shortId(booking.id)}`} muted />
             </div>
@@ -546,6 +630,13 @@ function BookingCard({
                   ❌ Cancel
                 </button>
               )}
+
+              <button
+                onClick={() => onRecordMilestone(booking)}
+                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                📍 Milestone
+              </button>
 
               {booking.status === 'delivered' && (
                 <span className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl text-green-600 bg-green-50">
