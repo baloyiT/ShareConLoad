@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import PaymentStageCard from '@/components/PaymentStageCard';
+import PageHero from '@/components/PageHero';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -184,16 +185,12 @@ export default function PaymentPage() {
         </div>
       </nav>
 
-      {/* Header */}
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-2xl mx-auto">
-          <p className="text-gray-400 text-sm mb-1">Payment</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            {c ? `${c.origin_city} → ${c.destination_city}` : 'Booking Payment'}
-          </h1>
-          <p className="text-gray-400 text-sm mt-1 font-mono">Ref: {bookingId.slice(0, 8).toUpperCase()}</p>
-        </div>
-      </div>
+      <PageHero
+        gradient
+        label="Payment"
+        title={c ? `${c.origin_city} → ${c.destination_city}` : 'Booking Payment'}
+        description={<span className="font-mono">Ref: {bookingId.slice(0, 8).toUpperCase()}</span>}
+      />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-5">
 

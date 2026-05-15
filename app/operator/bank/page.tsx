@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
+import PageHero from '@/components/PageHero';
 
 const COUNTRIES = [
   'South Africa', 'Ghana', 'Nigeria', 'Kenya', 'Zimbabwe', 'Zambia', 'Botswana',
@@ -160,13 +161,7 @@ export default function OperatorBankPage() {
 
   return (
     <div className="bg-gray-50">
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-lg mx-auto">
-          <p className="text-gray-400 text-sm mb-1">Operator Settings</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Payout Bank Account</h1>
-          <p className="text-gray-400 text-sm mt-1">Register your bank account to receive payout transfers.</p>
-        </div>
-      </div>
+      <PageHero gradient label="Operator Settings" title="Payout Bank Account" description="Register your bank account to receive payout transfers." />
 
       <div className="max-w-lg mx-auto px-4 sm:px-6 py-8">
 

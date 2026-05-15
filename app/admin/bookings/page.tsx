@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import PageHero from '@/components/PageHero';
 
 type AdminBooking = {
   id: string;
@@ -222,14 +223,7 @@ export default function AdminBookingsPage() {
         </div>
       </nav>
 
-      {/* Header */}
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-6xl mx-auto">
-          <p className="text-gray-400 text-sm mb-1">Admin</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">All Bookings</h1>
-          <p className="text-gray-400 text-sm mt-1">View, update statuses, and process refunds.</p>
-        </div>
-      </div>
+      <PageHero gradient label="Admin" title="All Bookings" description="View, update statuses, and process refunds." />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {error && <div className="alert alert-error text-sm mb-4">{error}</div>}

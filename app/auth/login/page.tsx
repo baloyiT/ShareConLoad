@@ -71,7 +71,7 @@ function LoginContent() {
       >
         {/* World map overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.25 }}>
-          <Image src="/world-map-overlay.png" alt="" fill className="object-cover" />
+          <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
         </div>
 
         {/* Logo */}

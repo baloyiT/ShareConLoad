@@ -12,17 +12,17 @@ test.describe('Home page', () => {
   });
 
   test('shows Log in and Sign up buttons when logged out', async ({ page }) => {
-    await expect(page.getByRole('link', { name: 'Log in' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Sign up' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Login' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Sign Up' })).toBeVisible();
   });
 
   test('shows hero headline', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /Ship Globally/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Share the Load/i })).toBeVisible();
   });
 
   test('shows search form with all four fields', async ({ page }) => {
-    await expect(page.getByPlaceholder(/China, Shanghai/i)).toBeVisible();
-    await expect(page.getByPlaceholder(/Nigeria, Lagos/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/Shanghai, China/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/Lagos, Nigeria/i)).toBeVisible();
     await expect(page.locator('input[type="date"]')).toBeVisible();
     await expect(page.getByPlaceholder(/e.g. 200/i)).toBeVisible();
   });
@@ -59,18 +59,18 @@ test.describe('Container search', () => {
   });
 
   test('Clear filters button appears after search and resets', async ({ page }) => {
-    await page.getByPlaceholder(/China, Shanghai/i).fill('China');
+    await page.getByPlaceholder(/Shanghai, China/i).fill('China');
     await page.getByRole('button', { name: 'Search' }).click();
-    const clearBtn = page.getByRole('button', { name: /Clear filters/i });
+    const clearBtn = page.getByRole('button', { name: 'Clear filters', exact: true });
     await expect(clearBtn).toBeVisible();
     await clearBtn.click();
     await expect(clearBtn).not.toBeVisible();
   });
 
   test('shows result count after searching', async ({ page }) => {
-    await page.getByPlaceholder(/China, Shanghai/i).fill('China');
+    await page.getByPlaceholder(/Shanghai, China/i).fill('China');
     await page.getByRole('button', { name: 'Search' }).click();
-    await expect(page.getByText(/\d+ results? found/i)).toBeVisible();
+    await expect(page.getByText(/\d+ results?/i)).toBeVisible();
   });
 });
 
@@ -85,7 +85,7 @@ test.describe('Navbar navigation', () => {
 
   test('Log in link navigates to login page', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: 'Log in' }).click();
+    await page.getByRole('link', { name: 'Login' }).click();
     await expect(page).toHaveURL('/auth/login');
   });
 

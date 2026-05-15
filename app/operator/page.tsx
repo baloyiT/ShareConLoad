@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-// Image is still used for the hero world-map overlay
 import { supabase } from '@/services/supabaseClient';
+import PageHero from '@/components/PageHero';
 import { notify } from '@/services/notificationService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -157,17 +156,12 @@ export default function OperatorDashboard() {
   return (
     <div className="bg-[#f8fafc]">
 
-      {/* ── Hero header ── */}
-      <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
-          <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
-        </div>
-        <div className="relative max-w-6xl mx-auto z-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <p className="text-gray-400 text-sm mb-1 font-medium">Operator Portal</p>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">My Containers</h1>
-            <p className="text-gray-400 text-sm mt-1">Manage your listed container space.</p>
-          </div>
+      <PageHero
+        showMap
+        label="Operator Portal"
+        title="My Containers"
+        description="Manage your listed container space."
+        rightSlot={
           <Link
             href="/operator/create"
             className="btn text-white font-bold rounded-xl hover:opacity-90 self-start sm:self-auto"
@@ -175,8 +169,8 @@ export default function OperatorDashboard() {
           >
             + Create Container
           </Link>
-        </div>
-        {/* Urgency alert: containers departing within 10 days with no notice sent */}
+        }
+      >
         {(() => {
           const urgent = containers.filter((c) => {
             const d = daysUntil(c.departure_date);
@@ -199,7 +193,7 @@ export default function OperatorDashboard() {
             </div>
           );
         })()}
-      </div>
+      </PageHero>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
 

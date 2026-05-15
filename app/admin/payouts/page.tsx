@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import PageHero from '@/components/PageHero';
 
 type OperatorProfile = {
   legal_name:              string | null;
@@ -68,22 +69,43 @@ export default function AdminPayoutsPage() {
 
   useEffect(() => {
     async function fetchPayouts() {
-      const { data, error: err } = await supabase
+      // Step 1: fetch payouts + bookings (no operator_profiles — no FK path exists)
+      const { data: payoutRows, error: err } = await supabase
         .from('payouts')
         .select(`
           id, booking_id, operator_id,
           gross_amount, net_amount, commission_amount,
           status, eligible_after, paystack_transfer_code, failure_reason,
           completed_at, created_at,
-          operator_profile:operator_profiles!payouts_operator_id_fkey(
-            legal_name, payout_enabled, payout_hold, paystack_recipient_code
-          ),
           booking:bookings(containers(origin_city, destination_city))
         `)
         .order('created_at', { ascending: false });
 
-      if (err) { setError(err.message); }
-      else { setPayouts((data ?? []) as unknown as Payout[]); }
+      if (err) { setError(err.message); setLoading(false); return; }
+
+      // Step 2: fetch operator profiles via profiles.user_id for all operator_ids
+      const operatorIds = [...new Set((payoutRows ?? []).map((p) => p.operator_id as string))];
+      let profileMap: Record<string, OperatorProfile> = {};
+
+      if (operatorIds.length > 0) {
+        const { data: profileRows } = await supabase
+          .from('profiles')
+          .select(`user_id, op:operator_profiles!profile_id(legal_name, payout_enabled, payout_hold, paystack_recipient_code)`)
+          .in('user_id', operatorIds)
+          .eq('role_type', 'operator');
+
+        profileMap = Object.fromEntries(
+          (profileRows ?? []).map((r) => [r.user_id, (r.op as unknown as OperatorProfile)])
+        );
+      }
+
+      // Step 3: merge
+      const merged = (payoutRows ?? []).map((p) => ({
+        ...p,
+        operator_profile: profileMap[p.operator_id as string] ?? null,
+      }));
+
+      setPayouts(merged as unknown as Payout[]);
       setLoading(false);
     }
     fetchPayouts();
@@ -139,14 +161,7 @@ export default function AdminPayoutsPage() {
         </div>
       </nav>
 
-      {/* Header */}
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-6xl mx-auto">
-          <p className="text-gray-400 text-sm mb-1">Admin</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Payouts</h1>
-          <p className="text-gray-400 text-sm mt-1">Approve and trigger operator payout transfers via Paystack.</p>
-        </div>
-      </div>
+      <PageHero gradient label="Admin" title="Payouts" description="Approve and trigger operator payout transfers via Paystack." />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {error && <div className="alert alert-error text-sm mb-4">{error}</div>}

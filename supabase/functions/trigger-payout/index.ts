@@ -70,10 +70,20 @@ serve(async (req: Request) => {
     }
 
     // ── Load operator profile ──────────────────────────────────────────────────
+    // payout.operator_id is auth.users.id; operator_profiles.profile_id FK → profiles.id
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', payout.operator_id)
+      .eq('role_type', 'operator')
+      .single();
+
+    if (!profileRow) return json({ error: 'Operator profile not found' }, 404);
+
     const { data: opProfile, error: opErr } = await supabase
       .from('operator_profiles')
       .select('paystack_recipient_code, payout_enabled, payout_hold')
-      .eq('profile_id', payout.operator_id)
+      .eq('profile_id', profileRow.id)
       .single();
 
     if (opErr || !opProfile) return json({ error: 'Operator profile not found' }, 404);

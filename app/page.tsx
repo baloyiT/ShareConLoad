@@ -141,6 +141,7 @@ export default function HomePage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [isOperator, setIsOperator] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [switchingRole, setSwitchingRole] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [containers, setContainers] = useState<Container[]>([]);
@@ -159,15 +160,15 @@ export default function HomePage() {
       setUser(u);
       if (!u) {
         setIsOperator(false);
+        setIsAdmin(false);
         return;
       }
       const { data } = await supabase
         .from("profiles")
-        .select("id")
-        .eq("user_id", u.id)
-        .eq("role_type", "operator")
-        .maybeSingle();
-      setIsOperator(!!data);
+        .select("role_type, is_admin")
+        .eq("user_id", u.id);
+      setIsOperator(data?.some((p) => p.role_type === "operator") ?? false);
+      setIsAdmin(data?.some((p) => p.is_admin === true) ?? false);
     }
 
     supabase.auth.getUser().then(({ data }) => resolveUser(data.user));
@@ -346,6 +347,15 @@ export default function HomePage() {
                 >
                   📦 My Bookings
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="hidden sm:flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                    style={{ color: '#0f2044', backgroundColor: '#e8eef8' }}
+                  >
+                    ⚙️ Admin
+                  </Link>
+                )}
                 <button
                   onClick={handleSwitchToOperator}
                   disabled={switchingRole}
@@ -477,6 +487,16 @@ export default function HomePage() {
                   >
                     🚢 Operator Portal
                   </button>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileNavOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                      style={{ color: '#0f2044', backgroundColor: '#e8eef8' }}
+                    >
+                      ⚙️ Admin Dashboard
+                    </Link>
+                  )}
                 </>
               )}
             </nav>
@@ -515,42 +535,23 @@ export default function HomePage() {
       )}
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
-      <section className="relative bg-white overflow-hidden">
-        {/* Background: port photo */}
+      <section className="grid grid-cols-1 lg:grid-cols-2">
+
+        {/* Left panel — dark navy */}
         <div
-          className="absolute inset-0 z-0 pointer-events-none"
-          style={{ opacity: 0.35 }}
+          className="flex items-center px-8 sm:px-12 lg:px-14 py-16 lg:py-24"
+          style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}
         >
-          <Image
-            src="/hero-port.png"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-        </div>
-
-        {/* Gradient overlay for text legibility */}
-        <div
-          className="absolute inset-0 z-0 pointer-events-none"
-          style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.92) 45%, rgba(255,255,255,0.1) 100%)' }}
-        />
-
-        {/* Text content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 xl:px-14 py-20 lg:py-28">
-          <div className="max-w-2xl">
+          <div className="max-w-xl w-full">
             <h1
-              className="font-extrabold leading-[1.1] mb-5 text-gray-900"
-              style={{ fontSize: "clamp(2.25rem, 4vw, 3.5rem)" }}
+              className="font-extrabold leading-[1.1] mb-5 text-white"
+              style={{ fontSize: 'clamp(2.25rem, 4vw, 3.5rem)' }}
             >
               Share the Load.
               <br />
-              <span style={{ color: "#f97316" }}>Connect the World.</span>
+              <span style={{ color: '#f97316' }}>Connect the World.</span>
             </h1>
-            <p
-              className="text-gray-700 text-base lg:text-lg mb-8 max-w-lg leading-relaxed"
-            >
+            <p className="text-gray-300 text-base lg:text-lg mb-8 max-w-lg leading-relaxed">
               ShareConLoad connects shippers and carriers to move containers
               smarter, reduce empty miles, and build a more efficient logistics
               network.
@@ -571,8 +572,8 @@ export default function HomePage() {
               <button
                 onClick={handleSwitchToOperator}
                 disabled={switchingRole}
-                className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl border-2 hover:bg-gray-50 transition-colors disabled:opacity-60"
-                style={{ borderColor: '#0f2044', color: '#0f2044' }}
+                className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl border-2 hover:bg-white/10 transition-colors disabled:opacity-60"
+                style={{ borderColor: 'rgba(255,255,255,0.4)', color: '#ffffff' }}
               >
                 {switchingRole ? (
                   <span className="loading loading-spinner loading-xs" />
@@ -583,24 +584,35 @@ export default function HomePage() {
             </div>
 
             {/* Feature grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-5">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
               {FEATURES.map(({ icon, title, desc }) => (
                 <div key={title} className="flex flex-col gap-2">
                   <div
                     className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-white"
-                    style={{ backgroundColor: "#f97316" }}
+                    style={{ backgroundColor: '#f97316' }}
                   >
                     {icon}
                   </div>
-                  <p className="text-sm font-bold text-gray-800">{title}</p>
-                  <p className="text-sm text-gray-500 leading-relaxed">
-                    {desc}
-                  </p>
+                  <p className="text-sm font-bold text-white">{title}</p>
+                  <p className="text-sm text-gray-400 leading-relaxed">{desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </div>
+
+        {/* Right panel — port photo */}
+        <div className="relative min-h-[280px] lg:min-h-0">
+          <Image
+            src="/hero-port.png"
+            alt="Container port"
+            fill
+            priority
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-cover object-center"
+          />
+        </div>
+
       </section>
 
       {/* ── Search + Listings ──────────────────────────────────────────────── */}

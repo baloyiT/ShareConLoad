@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import { notify } from '@/services/notificationService';
+import PageHero from '@/components/PageHero';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -272,40 +272,32 @@ export default function OperatorBookingsPage() {
   return (
     <div className="bg-[#f8fafc]">
 
-      {/* Hero */}
-      <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
-          <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
-        </div>
-        <div className="relative max-w-5xl mx-auto z-10">
-          <p className="text-gray-400 text-sm mb-1 font-medium">Operator Portal</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">Manage Bookings</h1>
-          <p className="text-gray-400 text-sm">
-            Review and update shipment statuses for your containers.
-          </p>
-
-          {/* Pending alert */}
-          {!loading && pendingCount > 0 && (
-            <div className="mt-5 flex items-center gap-3 bg-orange-500/20 border border-orange-400/30 rounded-xl px-4 py-3">
-              <span className="text-2xl">⏳</span>
-              <div>
-                <p className="text-white font-bold text-sm">
-                  {pendingCount} booking{pendingCount !== 1 ? 's' : ''} awaiting your confirmation
-                </p>
-                <p className="text-orange-200 text-xs">
-                  Shippers are waiting — confirm or cancel to keep your rating high.
-                </p>
-              </div>
-              <button
-                onClick={() => setStatusFilter('pending')}
-                className="ml-auto text-xs font-bold px-3 py-1.5 rounded-lg text-white border border-orange-300/50 hover:bg-orange-400/20 transition-colors shrink-0"
-              >
-                View →
-              </button>
+      <PageHero
+        showMap
+        label="Operator Portal"
+        title="Manage Bookings"
+        description="Review and update shipment statuses for your containers."
+      >
+        {!loading && pendingCount > 0 && (
+          <div className="mt-5 flex items-center gap-3 bg-orange-500/20 border border-orange-400/30 rounded-xl px-4 py-3">
+            <span className="text-2xl">⏳</span>
+            <div>
+              <p className="text-white font-bold text-sm">
+                {pendingCount} booking{pendingCount !== 1 ? 's' : ''} awaiting your confirmation
+              </p>
+              <p className="text-orange-200 text-xs">
+                Shippers are waiting — confirm or cancel to keep your rating high.
+              </p>
             </div>
-          )}
-        </div>
-      </div>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className="ml-auto text-xs font-bold px-3 py-1.5 rounded-lg text-white border border-orange-300/50 hover:bg-orange-400/20 transition-colors shrink-0"
+            >
+              View →
+            </button>
+          </div>
+        )}
+      </PageHero>
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">

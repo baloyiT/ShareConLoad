@@ -47,3 +47,13 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Local tooling
+.superpowers/
+
+# Supabase CLI temp
+supabase/.temp/
+
+# Debug / scratch screenshots (not source assets)
+MyAsset/*.png
+MyAsset/*.jpg

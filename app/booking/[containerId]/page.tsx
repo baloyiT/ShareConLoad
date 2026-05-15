@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import { notify } from '@/services/notificationService';
 import { Container } from '@/components/ContainerCard';
+import PageHero from '@/components/PageHero';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -292,20 +293,12 @@ export default function BookingPage() {
         </div>
       </nav>
 
-      {/* Page header */}
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-6xl mx-auto">
-          <p className="text-gray-400 text-sm mb-1">Booking</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            {container.origin_city}
-            <span className="text-orange-400 mx-3">→</span>
-            {container.destination_city}
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {container.origin_country} → {container.destination_country} · Departs {fmt(container.departure_date)}
-          </p>
-        </div>
-      </div>
+      <PageHero
+        gradient
+        label="Booking"
+        title={`${container.origin_city} → ${container.destination_city}`}
+        description={`${container.origin_country} → ${container.destination_country} · Departs ${fmt(container.departure_date)}`}
+      />
 
       {/* Global submit error */}
       {errors.submit && (

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import PageHero from '@/components/PageHero';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -169,17 +170,12 @@ export default function AdminCommissionPage() {
         </div>
       </nav>
 
-      {/* Header */}
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-3xl mx-auto">
-          <p className="text-gray-400 text-sm mb-1">Admin</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Commission Settings</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Set a fixed rate or configure tiered rates based on shipment value.
-            {config && <span className="ml-2">Last updated: {fmt(config.updated_at)}</span>}
-          </p>
-        </div>
-      </div>
+      <PageHero
+        gradient
+        label="Admin"
+        title="Commission Settings"
+        description={<>Set a fixed rate or configure tiered rates based on shipment value.{config && <span className="ml-2">Last updated: {fmt(config.updated_at)}</span>}</>}
+      />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
 

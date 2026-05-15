@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
+import PageHero from '@/components/PageHero';
 
 type PaymentRow = {
   id: string;
@@ -92,21 +93,17 @@ export default function PaymentHistoryPage() {
         </div>
       </nav>
 
-      {/* Header */}
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-4xl mx-auto flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-gray-400 text-sm mb-1">Customer Portal</p>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Payment History</h1>
+      <PageHero
+        gradient
+        label="Customer Portal"
+        title="Payment History"
+        rightSlot={!loading ? (
+          <div className="text-right">
+            <p className="text-gray-400 text-xs">Total paid</p>
+            <p className="text-2xl font-extrabold text-white">R{totalPaid.toFixed(2)}</p>
           </div>
-          {!loading && (
-            <div className="text-right">
-              <p className="text-gray-400 text-xs">Total paid</p>
-              <p className="text-2xl font-extrabold text-white">R{totalPaid.toFixed(2)}</p>
-            </div>
-          )}
-        </div>
-      </div>
+        ) : undefined}
+      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {error && <div className="alert alert-error text-sm mb-4">{error}</div>}

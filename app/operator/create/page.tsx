@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
+import PageHero from '@/components/PageHero';
 import type { Location } from '@/services/locations';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -183,15 +183,7 @@ export default function CreateContainerPage() {
   if (compliance === 'blocked') {
     return (
       <div className="bg-[#f8fafc] min-h-screen">
-        <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
-          <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
-            <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
-          </div>
-          <div className="relative max-w-4xl mx-auto z-10">
-            <p className="text-gray-400 text-sm mb-1 font-medium">Operator Portal</p>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Create a Container</h1>
-          </div>
-        </div>
+        <PageHero showMap label="Operator Portal" title="Create a Container" />
         <div className="max-w-md mx-auto px-4 py-16">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
             <div
@@ -285,19 +277,7 @@ export default function CreateContainerPage() {
   return (
     <div className="bg-[#f8fafc]">
 
-      {/* Page header */}
-      <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
-          <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
-        </div>
-        <div className="relative max-w-4xl mx-auto z-10">
-          <p className="text-gray-400 text-sm mb-1 font-medium">Operator Portal</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Create a Container</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            List your available container space for customers to book.
-          </p>
-        </div>
-      </div>
+      <PageHero showMap label="Operator Portal" title="Create a Container" description="List your available container space for customers to book." />
 
       {/* Form */}
       <form onSubmit={handleSubmit} noValidate>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import PageHero from '@/components/PageHero';
 import { supabase } from '@/services/supabaseClient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -141,16 +142,7 @@ export default function MyBookingsPage() {
         </div>
       </nav>
 
-      {/* ── Hero header ── */}
-      <div className="relative overflow-hidden py-10 px-4" style={{ backgroundColor: '#0f2044' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.15 }}>
-          <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
-        </div>
-        <div className="relative max-w-6xl mx-auto z-10">
-          <p className="text-gray-400 text-sm mb-1 font-medium">Shipper Portal</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">My Bookings</h1>
-        </div>
-      </div>
+      <PageHero label="Shipper Portal" title="My Bookings" showMap />
 
       {/* ── Content ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">

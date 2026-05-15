@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import PageHero from '@/components/PageHero';
 
 type ComplianceFlag = {
   id: string;
@@ -167,16 +168,12 @@ export default function AdminCompliancePage() {
         </div>
       </nav>
 
-      {/* Header */}
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <p className="text-gray-400 text-sm mb-1">Admin</p>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Compliance</h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {unresolvedCount > 0 ? `${unresolvedCount} unresolved flag${unresolvedCount !== 1 ? 's' : ''} require attention.` : 'All flags resolved.'}
-            </p>
-          </div>
+      <PageHero
+        gradient
+        label="Admin"
+        title="Compliance"
+        description={unresolvedCount > 0 ? `${unresolvedCount} unresolved flag${unresolvedCount !== 1 ? 's' : ''} require attention.` : 'All flags resolved.'}
+        rightSlot={
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -186,22 +183,23 @@ export default function AdminCompliancePage() {
             />
             <span className="text-sm text-gray-300">Show resolved</span>
           </label>
-          <div className="flex gap-1 mt-4 w-full">
-            {(['flags', 'documents'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors"
-                style={activeTab === tab
-                  ? { backgroundColor: '#f97316', color: '#ffffff' }
-                  : { backgroundColor: 'rgba(255,255,255,0.1)', color: '#d1d5db' }}
-              >
-                {tab === 'flags' ? 'Compliance Flags' : 'KYC Documents'}
-              </button>
-            ))}
-          </div>
+        }
+      >
+        <div className="flex gap-1 mt-4">
+          {(['flags', 'documents'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors"
+              style={activeTab === tab
+                ? { backgroundColor: '#f97316', color: '#ffffff' }
+                : { backgroundColor: 'rgba(255,255,255,0.1)', color: '#d1d5db' }}
+            >
+              {tab === 'flags' ? 'Compliance Flags' : 'KYC Documents'}
+            </button>
+          ))}
         </div>
-      </div>
+      </PageHero>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 

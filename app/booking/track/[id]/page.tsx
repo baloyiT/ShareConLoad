@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import MilestoneTimeline from '@/components/MilestoneTimeline';
+import PageHero from '@/components/PageHero';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -212,20 +213,12 @@ export default function BookingTrackPage() {
         </div>
       </nav>
 
-      {/* Header band */}
-      <div className="py-8 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <p className="text-gray-400 text-sm mb-1">Booking Tracking</p>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3 flex-wrap">
-              {container.origin_city}
-              <span className="text-orange-400">→</span>
-              {container.destination_city}
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {container.origin_country} → {container.destination_country}
-            </p>
-          </div>
+      <PageHero
+        gradient
+        label="Booking Tracking"
+        title={`${container.origin_city} → ${container.destination_city}`}
+        description={`${container.origin_country} → ${container.destination_country}`}
+        rightSlot={
           <div className="flex flex-col items-start sm:items-end gap-1">
             <span
               className="badge text-white font-semibold px-3 py-2 text-sm"
@@ -235,8 +228,8 @@ export default function BookingTrackPage() {
             </span>
             <p className="text-xs text-gray-400 font-mono">Ref: {booking.id.slice(0, 8)}…</p>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Cancelled banner */}
       {isCancelled && (
