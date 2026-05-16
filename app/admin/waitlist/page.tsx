@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
+import PageHero from '@/components/PageHero';
 
 type WaitlistEntry = {
   id: string;
@@ -27,7 +28,7 @@ const TABS: { key: RoleFilter; label: string }[] = [
 
 const ROLE_COLOURS: Record<string, string> = {
   operator:  '#f97316',
-  consignor: '#0f2044',
+  consignor: '#3b82f6',
   other:     '#6b7280',
 };
 
@@ -84,12 +85,9 @@ export default function AdminWaitlistPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
+      <PageHero gradient label="Admin" title="Waitlist" description="Signups collected before launch." />
 
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Waitlist</h1>
-          <p className="text-sm text-gray-400 mt-1">Signups collected before launch.</p>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
 
         {error && (
           <div className="alert alert-error text-sm">{error}</div>
