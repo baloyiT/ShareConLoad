@@ -180,6 +180,7 @@ export default function AdminDashboard() {
                   { href: '/admin/disputes',   label: 'Disputes',    icon: '⚖️', desc: 'Resolve disputes'            },
                   { href: '/admin/compliance', label: 'Compliance',  icon: '🚩', desc: 'Compliance flags'            },
                   { href: '/admin/release',    label: 'Release',     icon: '🔓', desc: 'Cargo release auth'          },
+                  { href: '/admin/waitlist',   label: 'Waitlist',    icon: '✉️', desc: 'Pre-launch signups'          },
                 ].map(({ href, label, icon, desc }) => (
                   <Link
                     key={href}
