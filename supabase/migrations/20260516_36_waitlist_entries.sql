@@ -9,7 +9,7 @@ create table if not exists waitlist_entries (
   phone         text,
   country       text,
   business_type text,
-  role          text not null default 'other'
+  role          text not null default 'other' check (role in ('operator', 'consignor', 'other'))
 );
 
 alter table waitlist_entries enable row level security;
