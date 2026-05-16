@@ -539,7 +539,7 @@ export default function HomePage() {
 
         {/* Left panel — dark navy */}
         <div
-          className="flex items-center px-8 sm:px-12 lg:px-14 py-16 lg:py-24"
+          className="flex items-center px-5 sm:px-12 lg:px-14 py-16 lg:py-24"
           style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}
         >
           <div className="max-w-xl w-full">
@@ -584,7 +584,7 @@ export default function HomePage() {
             </div>
 
             {/* Feature grid */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5">
               {FEATURES.map(({ icon, title, desc }) => (
                 <div key={title} className="flex flex-col gap-2">
                   <div

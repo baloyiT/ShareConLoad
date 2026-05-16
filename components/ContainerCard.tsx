@@ -52,7 +52,7 @@ export default function ContainerCard({ container }: ContainerCardProps) {
 
         {/* Route */}
         <div className="mt-1">
-          <div className="flex items-center gap-2 text-lg font-bold text-gray-800">
+          <div className="flex items-center gap-2 flex-wrap text-lg font-bold text-gray-800">
             <span>{container.origin_city}</span>
             <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
