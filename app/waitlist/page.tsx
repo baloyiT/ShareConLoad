@@ -95,8 +95,10 @@ export default function WaitlistPage() {
     setSubmitError(null);
 
     const form = e.currentTarget;
-    const get = (name: string) =>
-      (form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement).value.trim();
+    const get = (name: string) => {
+      const el = form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
+      return el ? el.value.trim() : '';
+    };
 
     const { error } = await supabase.from('waitlist_entries').insert({
       first_name:    get('fname'),
@@ -287,7 +289,7 @@ export default function WaitlistPage() {
           <div className={styles.steps}>
             {[
               { n: '1', icon: '📋', title: 'List or Search',      desc: 'Operators post available container space. Consignors search by route, date, and cargo type — all in real time.' },
-              { n: '2', icon: '🤝', title: 'Match & Connect',     desc: 'AI-driven matching connects cargo demand with available capacity. Communicate directly with verified operators.' },
+              { n: '2', icon: '🤝', title: 'Match & Connect',     desc: 'Smart matching connects cargo demand with available capacity. Communicate directly with verified operators on your route.' },
               { n: '3', icon: '🚀', title: 'Move Goods Smarter',  desc: 'Book and coordinate freight movement efficiently — cutting costs and eliminating empty miles across every corridor.' },
             ].map(({ n, icon, title, desc }) => (
               <div key={n} className={styles.step} data-n={n} data-fade="">
@@ -339,7 +341,7 @@ export default function WaitlistPage() {
               Share<tspan fill="rgba(242,101,34,0.55)">Con</tspan>Load
             </text>
           </svg>
-          <p>© 2025 ShareConLoad — Under Veyqon Group. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ShareConLoad — Under Veyqon Group. All rights reserved.</p>
           <p style={{ fontSize: '11px', opacity: 0.4 }}>shareconload.com</p>
         </footer>
 
