@@ -42,7 +42,8 @@ export default function RatingModal({ bookingId, rateeId, title, onClose, onSubm
     });
 
     if (insertError) {
-      setError(insertError.message);
+      console.error('RatingModal insert:', insertError);
+      setError('Failed to submit rating. Please try again.');
       setLoading(false);
       return;
     }
@@ -59,6 +60,7 @@ export default function RatingModal({ bookingId, rateeId, title, onClose, onSubm
           {[1, 2, 3, 4, 5].map(i => (
             <button
               key={i}
+              type="button"
               onClick={() => setStars(i)}
               onMouseEnter={() => setHovered(i)}
               onMouseLeave={() => setHovered(0)}
@@ -83,12 +85,12 @@ export default function RatingModal({ bookingId, rateeId, title, onClose, onSubm
         {error && <p className="text-error text-sm mt-2">{error}</p>}
 
         <div className="modal-action">
-          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={loading}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} disabled={loading}>
             Cancel
           </button>
           <button
-            className="btn btn-sm border-0"
-            style={{ background: '#f59e0b', color: 'white' }}
+            type="button"
+            className="btn btn-sm border-0 bg-amber-400 text-white"
             disabled={loading || stars === 0}
             onClick={handleSubmit}
           >
@@ -96,7 +98,7 @@ export default function RatingModal({ bookingId, rateeId, title, onClose, onSubm
           </button>
         </div>
       </div>
-      <label className="modal-backdrop" onClick={onClose} />
+      <label className="modal-backdrop" aria-label="Close modal" onClick={onClose} />
     </div>
   );
 }
