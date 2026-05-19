@@ -20,6 +20,8 @@ create trigger trg_booking_delivered_at
   before update on public.bookings
   for each row execute function set_booking_delivered_at();
 
+-- Note: existing delivered bookings are not backfilled. They will rely on both parties rating (no 14-day auto-reveal).
+
 -- 2. Ratings table
 create table if not exists public.booking_ratings (
   id           uuid primary key default gen_random_uuid(),
@@ -34,6 +36,9 @@ create table if not exists public.booking_ratings (
 );
 
 alter table public.booking_ratings enable row level security;
+
+create index if not exists idx_booking_ratings_booking_id on public.booking_ratings(booking_id);
+create index if not exists idx_booking_ratings_ratee_id   on public.booking_ratings(ratee_id);
 
 -- 3. Reveal trigger — set revealed_at on both rows when both parties have rated
 create or replace function maybe_reveal_ratings()
@@ -88,7 +93,11 @@ create policy "rating_insert" on public.booking_ratings
       join public.containers c on c.id = bk.container_id
       where bk.id = booking_id
         and bk.status = 'delivered'
-        and (bk.customer_id = auth.uid() or c.operator_id = auth.uid())
+        and (
+          (bk.customer_id = auth.uid() and c.operator_id = ratee_id)
+          or
+          (c.operator_id = auth.uid() and bk.customer_id = ratee_id)
+        )
     )
   );
 
@@ -96,7 +105,7 @@ drop policy if exists "rating_select" on public.booking_ratings;
 create policy "rating_select" on public.booking_ratings
   for select using (
     rater_id = auth.uid()
-    or is_admin()
+    or public.is_admin()
     or (
       revealed_at is not null
       or exists (
