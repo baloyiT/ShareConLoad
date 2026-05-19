@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
+import MessageThread from '@/components/MessageThread';
 
 type AdminBooking = {
   id: string;
@@ -86,6 +87,9 @@ export default function AdminBookingsPage() {
   const [notes,          setNotes]          = useState('');
   const [updating,       setUpdating]       = useState(false);
   const [updateError,    setUpdateError]    = useState<string | null>(null);
+
+  // Message thread modal
+  const [messageBookingId, setMessageBookingId] = useState<string | null>(null);
 
   // Payments tab
   const [payments,       setPayments]       = useState<Payment[]>([]);
@@ -309,6 +313,13 @@ export default function AdminBookingsPage() {
                           >
                             Payments
                           </button>
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-ghost"
+                            onClick={() => setMessageBookingId(b.id)}
+                          >
+                            💬 Messages
+                          </button>
                           <Link
                             href={`/booking/track/${b.id}`}
                             className="btn btn-ghost btn-xs text-gray-400 hover:text-gray-700 rounded-lg"
@@ -325,6 +336,28 @@ export default function AdminBookingsPage() {
           </div>
         )}
       </div>
+
+      {/* Read-only message thread modal */}
+      {messageBookingId && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-lg">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-base">
+                Messages — {messageBookingId.slice(0, 8).toUpperCase()}
+              </h3>
+              <button type="button" className="btn btn-ghost btn-xs" onClick={() => setMessageBookingId(null)}>✕</button>
+            </div>
+            <MessageThread
+              bookingId={messageBookingId}
+              bookingRef={messageBookingId.slice(0, 8).toUpperCase()}
+              currentUserId=""
+              recipientId=""
+              readOnly
+            />
+          </div>
+          <label className="modal-backdrop" aria-label="Close modal" onClick={() => setMessageBookingId(null)} />
+        </div>
+      )}
 
       {/* Modal */}
       {selected && (
