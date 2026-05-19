@@ -200,13 +200,33 @@ export default function HomePage() {
     async function fetchContainers() {
       const { data, error } = await supabase
         .from("containers")
-        .select("*")
+        .select("*, operator_id")
         .eq("status", "open")
         .order("departure_date", { ascending: true });
       if (error) {
         setError("Could not load containers. Please try again later.");
       } else {
         setContainers(data as Container[]);
+
+        const operatorIds = (data ?? []).map(c => c.operator_id).filter(Boolean) as string[];
+        if (operatorIds.length > 0) {
+          const { data: ratings } = await supabase
+            .from('operator_rating_summary')
+            .select('user_id, average_stars, review_count')
+            .in('user_id', operatorIds);
+
+          if (ratings && ratings.length > 0) {
+            const ratingMap = new Map(
+              ratings.map(r => [r.user_id, { average_stars: r.average_stars, review_count: r.review_count }])
+            );
+            setContainers(prev =>
+              prev.map(c => ({
+                ...c,
+                ...(c.operator_id ? (ratingMap.get(c.operator_id) ?? {}) : {}),
+              }))
+            );
+          }
+        }
       }
       setLoading(false);
     }
