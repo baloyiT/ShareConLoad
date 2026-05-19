@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import PageHero from '@/components/PageHero';
+import RatingBanner from '@/components/RatingBanner';
+import RatingModal  from '@/components/RatingModal';
 import { supabase } from '@/services/supabaseClient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,6 +24,7 @@ type BookingRow = {
     destination_country: string;
     departure_date: string;
     arrival_date: string | null;
+    operator_id: string;
   } | null;
 };
 
@@ -76,6 +79,8 @@ export default function MyBookingsPage() {
   const [statusFilter, setStatusFilter]   = useState<StatusFilter>('all');
   const [userName, setUserName]           = useState('');
   const [userInitials, setUserInitials]   = useState('');
+  const [ratedBookingIds, setRatedBookingIds] = useState<Set<string>>(new Set());
+  const [ratingModal, setRatingModal]         = useState<{ bookingId: string; rateeId: string } | null>(null);
 
   useEffect(() => {
     async function fetchBookings() {
@@ -93,7 +98,7 @@ export default function MyBookingsPage() {
       const { data, error } = await supabase
         .from('bookings')
         .select(`id, total_cbm, total_price, status, created_at,
-          containers(origin_city, origin_country, destination_city, destination_country, departure_date, arrival_date)`)
+          containers(origin_city, origin_country, destination_city, destination_country, departure_date, arrival_date, operator_id)`)
         .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -101,6 +106,11 @@ export default function MyBookingsPage() {
         setError('Could not load your bookings. Please try again.');
       } else {
         setBookings(data as unknown as BookingRow[]);
+        const { data: myRatings } = await supabase
+          .from('booking_ratings')
+          .select('booking_id')
+          .eq('rater_id', user.id);
+        setRatedBookingIds(new Set((myRatings ?? []).map((r: { booking_id: string }) => r.booking_id)));
       }
       setLoading(false);
     }
@@ -198,11 +208,37 @@ export default function MyBookingsPage() {
         {!loading && !error && filtered.length > 0 && (
           <div className="flex flex-col gap-4">
             {filtered.map((booking) => (
-              <BookingCard key={booking.id} booking={booking} />
+              <div key={booking.id}>
+                {booking.status === 'delivered' &&
+                 !ratedBookingIds.has(booking.id) &&
+                 booking.containers?.operator_id && (
+                  <RatingBanner
+                    label="How was your experience with this operator?"
+                    onRate={() => setRatingModal({
+                      bookingId: booking.id,
+                      rateeId:   booking.containers!.operator_id,
+                    })}
+                  />
+                )}
+                <BookingCard booking={booking} />
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {ratingModal && (
+        <RatingModal
+          bookingId={ratingModal.bookingId}
+          rateeId={ratingModal.rateeId}
+          title="Rate your operator"
+          onClose={() => setRatingModal(null)}
+          onSubmitted={() => {
+            setRatedBookingIds(prev => new Set([...prev, ratingModal!.bookingId]));
+            setRatingModal(null);
+          }}
+        />
+      )}
     </div>
   );
 }
