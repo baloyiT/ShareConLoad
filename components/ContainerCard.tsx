@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import StarDisplay from '@/components/StarDisplay';
 
 export type Container = {
   id: string;
@@ -13,6 +14,9 @@ export type Container = {
   price_per_cbm: number;
   status: string;
   operator_name?: string;
+  operator_id?: string;
+  average_stars?: number;
+  review_count?: number;
 };
 
 type ContainerCardProps = {
@@ -99,11 +103,18 @@ export default function ContainerCard({ container }: ContainerCardProps) {
 
         {/* Operator + CTA */}
         <div className="flex items-center justify-between pt-1">
-          {container.operator_name ? (
-            <p className="text-xs text-gray-400 truncate max-w-[120px]">{container.operator_name}</p>
-          ) : (
-            <span />
-          )}
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
+            {container.operator_name ? (
+              <p className="text-xs text-gray-400 truncate max-w-[120px]">{container.operator_name}</p>
+            ) : (
+              <span />
+            )}
+            {container.average_stars != null && container.review_count != null && container.review_count > 0 && (
+              <div style={{ marginTop: '4px' }}>
+                <StarDisplay average={container.average_stars} count={container.review_count} size="sm" />
+              </div>
+            )}
+          </div>
           <Link
             href={`/container/${container.id}`}
             className="text-sm font-semibold hover:underline"
