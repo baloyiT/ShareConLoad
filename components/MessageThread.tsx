@@ -41,7 +41,7 @@ export default function MessageThread({
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [filterWarn, setFilterWarn] = useState(false);
-  const [sendError, setSendError] = useState('');
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +77,7 @@ export default function MessageThread({
   function handleDraftChange(value: string) {
     setDraft(value);
     setFilterWarn(containsContactInfo(value));
-    setSendError('');
+    setSendError(null);
   }
 
   // ─── Send ────────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ export default function MessageThread({
     if (!trimmed || filterWarn) return;
 
     setSending(true);
-    setSendError('');
+    setSendError(null);
 
     const { error } = await supabase.from('booking_messages').insert({
       booking_id: bookingId,
@@ -106,7 +106,11 @@ export default function MessageThread({
       return;
     }
 
-    await notify('message.new', { bookingId, recipientId, bookingRef });
+    try {
+      await notify('message.new', { bookingId, recipientId, bookingRef });
+    } catch (e) {
+      console.error('[MessageThread] notify failed:', e);
+    }
     setDraft('');
     setFilterWarn(false);
     setSending(false);
