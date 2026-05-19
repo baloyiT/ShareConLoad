@@ -65,6 +65,11 @@ export type NotificationEventMap = {
     recipientId: string;
     newStatus: string;
   };
+  'message.new': {
+    bookingId: string;
+    recipientId: string;
+    bookingRef: string;
+  };
 };
 
 export type NotificationEvent = keyof NotificationEventMap;
@@ -163,6 +168,13 @@ function buildMessage(event: NotificationEvent, payload: NotificationEventMap[ty
       return {
         title: 'Departure Date Updated',
         body:  `The departure date for your shipment on ${p.route} has been updated to ${new Date(p.newDepartureDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}. Please update your plans accordingly.`,
+      };
+    }
+    case 'message.new': {
+      const p = payload as NotificationEventMap['message.new'];
+      return {
+        title: 'New Message',
+        body:  `You have a new message on booking ${p.bookingRef}.`,
       };
     }
     default:
