@@ -376,18 +376,20 @@ export default function HomePage() {
                     ⚙️ Admin
                   </Link>
                 )}
-                <button
-                  onClick={handleSwitchToOperator}
-                  disabled={switchingRole}
-                  className="hidden md:flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
-                  style={{ backgroundColor: "#f97316" }}
-                >
-                  {switchingRole ? (
-                    <span className="loading loading-spinner loading-xs" />
-                  ) : (
-                    "🚢 Operator Portal"
-                  )}
-                </button>
+                {isOperator && (
+                  <button
+                    onClick={handleSwitchToOperator}
+                    disabled={switchingRole}
+                    className="hidden md:flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+                    style={{ backgroundColor: "#f97316" }}
+                  >
+                    {switchingRole ? (
+                      <span className="loading loading-spinner loading-xs" />
+                    ) : (
+                      "🚢 Operator Portal"
+                    )}
+                  </button>
+                )}
 
                 {/* Avatar + name + badge */}
                 <div className="flex items-center gap-2 pl-1">
@@ -501,12 +503,14 @@ export default function HomePage() {
                   >
                     📦 My Bookings
                   </Link>
-                  <button
-                    onClick={() => { setMobileNavOpen(false); handleSwitchToOperator(); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-left"
-                  >
-                    🚢 Operator Portal
-                  </button>
+                  {isOperator && (
+                    <button
+                      onClick={() => { setMobileNavOpen(false); handleSwitchToOperator(); }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      🚢 Operator Portal
+                    </button>
+                  )}
                   {isAdmin && (
                     <Link
                       href="/admin"

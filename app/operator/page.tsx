@@ -71,6 +71,7 @@ export default function OperatorDashboard() {
   const [sendingNotice,  setSendingNotice]  = useState<string | null>(null);
   const [noticeError,    setNoticeError]    = useState<string | null>(null);
   const [noticeSent,     setNoticeSent]     = useState<string | null>(null);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     async function fetchContainers() {
@@ -106,6 +107,15 @@ export default function OperatorDashboard() {
           setPendingCount(count ?? 0);
         }
       }
+      // Unread message notifications
+      const { count: msgCount } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .eq('event', 'message.new')
+        .eq('read', false);
+      setUnreadMessages(msgCount ?? 0);
+
       setLoading(false);
     }
     fetchContainers();
@@ -197,6 +207,37 @@ export default function OperatorDashboard() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
 
+        {/* Summary cards */}
+        {!loading && !error && (pendingCount > 0 || unreadMessages > 0) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {pendingCount > 0 && (
+              <Link
+                href="/operator/bookings?filter=pending"
+                className="flex items-center gap-4 bg-white rounded-2xl border border-orange-100 shadow-sm px-5 py-4 hover:shadow-md transition-shadow"
+              >
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: '#fff7ed' }}>⏳</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 font-medium">Awaiting confirmation</p>
+                  <p className="text-xl font-extrabold" style={{ color: '#f97316' }}>{pendingCount}</p>
+                </div>
+                <span className="text-gray-300 text-lg">→</span>
+              </Link>
+            )}
+            {unreadMessages > 0 && (
+              <Link
+                href="/operator/bookings"
+                className="flex items-center gap-4 bg-white rounded-2xl border border-blue-100 shadow-sm px-5 py-4 hover:shadow-md transition-shadow"
+              >
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: '#eff6ff' }}>💬</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 font-medium">Unread messages</p>
+                  <p className="text-xl font-extrabold text-blue-600">{unreadMessages}</p>
+                </div>
+                <span className="text-gray-300 text-lg">→</span>
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Status filter tabs */}
         {!loading && !error && containers.length > 0 && (

@@ -8,6 +8,7 @@ import PageHero from '@/components/PageHero';
 import RatingBanner from '@/components/RatingBanner';
 import RatingModal  from '@/components/RatingModal';
 import { supabase } from '@/services/supabaseClient';
+import { markAsRead } from '@/services/notificationService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,14 @@ type BookingRow = {
 };
 
 type StatusFilter = 'all' | 'pending' | 'confirmed' | 'loaded' | 'in_transit' | 'delivered' | 'cancelled';
+
+type UnreadNotif = {
+  id: string;
+  title: string;
+  body: string;
+  created_at: string;
+  metadata: Record<string, string>;
+};
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -81,6 +90,9 @@ export default function MyBookingsPage() {
   const [userInitials, setUserInitials]   = useState('');
   const [ratedBookingIds, setRatedBookingIds] = useState<Set<string>>(new Set());
   const [ratingModal, setRatingModal]         = useState<{ bookingId: string; rateeId: string } | null>(null);
+  const [messageCounts, setMessageCounts]     = useState<Record<string, number>>({});
+  const [unreadNotifs, setUnreadNotifs]       = useState<UnreadNotif[]>([]);
+  const [notifOpen, setNotifOpen]             = useState(false);
 
   useEffect(() => {
     async function fetchBookings() {
@@ -106,11 +118,35 @@ export default function MyBookingsPage() {
         setError('Could not load your bookings. Please try again.');
       } else {
         setBookings(data as unknown as BookingRow[]);
+
         const { data: myRatings } = await supabase
           .from('booking_ratings')
           .select('booking_id')
           .eq('rater_id', user.id);
         setRatedBookingIds(new Set((myRatings ?? []).map((r: { booking_id: string }) => r.booking_id)));
+
+        const bookingIds = (data as unknown as BookingRow[]).map((b) => b.id);
+        if (bookingIds.length > 0) {
+          const { data: msgs } = await supabase
+            .from('booking_messages')
+            .select('booking_id')
+            .in('booking_id', bookingIds)
+            .neq('sender_id', user.id);
+          const counts: Record<string, number> = {};
+          (msgs ?? []).forEach((m: { booking_id: string }) => {
+            counts[m.booking_id] = (counts[m.booking_id] ?? 0) + 1;
+          });
+          setMessageCounts(counts);
+        }
+
+        const { data: notifData } = await supabase
+          .from('notifications')
+          .select('id, title, body, created_at, metadata')
+          .eq('recipient_id', user.id)
+          .eq('event', 'message.new')
+          .eq('read', false)
+          .order('created_at', { ascending: false });
+        setUnreadNotifs((notifData ?? []) as UnreadNotif[]);
       }
       setLoading(false);
     }
@@ -118,6 +154,14 @@ export default function MyBookingsPage() {
   }, [router]);
 
   const filtered = statusFilter === 'all' ? bookings : bookings.filter((b) => b.status === statusFilter);
+
+  async function openFromNotification(notif: UnreadNotif) {
+    await markAsRead(notif.id);
+    setUnreadNotifs((prev) => prev.filter((n) => n.id !== notif.id));
+    setNotifOpen(false);
+    const bookingId = notif.metadata?.bookingId;
+    if (bookingId) router.push(`/booking/track/${bookingId}`);
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans">
@@ -145,6 +189,61 @@ export default function MyBookingsPage() {
                 </div>
               </div>
             )}
+
+            {/* Notification bell */}
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen((o) => !o)}
+                className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Notifications"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadNotifs.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white rounded-full" style={{ backgroundColor: '#f97316' }}>
+                    {unreadNotifs.length > 9 ? '9+' : unreadNotifs.length}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" aria-hidden="true" onClick={() => setNotifOpen(false)} />
+                  <div className="absolute right-0 top-11 z-50 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <span className="text-sm font-bold text-gray-800">Messages</span>
+                      {unreadNotifs.length > 0 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-white" style={{ backgroundColor: '#f97316' }}>
+                          {unreadNotifs.length} unread
+                        </span>
+                      )}
+                    </div>
+                    {unreadNotifs.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-6">No new messages</p>
+                    ) : (
+                      <ul className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                        {unreadNotifs.map((n) => (
+                          <li key={n.id}>
+                            <button
+                              onClick={() => openFromNotification(n)}
+                              className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+                            >
+                              <p className="text-sm font-semibold text-gray-800 truncate">{n.title}</p>
+                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.body}</p>
+                              <p className="text-[10px] text-gray-400 mt-1">
+                                {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
             <Link href="/" className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
               ← Home
             </Link>
@@ -220,7 +319,7 @@ export default function MyBookingsPage() {
                     })}
                   />
                 )}
-                <BookingCard booking={booking} />
+                <BookingCard booking={booking} messageCount={messageCounts[booking.id] ?? 0} />
               </div>
             ))}
           </div>
@@ -245,7 +344,7 @@ export default function MyBookingsPage() {
 
 // ─── BookingCard ──────────────────────────────────────────────────────────────
 
-function BookingCard({ booking }: { booking: BookingRow }) {
+function BookingCard({ booking, messageCount }: { booking: BookingRow; messageCount: number }) {
   const cfg = STATUS_CONFIG[booking.status] ?? STATUS_CONFIG.pending;
   const c   = booking.containers;
 
@@ -275,19 +374,32 @@ function BookingCard({ booking }: { booking: BookingRow }) {
             </div>
           </div>
 
-          <div className="flex sm:flex-col items-center sm:items-end gap-3 shrink-0">
-            <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cfg.dot }} />
-              {cfg.label}
-            </span>
-            <span className="text-xs text-gray-400 font-mono">#{shortId(booking.id)}</span>
-            <Link href={`/booking/track/${booking.id}`} className="btn btn-sm text-white font-semibold rounded-lg hover:opacity-90 text-xs" style={{ backgroundColor: '#0f2044' }}>
+          <div className="flex flex-col items-stretch gap-2 shrink-0 w-full sm:w-auto sm:items-end">
+            <div className="flex items-center justify-between sm:flex-col sm:items-end sm:gap-1">
+              <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cfg.dot }} />
+                {cfg.label}
+              </span>
+              <span className="text-xs text-gray-400 font-mono">#{shortId(booking.id)}</span>
+            </div>
+            <Link href={`/booking/track/${booking.id}`} className="btn btn-sm text-white font-semibold rounded-lg hover:opacity-90 text-xs w-full sm:w-auto justify-center" style={{ backgroundColor: '#0f2044' }}>
               View Details →
+            </Link>
+            <Link
+              href={`/booking/track/${booking.id}`}
+              className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors w-full sm:w-auto justify-center"
+            >
+              💬 Messages
+              {messageCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white rounded-full" style={{ backgroundColor: '#f97316' }}>
+                  {messageCount > 9 ? '9+' : messageCount}
+                </span>
+              )}
             </Link>
             {!['cancelled', 'delivered'].includes(booking.status) && (
               <Link
                 href={`/payments/${booking.id}`}
-                className="btn btn-sm font-semibold rounded-lg hover:opacity-90 text-xs text-white"
+                className="btn btn-sm font-semibold rounded-lg hover:opacity-90 text-xs text-white w-full sm:w-auto justify-center"
                 style={{ backgroundColor: '#f97316' }}
               >
                 Make Payment
@@ -296,14 +408,14 @@ function BookingCard({ booking }: { booking: BookingRow }) {
             {['confirmed', 'loaded', 'in_transit', 'delivered'].includes(booking.status) && (
               <Link
                 href={`/disputes/new?bookingId=${booking.id}`}
-                className="btn btn-sm btn-ghost rounded-lg text-xs text-red-400 hover:bg-red-50 border border-red-100"
+                className="btn btn-sm btn-ghost rounded-lg text-xs text-red-400 hover:bg-red-50 border border-red-100 w-full sm:w-auto justify-center"
               >
                 Raise Dispute
               </Link>
             )}
             <Link
               href="/support/new"
-              className="btn btn-sm btn-ghost rounded-lg text-xs text-gray-400 hover:bg-gray-100 border border-gray-200"
+              className="btn btn-sm btn-ghost rounded-lg text-xs text-gray-400 hover:bg-gray-100 border border-gray-200 w-full sm:w-auto justify-center"
             >
               Support
             </Link>

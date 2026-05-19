@@ -183,8 +183,8 @@ export default function BookingTrackPage() {
         <p className="text-gray-400 text-sm max-w-xs">
           This booking ID does not exist or you do not have access to it.
         </p>
-        <Link href="/" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0f2044' }}>
-          ← Back to Home
+        <Link href="/bookings" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0f2044' }}>
+          ← My Bookings
         </Link>
       </div>
     );
@@ -213,8 +213,8 @@ export default function BookingTrackPage() {
               <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
             </span>
           </Link>
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
-            ← Home
+          <Link href="/bookings" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            ← My Bookings
           </Link>
         </div>
       </nav>

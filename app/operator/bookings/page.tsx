@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
-import { notify } from '@/services/notificationService';
+import { notify, markAsRead } from '@/services/notificationService';
 import PageHero from '@/components/PageHero';
 import RatingBanner from '@/components/RatingBanner';
 import RatingModal  from '@/components/RatingModal';
@@ -39,6 +40,14 @@ type PendingAction = {
 
 type MilestoneModal = {
   booking: OperatorBooking;
+};
+
+type UnreadNotif = {
+  id: string;
+  title: string;
+  body: string;
+  created_at: string;
+  metadata: Record<string, string>;
 };
 
 const OPERATOR_MILESTONES: { value: string; label: string }[] = [
@@ -145,8 +154,11 @@ export default function OperatorBookingsPage() {
   const [ratingModal, setRatingModal] = useState<{ bookingId: string; rateeId: string } | null>(null);
 
   // Messages state
-  const [messageBooking, setMessageBooking] = useState<OperatorBooking | null>(null);
-  const [currentUserId, setCurrentUserId]   = useState<string | null>(null);
+  const [messageBooking, setMessageBooking]   = useState<OperatorBooking | null>(null);
+  const [currentUserId, setCurrentUserId]     = useState<string | null>(null);
+  const [messageCounts, setMessageCounts]     = useState<Record<string, number>>({});
+  const [unreadNotifs, setUnreadNotifs]       = useState<UnreadNotif[]>([]);
+  const [notifOpen, setNotifOpen]             = useState(false);
 
   // Milestone modal state
   const [milestoneModal,   setMilestoneModal]   = useState<MilestoneModal | null>(null);
@@ -209,6 +221,29 @@ export default function OperatorBookingsPage() {
       .eq('rater_id', user.id);
     setRatedBookingIds(new Set((myRatings ?? []).map((r: { booking_id: string }) => r.booking_id)));
 
+    // Count inbound messages per booking (from customers, not the operator)
+    if (containerIds.length > 0) {
+      const { data: msgs } = await supabase
+        .from('booking_messages')
+        .select('booking_id')
+        .in('booking_id', (bookingRows ?? []).map(b => b.id))
+        .neq('sender_id', user.id);
+      const counts: Record<string, number> = {};
+      for (const m of msgs ?? []) counts[m.booking_id] = (counts[m.booking_id] ?? 0) + 1;
+      setMessageCounts(counts);
+    }
+
+    // Fetch unread message.new notifications
+    const { data: notifs } = await supabase
+      .from('notifications')
+      .select('id, title, body, created_at, metadata')
+      .eq('recipient_id', user.id)
+      .eq('event', 'message.new')
+      .eq('read', false)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    setUnreadNotifs((notifs ?? []) as UnreadNotif[]);
+
     setLoading(false);
   }, [router]);
 
@@ -257,6 +292,19 @@ export default function OperatorBookingsPage() {
     setPendingAction({ booking: { ...booking, status: booking.status }, newStatus: 'cancelled' });
   }
 
+  async function openFromNotification(notif: UnreadNotif) {
+    setNotifOpen(false);
+    await markAsRead(notif.id);
+    setUnreadNotifs(prev => prev.filter(n => n.id !== notif.id));
+    const bookingId = notif.metadata?.bookingId;
+    if (!bookingId) return;
+    const booking = bookings.find(b => b.id === bookingId);
+    if (booking) {
+      setStatusFilter('all');
+      setMessageBooking(booking);
+    }
+  }
+
   async function recordMilestone() {
     if (!milestoneModal) return;
     setRecordingMilestone(true);
@@ -290,6 +338,87 @@ export default function OperatorBookingsPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="bg-[#f8fafc]">
+
+      {/* ── Navbar ──────────────────────────────────────────────────────────── */}
+      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
+            <span className="text-xl font-extrabold tracking-tight">
+              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            {/* Notification bell */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotifOpen(v => !v)}
+                className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-lg"
+              >
+                🔔
+                {unreadNotifs.length > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
+                    style={{ backgroundColor: '#f97316' }}
+                  >
+                    {unreadNotifs.length > 9 ? '9+' : unreadNotifs.length}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 top-11 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-800">New Messages</span>
+                    <button type="button" onClick={() => setNotifOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+                  </div>
+                  {unreadNotifs.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-400 text-sm">No new messages</div>
+                  ) : (
+                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                      {unreadNotifs.map(notif => (
+                        <button
+                          key={notif.id}
+                          type="button"
+                          onClick={() => openFromNotification(notif)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+                        >
+                          <p className="text-sm font-semibold text-gray-800">{notif.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(notif.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* User info */}
+            {userName && (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#0f2044' }}>
+                  {userInitials}
+                </div>
+                <div className="hidden sm:flex flex-col leading-tight">
+                  <span className="text-sm font-medium text-gray-700 max-w-[130px] truncate">{userName}</span>
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full w-fit mt-0.5" style={{ backgroundColor: '#e8eef8', color: '#0f2044' }}>
+                    🚢 Operator
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <Link href="/operator" className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+              ← Operator Hub
+            </Link>
+          </div>
+        </div>
+      </nav>
 
       <PageHero
         showMap
@@ -398,6 +527,7 @@ export default function OperatorBookingsPage() {
                 isRated={ratedBookingIds.has(booking.id)}
                 onRate={() => setRatingModal({ bookingId: booking.id, rateeId: booking.customer_id })}
                 onMessage={() => setMessageBooking(booking)}
+                messageCount={messageCounts[booking.id] ?? 0}
               />
             ))}
           </div>
@@ -617,6 +747,7 @@ function BookingCard({
   isRated,
   onRate,
   onMessage,
+  messageCount,
 }: {
   booking: OperatorBooking;
   onAction: (b: OperatorBooking, newStatus: string) => void;
@@ -625,6 +756,7 @@ function BookingCard({
   isRated: boolean;
   onRate: () => void;
   onMessage: () => void;
+  messageCount: number;
 }) {
   const nextStatus = NEXT_STATUS[booking.status];
   const actionCfg  = nextStatus ? ACTION_CONFIG[nextStatus] : null;
@@ -703,10 +835,18 @@ function BookingCard({
 
               <button
                 type="button"
-                className="btn btn-xs btn-outline"
                 onClick={onMessage}
+                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
               >
                 💬 Messages
+                {messageCount > 0 && (
+                  <span
+                    className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
+                    style={{ backgroundColor: '#f97316' }}
+                  >
+                    {messageCount > 9 ? '9+' : messageCount}
+                  </span>
+                )}
               </button>
 
               {booking.status === 'delivered' && (
