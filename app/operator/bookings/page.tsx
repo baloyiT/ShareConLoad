@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import { notify } from '@/services/notificationService';
 import PageHero from '@/components/PageHero';
+import RatingBanner from '@/components/RatingBanner';
+import RatingModal  from '@/components/RatingModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -137,6 +139,10 @@ export default function OperatorBookingsPage() {
   const [updating, setUpdating]           = useState(false);
   const [updateError, setUpdateError]     = useState<string | null>(null);
 
+  // Rating state
+  const [ratedBookingIds, setRatedBookingIds] = useState<Set<string>>(new Set());
+  const [ratingModal, setRatingModal] = useState<{ bookingId: string; rateeId: string } | null>(null);
+
   // Milestone modal state
   const [milestoneModal,   setMilestoneModal]   = useState<MilestoneModal | null>(null);
   const [milestoneType,    setMilestoneType]    = useState(OPERATOR_MILESTONES[0].value);
@@ -190,6 +196,13 @@ export default function OperatorBookingsPage() {
         container: containerMap[b.container_id] ?? null,
       })),
     );
+
+    const { data: myRatings } = await supabase
+      .from('booking_ratings')
+      .select('booking_id')
+      .eq('rater_id', user.id);
+    setRatedBookingIds(new Set((myRatings ?? []).map((r: { booking_id: string }) => r.booking_id)));
+
     setLoading(false);
   }, [router]);
 
@@ -376,6 +389,8 @@ export default function OperatorBookingsPage() {
                 onAction={(b, newStatus) => { setUpdateError(null); setPendingAction({ booking: b, newStatus }); }}
                 onCancel={cancelBooking}
                 onRecordMilestone={(b) => { setMilestoneModal({ booking: b }); setMilestoneType(OPERATOR_MILESTONES[0].value); setMilestoneNotes(''); setMilestoneError(null); }}
+                isRated={ratedBookingIds.has(booking.id)}
+                onRate={() => setRatingModal({ bookingId: booking.id, rateeId: booking.customer_id })}
               />
             ))}
           </div>
@@ -442,6 +457,20 @@ export default function OperatorBookingsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Rating Modal ──────────────────────────────────────────────────── */}
+      {ratingModal && (
+        <RatingModal
+          bookingId={ratingModal.bookingId}
+          rateeId={ratingModal.rateeId}
+          title="Rate this customer"
+          onClose={() => setRatingModal(null)}
+          onSubmitted={() => {
+            setRatedBookingIds(prev => new Set([...prev, ratingModal!.bookingId]));
+            setRatingModal(null);
+          }}
+        />
       )}
 
       {/* ── Confirmation Modal ─────────────────────────────────────────────── */}
@@ -557,11 +586,15 @@ function BookingCard({
   onAction,
   onCancel,
   onRecordMilestone,
+  isRated,
+  onRate,
 }: {
   booking: OperatorBooking;
   onAction: (b: OperatorBooking, newStatus: string) => void;
   onCancel: (b: OperatorBooking) => void;
   onRecordMilestone: (b: OperatorBooking) => void;
+  isRated: boolean;
+  onRate: () => void;
 }) {
   const nextStatus = NEXT_STATUS[booking.status];
   const actionCfg  = nextStatus ? ACTION_CONFIG[nextStatus] : null;
@@ -600,6 +633,14 @@ function BookingCard({
               <Chip icon="🕐" label={`Booked ${fmt(booking.created_at)}`} muted />
               <Chip icon="👤" label={`Ref #${shortId(booking.id)}`} muted />
             </div>
+
+            {/* Rating banner */}
+            {booking.status === 'delivered' && !isRated && (
+              <RatingBanner
+                label="Rate this customer"
+                onRate={onRate}
+              />
+            )}
 
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2">
