@@ -8,6 +8,7 @@ import { notify } from '@/services/notificationService';
 import PageHero from '@/components/PageHero';
 import RatingBanner from '@/components/RatingBanner';
 import RatingModal  from '@/components/RatingModal';
+import MessageThread from '@/components/MessageThread';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -143,6 +144,10 @@ export default function OperatorBookingsPage() {
   const [ratedBookingIds, setRatedBookingIds] = useState<Set<string>>(new Set());
   const [ratingModal, setRatingModal] = useState<{ bookingId: string; rateeId: string } | null>(null);
 
+  // Messages state
+  const [messageBooking, setMessageBooking] = useState<OperatorBooking | null>(null);
+  const [currentUserId, setCurrentUserId]   = useState<string | null>(null);
+
   // Milestone modal state
   const [milestoneModal,   setMilestoneModal]   = useState<MilestoneModal | null>(null);
   const [milestoneType,    setMilestoneType]    = useState(OPERATOR_MILESTONES[0].value);
@@ -163,6 +168,7 @@ export default function OperatorBookingsPage() {
         ? name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
         : name[0]?.toUpperCase() ?? '',
     );
+    if (user) setCurrentUserId(user.id);
 
     const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single();
     if (profile) setOperatorProfileId(profile.id);
@@ -391,6 +397,7 @@ export default function OperatorBookingsPage() {
                 onRecordMilestone={(b) => { setMilestoneModal({ booking: b }); setMilestoneType(OPERATOR_MILESTONES[0].value); setMilestoneNotes(''); setMilestoneError(null); }}
                 isRated={ratedBookingIds.has(booking.id)}
                 onRate={() => setRatingModal({ bookingId: booking.id, rateeId: booking.customer_id })}
+                onMessage={() => setMessageBooking(booking)}
               />
             ))}
           </div>
@@ -456,6 +463,27 @@ export default function OperatorBookingsPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Messages Modal ────────────────────────────────────────────────── */}
+      {messageBooking && currentUserId && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-lg">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-base">
+                Messages — {messageBooking.id.slice(0, 8).toUpperCase()}
+              </h3>
+              <button type="button" className="btn btn-ghost btn-xs" onClick={() => setMessageBooking(null)}>✕</button>
+            </div>
+            <MessageThread
+              bookingId={messageBooking.id}
+              bookingRef={messageBooking.id.slice(0, 8).toUpperCase()}
+              currentUserId={currentUserId}
+              recipientId={messageBooking.customer_id}
+            />
+          </div>
+          <label className="modal-backdrop" aria-label="Close modal" onClick={() => setMessageBooking(null)} />
         </div>
       )}
 
@@ -588,6 +616,7 @@ function BookingCard({
   onRecordMilestone,
   isRated,
   onRate,
+  onMessage,
 }: {
   booking: OperatorBooking;
   onAction: (b: OperatorBooking, newStatus: string) => void;
@@ -595,6 +624,7 @@ function BookingCard({
   onRecordMilestone: (b: OperatorBooking) => void;
   isRated: boolean;
   onRate: () => void;
+  onMessage: () => void;
 }) {
   const nextStatus = NEXT_STATUS[booking.status];
   const actionCfg  = nextStatus ? ACTION_CONFIG[nextStatus] : null;
@@ -669,6 +699,14 @@ function BookingCard({
                 className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 📍 Milestone
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-xs btn-outline"
+                onClick={onMessage}
+              >
+                💬 Messages
               </button>
 
               {booking.status === 'delivered' && (
