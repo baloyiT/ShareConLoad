@@ -363,7 +363,8 @@ export default function HomePage() {
               <>
                 <Link
                   href="/bookings"
-                  className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="hidden sm:flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: "#0f2044" }}
                 >
                   📦 My Bookings
                 </Link>
@@ -499,7 +500,8 @@ export default function HomePage() {
                   <Link
                     href="/bookings"
                     onClick={() => setMobileNavOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                    style={{ color: '#0f2044', backgroundColor: '#e8eef8' }}
                   >
                     📦 My Bookings
                   </Link>
