@@ -7,10 +7,12 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import MilestoneTimeline from '@/components/MilestoneTimeline';
 import PageHero from '@/components/PageHero';
+import MessageThread from '@/components/MessageThread';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type BookingContainer = {
+  operator_id: string;
   origin_city: string;
   origin_country: string;
   destination_city: string;
@@ -119,15 +121,16 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
 export default function BookingTrackPage() {
   const { id } = useParams<{ id: string }>();
 
-  const [booking,    setBooking]    = useState<Booking | null>(null);
-  const [history,    setHistory]    = useState<HistoryEntry[]>([]);
-  const [milestones, setMilestones] = useState<ShipmentMilestone[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [notFound,   setNotFound]   = useState(false);
+  const [booking,       setBooking]       = useState<Booking | null>(null);
+  const [history,       setHistory]       = useState<HistoryEntry[]>([]);
+  const [milestones,    setMilestones]    = useState<ShipmentMilestone[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [notFound,      setNotFound]      = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const [bookingRes, historyRes, milestonesRes] = await Promise.all([
+      const [bookingRes, historyRes, milestonesRes, authRes] = await Promise.all([
         supabase
           .from('bookings')
           .select('*, containers(*)')
@@ -143,7 +146,10 @@ export default function BookingTrackPage() {
           .select('id, milestone, notes, occurred_at')
           .eq('booking_id', id)
           .order('occurred_at', { ascending: true }),
+        supabase.auth.getUser(),
       ]);
+
+      if (authRes.data.user) setCurrentUserId(authRes.data.user.id);
 
       if (bookingRes.error || !bookingRes.data) {
         console.error('Booking fetch error:', bookingRes.error);
@@ -462,6 +468,21 @@ export default function BookingTrackPage() {
                 Shipment Milestones
               </h2>
               <MilestoneTimeline milestones={milestones} />
+            </div>
+          )}
+
+          {/* Messages section */}
+          {booking && currentUserId && booking.containers?.operator_id && (
+            <div className="mt-8">
+              <h3 className="font-bold text-base mb-3" style={{ color: '#111827' }}>
+                Messages
+              </h3>
+              <MessageThread
+                bookingId={booking.id}
+                bookingRef={booking.id.slice(0, 8).toUpperCase()}
+                currentUserId={currentUserId}
+                recipientId={booking.containers.operator_id}
+              />
             </div>
           )}
         </div>
