@@ -19,6 +19,7 @@ type ItemForm = {
   estimated_value: string;
   weight_kg: string;
   volume_cbm: string;
+  photos: File[];
 };
 
 type FormErrors = Partial<{
@@ -53,6 +54,7 @@ function emptyItem(): ItemForm {
     estimated_value: '',
     weight_kg: '',
     volume_cbm: '',
+    photos: [],
   };
 }
 
@@ -78,6 +80,7 @@ export default function BookingPage() {
   // Form state
   const [totalCbm, setTotalCbm] = useState('');
   const [items, setItems] = useState<ItemForm[]>([emptyItem()]);
+  const [photoPreviews, setPhotoPreviews] = useState<Record<string, string[]>>({});
   const [agreedTerms, setAgreedTerms] = useState(false);
 
   // Submission state
@@ -122,13 +125,56 @@ export default function BookingPage() {
   }, []);
 
   const updateItem = useCallback(
-    (key: string, field: keyof Omit<ItemForm, '_key'>, value: string) => {
+    (key: string, field: keyof Omit<ItemForm, '_key' | 'photos'>, value: string) => {
       setItems((prev) =>
         prev.map((item) => (item._key === key ? { ...item, [field]: value } : item))
       );
     },
     []
   );
+
+  const addItemPhoto = useCallback((key: string, files: FileList | null) => {
+    if (!files) return;
+    const fileArray = Array.from(files);
+    const oversized = fileArray.find((f) => f.size > 5 * 1024 * 1024);
+    if (oversized) {
+      setErrors((e) => ({ ...e, [`photo_size_${key}`]: `"${oversized.name}" exceeds 5 MB limit.` }));
+      return;
+    }
+    setErrors((e) => ({ ...e, [`photo_size_${key}`]: undefined }));
+    const target = items.find((i) => i._key === key);
+    if (!target) return;
+    const slots = 3 - target.photos.length;
+    if (slots <= 0) return;
+    const newFiles = fileArray.slice(0, slots);
+    const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
+    setItems((prev) =>
+      prev.map((i) => (i._key === key ? { ...i, photos: [...i.photos, ...newFiles] } : i))
+    );
+    setPhotoPreviews((prev) => ({
+      ...prev,
+      [key]: [...(prev[key] ?? []), ...newPreviews],
+    }));
+  }, [items]);
+
+  const removeItemPhoto = useCallback((key: string, index: number) => {
+    setPhotoPreviews((prev) => {
+      const preview = prev[key]?.[index];
+      if (preview) URL.revokeObjectURL(preview);
+      const updated = [...(prev[key] ?? [])];
+      updated.splice(index, 1);
+      return { ...prev, [key]: updated };
+    });
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i._key !== key) return i;
+        const updated = [...i.photos];
+        updated.splice(index, 1);
+        return { ...i, photos: updated };
+      })
+    );
+    setErrors((prev) => ({ ...prev, [`photo_size_${key}`]: undefined }));
+  }, []);
 
   // ── Validation ─────────────────────────────────────────────────────────────
   function validate(): FormErrors {
