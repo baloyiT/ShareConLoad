@@ -254,8 +254,38 @@ export default function BookingPage() {
         weight_kg: item.weight_kg ? parseFloat(item.weight_kg) : null,
       }));
 
-      const { error: itemsError } = await supabase.from('shipment_items').insert(shipmentRows);
-      if (itemsError) throw itemsError;
+      const { data: insertedItems, error: itemsError } = await supabase
+        .from('shipment_items')
+        .insert(shipmentRows)
+        .select('id');
+      if (itemsError || !insertedItems) throw itemsError ?? new Error('shipment_items insert returned no data');
+
+      // ── Step 2b: Upload item photos (non-blocking) ──────────────────────────────
+      try {
+        for (let i = 0; i < items.length; i++) {
+          const itemPhotos = items[i].photos;
+          if (itemPhotos.length === 0) continue;
+          const urls: string[] = [];
+          for (const file of itemPhotos) {
+            const ext = file.name.split('.').pop() ?? 'jpg';
+            const filePath = `${booking.id}/${i}/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadError } = await supabase.storage
+              .from('item-photos')
+              .upload(filePath, file);
+            if (uploadError) throw uploadError;
+            const { data: urlData } = supabase.storage
+              .from('item-photos')
+              .getPublicUrl(filePath);
+            urls.push(urlData.publicUrl);
+          }
+          await supabase
+            .from('shipment_items')
+            .update({ photo_urls: urls })
+            .eq('id', insertedItems[i].id);
+        }
+      } catch (photoErr) {
+        console.error('Item photo upload failed (non-blocking):', photoErr);
+      }
 
       // ── Step 3: Insert declaration ───────────────────────────────────────
       const goodsDescription = items
