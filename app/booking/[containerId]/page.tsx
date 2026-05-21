@@ -149,7 +149,12 @@ export default function BookingPage() {
     const newFiles = fileArray.slice(0, slots);
     const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
     setItems((prev) =>
-      prev.map((i) => (i._key === key ? { ...i, photos: [...i.photos, ...newFiles] } : i))
+      prev.map((i) => {
+        if (i._key !== key) return i;
+        const remaining = 3 - i.photos.length;
+        if (remaining <= 0) return i;
+        return { ...i, photos: [...i.photos, ...newFiles.slice(0, remaining)] };
+      })
     );
     setPhotoPreviews((prev) => ({
       ...prev,
