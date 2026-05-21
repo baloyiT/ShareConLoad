@@ -278,6 +278,10 @@ export default function BookingPage() {
               .getPublicUrl(filePath);
             urls.push(urlData.publicUrl);
           }
+          if (!insertedItems[i]) {
+            console.warn(`No insertedItem at index ${i} — skipping photo_urls patch`);
+            continue;
+          }
           await supabase
             .from('shipment_items')
             .update({ photo_urls: urls })
