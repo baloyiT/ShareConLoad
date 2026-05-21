@@ -593,6 +593,69 @@ export default function BookingPage() {
                         />
                       </div>
                     </div>
+
+                    {/* Photo upload */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-gray-600">
+                          Item Photos
+                          <span className="font-normal text-gray-400 ml-1">(optional · up to 3 · JPG/PNG/WEBP)</span>
+                        </span>
+                        {item.photos.length < 3 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              (document.getElementById(`photo-input-${item._key}`) as HTMLInputElement | null)?.click()
+                            }
+                            className="btn btn-xs btn-outline border-gray-300 text-gray-600 hover:border-orange-400 hover:text-orange-500 gap-1"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Photo
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        id={`photo-input-${item._key}`}
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          addItemPhoto(item._key, e.target.files);
+                          e.target.value = '';
+                        }}
+                      />
+                      {(photoPreviews[item._key] ?? []).length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {(photoPreviews[item._key] ?? []).map((url, photoIdx) => (
+                            <div
+                              key={photoIdx}
+                              className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={url}
+                                alt={`Item ${idx + 1} photo ${photoIdx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeItemPhoto(item._key, photoIdx)}
+                                className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                aria-label="Remove photo"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {errors[`photo_size_${item._key}`] && (
+                        <p className="text-red-500 text-xs mt-1">{errors[`photo_size_${item._key}`]}</p>
+                      )}
+                    </div>
                   </div>
                 ))}
 
