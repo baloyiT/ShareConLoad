@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ShareConLoad — Operator Demo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1B2A4A;
+    --orange: #F26522;
+    --salmon: #F4A27A;
+    --bg: #F8F9FA;
+    --white: #ffffff;
+    --grey-100: #F1F3F5;
+    --grey-200: #E9ECEF;
+    --grey-300: #DEE2E6;
+    --grey-400: #CED4DA;
+    --grey-600: #6C757D;
+    --grey-800: #343A40;
+    --green: #28A745;
+    --blue: #007BFF;
+    --red: #DC3545;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 16px 48px;
+    color: var(--grey-800);
+    line-height: 1.5;
+  }
+
+  /* DEMO WATERMARK */
+  .watermark {
+    position: fixed;
+    bottom: 16px;
+    right: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(27,42,74,0.18);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 9999;
+    transform: rotate(-15deg);
+    user-select: none;
+  }
+
+  /* WRAPPER */
+  .app-shell {
+    width: 100%;
+    max-width: 900px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-header {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .progress-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+    white-space: nowrap;
+    min-width: 80px;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--grey-200);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--navy), var(--orange));
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .step-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--grey-300);
+    transition: background 0.3s, transform 0.3s;
+  }
+
+  .step-dot.active {
+    background: var(--orange);
+    transform: scale(1.3);
+  }
+
+  .step-dot.done {
+    background: var(--navy);
+  }
+
+  /* SCREEN CONTAINER */
+  .screen-wrapper {
+    position: relative;
+    overflow: hidden;
+    min-height: 560px;
+  }
+
+  .screen {
+    display: none;
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    width: 100%;
+  }
+
+  .screen.active {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .screen.exit-left {
+    display: block;
+    opacity: 0;
+    transform: translateX(-40px);
+    pointer-events: none;
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  /* NAVIGATION */
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--grey-200);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    text-decoration: none;
+    line-height: 1;
+  }
+
+  .btn-primary {
+    background: var(--orange);
+    color: var(--white);
+    border-color: var(--orange);
+  }
+
+  .btn-primary:hover {
+    background: #d9561d;
+    border-color: #d9561d;
+    box-shadow: 0 4px 12px rgba(242,101,34,0.35);
+    transform: translateY(-1px);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--navy);
+    border-color: var(--navy);
+  }
+
+  .btn-outline:hover {
+    background: var(--navy);
+    color: var(--white);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--grey-600);
+    border-color: var(--grey-400);
+  }
+
+  .btn-ghost:hover {
+    background: var(--grey-100);
+    color: var(--grey-800);
+  }
+
+  .btn-navy {
+    background: var(--navy);
+    color: var(--white);
+    border-color: var(--navy);
+  }
+
+  .btn-navy:hover {
+    background: #253d6b;
+    box-shadow: 0 4px 12px rgba(27,42,74,0.3);
+    transform: translateY(-1px);
+  }
+
+  .btn-sm {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+
+  .btn-lg {
+    padding: 14px 32px;
+    font-size: 16px;
+    border-radius: var(--radius);
+  }
+
+  .btn:disabled, .btn.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+
+  .card-sm {
+    padding: 18px 22px;
+  }
+
+  /* TYPOGRAPHY */
+  h1 { font-size: 28px; font-weight: 700; line-height: 1.25; }
+  h2 { font-size: 22px; font-weight: 700; line-height: 1.3; }
+  h3 { font-size: 17px; font-weight: 600; }
+  h4 { font-size: 14px; font-weight: 600; }
+
+  .text-navy { color: var(--navy); }
+  .text-orange { color: var(--orange); }
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-muted { color: var(--grey-600); }
+  .text-sm { font-size: 13px; }
+  .text-xs { font-size: 11px; }
+
+  /* FORM ELEMENTS */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--grey-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .form-input, .form-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--grey-300);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--grey-800);
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    appearance: none;
+  }
+  .form-input:focus, .form-select:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(242,101,34,0.12);
+  }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  .checkbox-group { display: flex; align-items: flex-start; gap: 10px; }
+  .checkbox-group input[type="checkbox"] {
+    width: 16px; height: 16px; margin-top: 2px;
+    accent-color: var(--orange); flex-shrink: 0;
+  }
+  .checkbox-label { font-size: 14px; color: var(--grey-800); }
+
+  /* BADGE */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .badge-green { background: #D4EDDA; color: #155724; }
+  .badge-orange { background: #FFF3CD; color: #856404; }
+  .badge-blue { background: #CCE5FF; color: #004085; }
+  .badge-grey { background: var(--grey-200); color: var(--grey-600); }
+  .badge-navy { background: var(--navy); color: var(--white); }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--grey-200);
+    margin: 20px 0;
+  }
+
+  /* TAG */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: var(--grey-100);
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--grey-600);
+  }
+
+  /* ========================
+     SCREEN 1 — LANDING
+  ======================== */
+  .landing-hero {
+    text-align: center;
+    padding: 48px 40px 36px;
+  }
+
+  .logo-text {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .logo-share { color: var(--navy); }
+  .logo-con { color: var(--orange); }
+  .logo-load { color: var(--navy); }
+
+  .logo-tagline {
+    font-size: 12px;
+    color: var(--grey-600);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+
+  .hero-headline {
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 14px;
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    color: var(--grey-600);
+    max-width: 520px;
+    margin: 0 auto 36px;
+  }
+
+  .value-props {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .value-prop {
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    text-align: center;
+    flex: 1;
+    min-width: 180px;
+    max-width: 220px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .value-prop:hover {
+    border-color: var(--orange);
+    box-shadow: var(--shadow-md);
+  }
+
+  .value-prop-icon { font-size: 28px; margin-bottom: 10px; }
+  .value-prop-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .value-prop-desc { font-size: 12px; color: var(--grey-600); }
+
+  .cta-row {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .company-footer {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--grey-400);
+    letter-spacing: 0.04em;
+  }
+
+  /* ========================
+     SCREEN 2 — ONBOARDING
+  ======================== */
+  .screen-header {
+    margin-bottom: 24px;
+  }
+
+  .screen-header .screen-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(242,101,34,0.10);
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  .screen-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(27,42,74,0.06);
+    border-left: 3px solid var(--navy);
+    padding: 10px 14px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 13px;
+    color: var(--navy);
+    margin-top: 16px;
+  }
+
+  /* ========================
+     SCREEN 3 — LISTING
+  ======================== */
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+  }
+
+  /* ========================
+     SCREEN 4 — BOOKING REQUEST
+  ======================== */
+  .notification-banner {
+    background: linear-gradient(135deg, var(--orange) 0%, #d9561d 100%);
+    color: var(--white);
+    padding: 14px 20px;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 16px rgba(242,101,34,0.35);
+  }
+
+  .notification-badge {
+    background: var(--white);
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+
+  .cargo-card {
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .cargo-card-header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cargo-card-body { padding: 20px; }
+
+  .cargo-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .cargo-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .cargo-detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--grey-600);
+  }
+
+  .cargo-detail-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--grey-800);
+  }
+
+  .customer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--grey-100);
+    border-top: 1px solid var(--grey-200);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  .customer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--navy) 0%, #2d4a7a 100%);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .customer-info { flex: 1; }
+  .customer-name { font-size: 14px; font-weight: 700; color: var(--grey-800); }
+  .customer-meta { font-size: 12px; color: var(--grey-600); }
+
+  .rating-stars { color: #f5a623; font-size: 14px; }
+
+  .booking-action-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .btn-accept {
+    flex: 2;
+    justify-content: center;
+    background: var(--green);
+    color: var(--white);
+    border-color: var(--green);
+    font-size: 15px;
+    padding: 13px;
+  }
+
+  .btn-accept:hover {
+    background: #1e8035;
+    border-color: #1e8035;
+    box-shadow: 0 4px 12px rgba(40,167,69,0.35);
+    transform: translateY(-1px);
+  }
+
+  .btn-decline {
+    flex: 1;
+    justify-content: center;
+    background: transparent;
+    color: var(--red);
+    border-color: var(--red);
+  }
+
+  .btn-decline:hover {
+    background: var(--red);
+    color: var(--white);
+  }
+
+  /* ========================
+     SCREEN 5 — DASHBOARD
+  ======================== */
+  .dashboard-heading-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .stats-mini-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-mini {
+    flex: 1;
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .stat-mini-val { font-size: 22px; font-weight: 800; color: var(--navy); }
+  .stat-mini-lbl { font-size: 11px; color: var(--grey-600); font-weight: 500; }
+
+  .shipments-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .shipments-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--grey-600);
+    padding: 10px 14px;
+    background: var(--grey-100);
+    border-bottom: 1px solid var(--grey-200);
+  }
+
+  .shipments-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--grey-200);
+    vertical-align: middle;
+  }
+
+  .shipments-table tr:last-child td { border-bottom: none; }
+
+  .shipments-table tbody tr:hover { background: rgba(248,249,250,0.8); }
+
+  .row-highlighted { background: rgba(242,101,34,0.05) !important; border-left: 3px solid var(--orange); }
+  .row-highlighted td:first-child { padding-left: 11px; }
+
+  .booking-ref {
+    font-weight: 700;
+    color: var(--navy);
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .payout-summary-panel {
+    background: var(--navy);
+    border-radius: var(--radius);
+    padding: 22px 28px;
+    color: var(--white);
+    margin-top: 20px;
+  }
+
+  .payout-summary-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 16px;
+  }
+
+  .payout-stages {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .payout-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .payout-stage-label { font-size: 11px; color: rgba(255,255,255,0.55); }
+  .payout-stage-amount { font-size: 17px; font-weight: 800; }
+  .payout-stage-status { font-size: 11px; font-weight: 600; }
+  .payout-stage-status.received { color: #6FCF97; }
+  .payout-stage-status.pending { color: var(--salmon); }
+  .payout-stage-status.locked { color: rgba(255,255,255,0.35); }
+
+  .payout-total {
+    border-left: 1px solid rgba(255,255,255,0.2);
+    padding-left: 16px;
+  }
+
+  .payout-total-label { font-size: 11px; color: rgba(255,255,255,0.55); }
+  .payout-total-amount { font-size: 22px; font-weight: 800; color: var(--salmon); }
+
+  /* ========================
+     SCREEN 6 — PAYOUT TRACKER
+  ======================== */
+  .payout-stages-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 32px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .payout-stage-block {
+    flex: 1;
+    padding: 20px 18px;
+    position: relative;
+  }
+
+  .payout-stage-block::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: rgba(255,255,255,0.3);
+  }
+
+  .payout-stage-block:last-child::after { display: none; }
+
+  .stage-received { background: #1a6b3a; }
+  .stage-pending { background: var(--orange); }
+  .stage-locked { background: #adb5bd; }
+
+  .stage-block-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 6px;
+  }
+
+  .stage-block-amount {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+
+  .stage-block-pct {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 6px;
+  }
+
+  .stage-block-status {
+    font-size: 12px;
+    color: rgba(255,255,255,0.9);
+  }
+
+  .balance-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 18px 24px;
+    margin-bottom: 20px;
+  }
+
+  .balance-label { font-size: 13px; color: var(--grey-600); font-weight: 500; }
+  .balance-amount { font-size: 28px; font-weight: 800; color: var(--navy); }
+
+  .transactions-list { margin-bottom: 20px; }
+
+  .transactions-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--grey-600);
+  }
+
+  .transaction-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    border-top: 1px solid var(--grey-200);
+  }
+
+  .transaction-row:first-of-type { border-top: none; }
+
+  .txn-meta { flex: 1; }
+  .txn-date { font-size: 12px; color: var(--grey-600); }
+  .txn-desc { font-size: 14px; font-weight: 600; color: var(--grey-800); }
+  .txn-ref { font-size: 11px; color: var(--grey-400); font-family: monospace; }
+
+  .txn-amount {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .txn-amount.credit { color: var(--green); }
+  .txn-amount.debit { color: var(--red); }
+
+  .tooltip-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .tooltip-text {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--grey-800);
+    color: var(--white);
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .tooltip-text::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--grey-800);
+  }
+
+  .tooltip-wrapper:hover .tooltip-text { opacity: 1; }
+
+  /* ========================
+     SCREEN 7 — PERFORMANCE
+  ======================== */
+  .kpi-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .kpi-tile {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    border: 1.5px solid var(--grey-200);
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+
+  .kpi-tile:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--orange);
+  }
+
+  .kpi-value {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-unit { font-size: 22px; }
+  .kpi-label { font-size: 13px; font-weight: 600; color: var(--grey-600); }
+
+  .kpi-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-top: 6px;
+  }
+
+  .kpi-trend.up { background: #D4EDDA; color: #155724; }
+
+  .verified-banner {
+    background: var(--navy);
+    border-radius: var(--radius);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .verified-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .verified-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .verified-title { font-size: 16px; font-weight: 700; color: var(--white); }
+  .verified-sub { font-size: 13px; color: rgba(255,255,255,0.65); }
+
+  .verified-badge {
+    background: var(--orange);
+    color: var(--white);
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .review-card {
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+
+  .review-card:hover { box-shadow: var(--shadow-md); }
+
+  .review-quote {
+    font-size: 32px;
+    line-height: 1;
+    color: var(--grey-200);
+    position: absolute;
+    top: 10px;
+    right: 14px;
+  }
+
+  .review-text {
+    font-size: 14px;
+    color: var(--grey-700);
+    line-height: 1.55;
+    margin-bottom: 14px;
+    font-style: italic;
+  }
+
+  .review-author-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .review-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--orange), var(--salmon));
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .review-name { font-size: 13px; font-weight: 700; color: var(--navy); }
+  .review-stars { font-size: 13px; color: #f5a623; }
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--orange);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-family: inherit;
+  }
+
+  .link-btn:hover { color: #d9561d; }
+
+  /* COMPLETION SCREEN (hidden screen-7 end state) */
+  .completion-state {
+    text-align: center;
+    padding: 40px 0;
+  }
+
+  .completion-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green) 0%, #34c759 100%);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 24px rgba(40,167,69,0.35);
+  }
+
+  /* RESPONSIVE TWEAKS */
+  @media (max-width: 640px) {
+    .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+    .cargo-detail-grid { grid-template-columns: 1fr 1fr; }
+    .payout-stages { grid-template-columns: 1fr 1fr; }
+    .kpi-tiles { grid-template-columns: 1fr; }
+    .reviews-grid { grid-template-columns: 1fr; }
+    .payout-stages-bar { flex-direction: column; }
+    .payout-stage-block::after { display: none; }
+    .hero-headline { font-size: 26px; }
+    .value-props { flex-direction: column; align-items: center; }
+    .stats-mini-row { flex-wrap: wrap; }
+  }
+
+  /* Table wrapper for overflow on small screens */
+  .table-wrapper { overflow-x: auto; border-radius: var(--radius); }
+</style>
+</head>
+<body>
+
+<!-- DEMO WATERMARK -->
+<div class="watermark">Demo Mode</div>
+
+<div class="app-shell">
+
+  <!-- PROGRESS HEADER -->
+  <div class="progress-header">
+    <span class="progress-label" id="progress-label">Step 1 of 7</span>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width: 14.28%"></div>
+    </div>
+    <div class="step-dots" id="step-dots">
+      <div class="step-dot active" data-step="1"></div>
+      <div class="step-dot" data-step="2"></div>
+      <div class="step-dot" data-step="3"></div>
+      <div class="step-dot" data-step="4"></div>
+      <div class="step-dot" data-step="5"></div>
+      <div class="step-dot" data-step="6"></div>
+      <div class="step-dot" data-step="7"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN WRAPPER -->
+  <div class="screen-wrapper">
+
+    <!-- ====================== SCREEN 1 — LANDING ====================== -->
+    <div class="screen active" id="screen-1">
+      <div class="card">
+        <div class="landing-hero">
+          <div class="logo-text">
+            <span class="logo-share">Share</span><span class="logo-con">Con</span><span class="logo-load">Load</span>
+          </div>
+          <div class="logo-tagline">Share the Load. Connect the World.</div>
+
+          <h1 class="hero-headline">Monetise Your<br>Container Space</h1>
+          <p class="hero-sub">Connect with verified shippers. Get paid in stages. Grow your network across Africa and beyond.</p>
+
+          <div class="value-props">
+            <div class="value-prop">
+              <div class="value-prop-icon">📦</div>
+              <div class="value-prop-title">List Spare Capacity</div>
+              <div class="value-prop-desc">Post your available CBM and fill every container profitably.</div>
+            </div>
+            <div class="value-prop">
+              <div class="value-prop-icon">🔒</div>
+              <div class="value-prop-title">Verified Customers</div>
+              <div class="value-prop-desc">We screen every shipper — you only see qualified booking requests.</div>
+            </div>
+            <div class="value-prop">
+              <div class="value-prop-icon">💳</div>
+              <div class="value-prop-title">Staged Payouts</div>
+              <div class="value-prop-desc">Receive guaranteed payments at booking, departure, and delivery.</div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <button class="btn btn-primary btn-lg" onclick="goTo(2)">Register as Operator</button>
+            <button class="btn btn-outline btn-lg" onclick="goTo(2)">Log In</button>
+          </div>
+
+          <div class="company-footer">Powered by VEYQON GROUP (Pty) Ltd</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================== SCREEN 2 — ONBOARDING ====================== -->
+    <div class="screen" id="screen-2">
+      <div class="card">
+        <div class="screen-header">
+          <div class="screen-tag">🚀 Operator Registration</div>
+          <h2 class="text-navy">Create Your Operator Account</h2>
+          <p class="text-muted text-sm" style="margin-top:6px;">Fill in your company details to get started. Our team reviews applications within 48 hours.</p>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Company Name</label>
+            <input class="form-input" type="text" value="AfriShip Logistics (Pty) Ltd" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Operator Licence Number</label>
+            <input class="form-input" type="text" value="ZA-OPS-2024-00312" readonly />
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Contact Name</label>
+            <input class="form-input" type="text" value="Thabo Mokoena" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input class="form-input" type="text" value="+27 11 456 7890" readonly />
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input class="form-input" type="email" value="thabo@afrishiplogistics.co.za" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Country of Registration</label>
+            <input class="form-input" type="text" value="South Africa" readonly />
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 4px;">
+          <div class="checkbox-group">
+            <input type="checkbox" id="terms" checked />
+            <label class="checkbox-label" for="terms">I agree to the ShareConLoad <strong>Operator Terms of Service</strong> and confirm that all information provided is accurate.</label>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="margin-top:8px; width:100%; justify-content:center; padding:13px;" onclick="goTo(3)">
+          Submit Application
+        </button>
+
+        <div class="screen-note">
+          ⏱ Applications are typically reviewed within <strong>48 hours</strong>. You will receive an email confirmation once approved.
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goTo(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goTo(3)">Next →</button>
+      </div>
+    </div>
+
+    <!-- ====================== SCREEN 3 — LISTING ====================== -->
+    <div class="screen" id="screen-3">
+      <div class="card">
+        <div class="screen-header">
+          <div class="screen-tag">📋 New Listing</div>
+          <h2 class="text-navy">Create a New Container Listing</h2>
+          <p class="text-muted text-sm" style="margin-top:6px;">Your listing will be shown to verified customers shipping along this route.</p>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Origin Port</label>
+            <input class="form-input" type="text" value="Durban, South Africa" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Destination Port</label>
+            <input class="form-input" type="text" value="Tema, Ghana" readonly />
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Vessel Name</label>
+            <input class="form-input" type="text" value="MV African Horizon" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Departure Date</label>
+            <input class="form-input" type="text" value="2026-07-15" readonly />
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label class="form-label">Available Space (CBM)</label>
+            <input class="form-input" type="text" value="65 CBM" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Cargo Weight</label>
+            <input class="form-input" type="text" value="12,000 kg" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Price per CBM</label>
+            <input class="form-input" type="text" value="R 2,800" readonly />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Cargo Types Accepted</label>
+          <div class="checkbox-grid" style="margin-top: 8px;">
+            <div class="checkbox-group">
+              <input type="checkbox" checked id="c1"/><label class="checkbox-label" for="c1">Electronics</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="c4"/><label class="checkbox-label" for="c4">Hazardous Materials</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" checked id="c2"/><label class="checkbox-label" for="c2">Clothing &amp; Apparel</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="c5"/><label class="checkbox-label" for="c5">Perishables</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" checked id="c3"/><label class="checkbox-label" for="c3">Personal Effects</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="c6"/><label class="checkbox-label" for="c6">Oversized / Heavy Lift</label>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider"/>
+
+        <div class="checkbox-group" style="margin-bottom: 20px;">
+          <input type="checkbox" checked id="insurance"/>
+          <label class="checkbox-label" for="insurance">
+            <strong>I confirm cargo-in-transit insurance is in place</strong> for the full voyage duration and that coverage documentation is available upon request.
+          </label>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:13px;" onclick="goTo(4)">
+          🚢 Publish Listing
+        </button>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goTo(2)">← Back</button>
+        <button class="btn btn-primary" onclick="goTo(4)">Next →</button>
+      </div>
+    </div>
+
+    <!-- ====================== SCREEN 4 — BOOKING REQUEST ====================== -->
+    <div class="screen" id="screen-4">
+      <div class="notification-banner">
+        <span>🔔</span>
+        <span>New Booking Request</span>
+        <span class="notification-badge">SCL-2026-00847</span>
+        <span style="margin-left:auto; font-size:12px; font-weight:400; opacity:0.85;">Received just now</span>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="cargo-card-header">
+          <div>
+            <div style="font-size:12px; opacity:0.7; margin-bottom:3px; letter-spacing:0.04em; text-transform:uppercase;">Booking Reference</div>
+            <div style="font-size:18px; font-weight:700; font-family:monospace;">SCL-2026-00847</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Route</div>
+            <div style="font-size:14px; font-weight:600;">Durban → Tema, Ghana</div>
+          </div>
+        </div>
+
+        <div class="cargo-card-body">
+          <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--grey-600); margin-bottom:12px;">Cargo Details</div>
+
+          <div class="cargo-detail-grid">
+            <div class="cargo-detail">
+              <span class="cargo-detail-label">Description</span>
+              <span class="cargo-detail-value">Samsung 65" Smart TVs</span>
+            </div>
+            <div class="cargo-detail">
+              <span class="cargo-detail-label">Quantity</span>
+              <span class="cargo-detail-value">5 units</span>
+            </div>
+            <div class="cargo-detail">
+              <span class="cargo-detail-label">Total Weight</span>
+              <span class="cargo-detail-value">125 kg</span>
+            </div>
+            <div class="cargo-detail">
+              <span class="cargo-detail-label">Volume (CBM)</span>
+              <span class="cargo-detail-value" style="color:var(--orange);">3.5 CBM</span>
+            </div>
+            <div class="cargo-detail">
+              <span class="cargo-detail-label">Declared Value</span>
+              <span class="cargo-detail-value" style="color:var(--navy);">R 42,500</span>
+            </div>
+            <div class="cargo-detail">
+              <span class="cargo-detail-label">Cargo Category</span>
+              <span class="cargo-detail-value"><span class="badge badge-blue">Electronics</span></span>
+            </div>
+          </div>
+
+          <div style="background:var(--grey-100); border-radius:var(--radius-sm); padding:12px 16px; display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+            <div style="font-size:12px; color:var(--grey-600);">📋 Declaration submitted and verified &nbsp;·&nbsp; 🔒 Goods declared: Samsung QLED television units, non-hazardous commercial goods</div>
+          </div>
+        </div>
+
+        <div class="customer-row">
+          <div class="customer-avatar">ND</div>
+          <div class="customer-info">
+            <div class="customer-name">Nomvula Dlamini</div>
+            <div class="customer-meta">Verified Shipper &nbsp;·&nbsp; Johannesburg, SA</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="rating-stars">★★★★★</div>
+            <div style="font-size:12px; color:var(--grey-600);">4.9 · 12 trips</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top:4px;">
+        <button class="btn btn-accept" onclick="goTo(5)">
+          ✓ &nbsp; Accept Booking
+        </button>
+        <button class="btn btn-decline">
+          ✕ &nbsp; Decline
+        </button>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goTo(3)">← Back</button>
+        <button class="btn btn-primary" onclick="goTo(5)">Next →</button>
+      </div>
+    </div>
+
+    <!-- ====================== SCREEN 5 — DASHBOARD ====================== -->
+    <div class="screen" id="screen-5">
+      <div class="card" style="padding: 24px 28px;">
+        <div class="dashboard-heading-row">
+          <div>
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--orange); margin-bottom:4px;">Operator Portal</div>
+            <h2 class="text-navy">Active Shipments</h2>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2px rgba(40,167,69,0.25);"></div>
+            <span style="font-size:13px; font-weight:600; color:var(--grey-600);">AfriShip Logistics</span>
+          </div>
+        </div>
+
+        <div class="stats-mini-row">
+          <div class="stat-mini">
+            <div class="stat-mini-val">3</div>
+            <div class="stat-mini-lbl">Active Bookings</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-val">24.0</div>
+            <div class="stat-mini-lbl">Total CBM Booked</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-val">R 57,600</div>
+            <div class="stat-mini-lbl">Contract Value</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-val">R 3,840</div>
+            <div class="stat-mini-lbl">Balance Available</div>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="shipments-table">
+            <thead>
+              <tr>
+                <th>Booking Ref</th>
+                <th>Route</th>
+                <th>Customer</th>
+                <th>CBM</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row-highlighted">
+                <td><span class="booking-ref">SCL-2026-00847</span></td>
+                <td>Durban → Tema</td>
+                <td>Nomvula Dlamini</td>
+                <td><strong>3.5</strong></td>
+                <td><span class="badge badge-orange">🟡 Awaiting Departure</span></td>
+                <td><button class="btn btn-primary btn-sm" onclick="goTo(6)">Update Status</button></td>
+              </tr>
+              <tr>
+                <td><span class="booking-ref">SCL-2026-00831</span></td>
+                <td>Durban → Tema</td>
+                <td>Sipho Nkosi</td>
+                <td><strong>8.0</strong></td>
+                <td><span class="badge badge-blue">🔵 In Transit</span></td>
+                <td><button class="btn btn-ghost btn-sm">View Details</button></td>
+              </tr>
+              <tr>
+                <td><span class="booking-ref">SCL-2026-00819</span></td>
+                <td>Durban → Accra</td>
+                <td>Fatima Al-Hassan</td>
+                <td><strong>12.5</strong></td>
+                <td><span class="badge badge-green">🟢 Delivered</span></td>
+                <td><button class="btn btn-navy btn-sm">Release Cargo</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="payout-summary-panel">
+        <div class="payout-summary-title">Payout Summary — SCL-2026-00847</div>
+        <div class="payout-stages">
+          <div class="payout-stage">
+            <span class="payout-stage-label">Stage 1 · 20% Deposit</span>
+            <span class="payout-stage-amount">R 3,840</span>
+            <span class="payout-stage-status received">✓ Received</span>
+          </div>
+          <div class="payout-stage">
+            <span class="payout-stage-label">Stage 2 · 50% Pre-departure</span>
+            <span class="payout-stage-amount">R 9,600</span>
+            <span class="payout-stage-status pending">⏳ Pending vessel departure</span>
+          </div>
+          <div class="payout-stage">
+            <span class="payout-stage-label">Stage 3 · 30% On Release</span>
+            <span class="payout-stage-amount">R 5,760</span>
+            <span class="payout-stage-status locked">🔒 On cargo release</span>
+          </div>
+          <div class="payout-stage payout-total">
+            <span class="payout-total-label">Total Contract</span>
+            <span class="payout-total-amount">R 19,200</span>
+            <span class="payout-stage-status received" style="font-size:10px;">Less 5% platform fee</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goTo(4)">← Back</button>
+        <button class="btn btn-primary" onclick="goTo(6)">Next →</button>
+      </div>
+    </div>
+
+    <!-- ====================== SCREEN 6 — PAYOUT TRACKER ====================== -->
+    <div class="screen" id="screen-6">
+      <div class="card">
+        <div class="screen-header">
+          <div class="screen-tag">💰 Financials</div>
+          <h2 class="text-navy">Payout Tracker</h2>
+          <p class="text-muted text-sm" style="margin-top:6px;">Track your incoming payments for active and completed shipments.</p>
+        </div>
+
+        <div class="payout-stages-bar">
+          <div class="payout-stage-block stage-received">
+            <div class="stage-block-label">Stage 1 — 20% Deposit</div>
+            <div class="stage-block-amount">R 3,840</div>
+            <div class="stage-block-pct">20% of contract</div>
+            <div class="stage-block-status">✅ Received — 15 May 2026</div>
+          </div>
+          <div class="payout-stage-block stage-pending">
+            <div class="stage-block-label">Stage 2 — 50% Pre-departure</div>
+            <div class="stage-block-amount">R 9,600</div>
+            <div class="stage-block-pct">50% of contract</div>
+            <div class="stage-block-status">⏳ Pending vessel departure</div>
+          </div>
+          <div class="payout-stage-block stage-locked">
+            <div class="stage-block-label">Stage 3 — 30% On Release</div>
+            <div class="stage-block-amount">R 5,760</div>
+            <div class="stage-block-pct">30% of contract</div>
+            <div class="stage-block-status">🔒 Locked — pending delivery</div>
+          </div>
+        </div>
+
+        <div class="balance-row">
+          <div>
+            <div class="balance-label">Current Available Balance</div>
+            <div class="balance-amount">R 3,840.00</div>
+          </div>
+          <div class="tooltip-wrapper">
+            <button class="btn btn-primary disabled" disabled>
+              Withdraw Funds
+            </button>
+            <div class="tooltip-text">Stage 2 payment pending — available after vessel departure</div>
+          </div>
+        </div>
+
+        <div style="background:var(--white); border: 1.5px solid var(--grey-200); border-radius:var(--radius); overflow:hidden;">
+          <div style="padding:14px 16px; background:var(--grey-100); border-bottom:1px solid var(--grey-200);">
+            <h4 class="text-navy">Recent Transactions</h4>
+          </div>
+          <div class="transactions-list">
+            <div class="transaction-row">
+              <div class="txn-meta">
+                <div class="txn-date">28 May 2026</div>
+                <div class="txn-desc">Stage 1 Deposit — Received</div>
+                <div class="txn-ref">SCL-2026-00819 · Fatima Al-Hassan</div>
+              </div>
+              <div class="txn-amount credit">+R 2,058</div>
+            </div>
+            <div class="transaction-row">
+              <div class="txn-meta">
+                <div class="txn-date">14 May 2026</div>
+                <div class="txn-desc">Stage 1 Deposit — Received</div>
+                <div class="txn-ref">SCL-2026-00831 · Sipho Nkosi</div>
+              </div>
+              <div class="txn-amount credit">+R 1,470</div>
+            </div>
+            <div class="transaction-row">
+              <div class="txn-meta">
+                <div class="txn-date">1 May 2026</div>
+                <div class="txn-desc">Platform Fee — Monthly</div>
+                <div class="txn-ref">VEYQON GROUP (Pty) Ltd</div>
+              </div>
+              <div class="txn-amount debit">−R 490</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px; padding: 12px 16px; background:rgba(242,101,34,0.07); border-radius:var(--radius-sm); border-left:3px solid var(--orange);">
+          <div style="font-size:13px; color:var(--navy);">
+            <strong>Next payout:</strong> R 9,600 will be released automatically 24 hours after MV African Horizon departure is confirmed on <strong>15 July 2026</strong>.
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goTo(5)">← Back</button>
+        <button class="btn btn-primary" onclick="goTo(7)">Next →</button>
+      </div>
+    </div>
+
+    <!-- ====================== SCREEN 7 — PERFORMANCE ====================== -->
+    <div class="screen" id="screen-7">
+      <div class="card">
+        <div class="screen-header">
+          <div class="screen-tag">📊 Performance</div>
+          <h2 class="text-navy">Operator Scorecard</h2>
+          <p class="text-muted text-sm" style="margin-top:6px;">Your performance metrics for the last 12 months across all completed shipments.</p>
+        </div>
+
+        <div class="kpi-tiles">
+          <div class="kpi-tile">
+            <div class="kpi-value">98<span class="kpi-unit" style="font-size:24px;">%</span></div>
+            <div class="kpi-label">Completion Rate</div>
+            <div class="kpi-trend up">↑ +2% vs last year</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-value">95<span class="kpi-unit" style="font-size:24px;">%</span></div>
+            <div class="kpi-label">On-Time Departures</div>
+            <div class="kpi-trend up">↑ +5% vs last year</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-value" style="color:var(--orange);">4.8</div>
+            <div class="kpi-label">Customer Rating &nbsp;⭐</div>
+            <div class="kpi-trend up">↑ +0.2 vs last year</div>
+          </div>
+        </div>
+
+        <div class="verified-banner">
+          <div class="verified-banner-left">
+            <div class="verified-icon">🏅</div>
+            <div>
+              <div class="verified-title">AfriShip Logistics (Pty) Ltd</div>
+              <div class="verified-sub">Member since January 2024 · 47 shipments completed</div>
+            </div>
+          </div>
+          <div class="verified-badge">
+            ✅ &nbsp;Verified Operator — Preferred Status
+          </div>
+        </div>
+
+        <h3 class="text-navy" style="margin-bottom:14px;">Recent Customer Reviews</h3>
+
+        <div class="reviews-grid">
+          <div class="review-card">
+            <div class="review-quote">"</div>
+            <div class="review-text">Cargo arrived on time and in perfect condition. Will definitely use AfriShip again for my next shipment to Ghana!</div>
+            <div class="review-author-row">
+              <div class="review-avatar">ND</div>
+              <div>
+                <div class="review-name">Nomvula Dlamini</div>
+                <div class="review-stars">★★★★★</div>
+              </div>
+              <div style="margin-left:auto; font-size:11px; color:var(--grey-400);">May 2026</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <div class="review-quote">"</div>
+            <div class="review-text">Professional team, clear communication throughout the entire process. Highly recommend to anyone shipping to West Africa.</div>
+            <div class="review-author-row">
+              <div class="review-avatar" style="background: linear-gradient(135deg, var(--navy), #2d4a7a);">SN</div>
+              <div>
+                <div class="review-name">Sipho Nkosi</div>
+                <div class="review-stars">★★★★★</div>
+              </div>
+              <div style="margin-left:auto; font-size:11px; color:var(--grey-400);">Apr 2026</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:4px;">
+          <button class="link-btn">View Full Performance Report →</button>
+          <div style="display:flex; gap:8px;">
+            <span class="tag">47 Completed</span>
+            <span class="tag">2 Disputes (Resolved)</span>
+            <span class="tag">0 Cancellations</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPLETION STATE -->
+      <div class="card" style="text-align:center; padding:28px;">
+        <div style="font-size:32px; margin-bottom:10px;">🎉</div>
+        <h3 class="text-navy" style="margin-bottom:6px;">End of Demo Walkthrough</h3>
+        <p class="text-muted text-sm" style="margin-bottom:20px;">You've seen the full operator experience — from registration to receiving payouts and building your reputation on ShareConLoad.</p>
+        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="goTo(1)">Restart Demo</button>
+          <button class="btn btn-outline" onclick="goTo(2)">Register as Operator</button>
+        </div>
+        <div style="margin-top:14px; font-size:11px; color:var(--grey-400);">Powered by VEYQON GROUP (Pty) Ltd · ShareConLoad Platform</div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goTo(6)">← Back</button>
+        <button class="btn btn-primary" onclick="goTo(1)">↺ Restart</button>
+      </div>
+    </div>
+
+  </div>
+  <!-- END SCREEN WRAPPER -->
+
+</div>
+<!-- END APP SHELL -->
+
+<script>
+  var currentScreen = 1;
+  var totalScreens = 7;
+  var isAnimating = false;
+
+  function goTo(num) {
+    if (isAnimating || num === currentScreen) return;
+    if (num < 1 || num > totalScreens) return;
+
+    isAnimating = true;
+
+    var oldScreen = document.getElementById('screen-' + currentScreen);
+    var newScreen = document.getElementById('screen-' + num);
+
+    // Determine direction
+    var direction = num > currentScreen ? 1 : -1;
+
+    // Prepare new screen (hidden, offset in enter direction)
+    newScreen.style.display = 'block';
+    newScreen.style.opacity = '0';
+    newScreen.style.transform = 'translateX(' + (direction * 40) + 'px)';
+    newScreen.classList.remove('active');
+
+    // Force reflow
+    newScreen.getBoundingClientRect();
+
+    // Animate old screen out
+    oldScreen.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+    oldScreen.style.opacity = '0';
+    oldScreen.style.transform = 'translateX(' + (direction * -40) + 'px)';
+    oldScreen.style.position = 'absolute';
+    oldScreen.style.top = '0';
+    oldScreen.style.left = '0';
+    oldScreen.style.width = '100%';
+
+    // Animate new screen in
+    newScreen.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        newScreen.style.opacity = '1';
+        newScreen.style.transform = 'translateX(0)';
+      });
+    });
+
+    setTimeout(function() {
+      // Reset old screen
+      oldScreen.style.display = 'none';
+      oldScreen.style.opacity = '';
+      oldScreen.style.transform = '';
+      oldScreen.style.position = '';
+      oldScreen.style.top = '';
+      oldScreen.style.left = '';
+      oldScreen.style.width = '';
+      oldScreen.style.transition = '';
+      oldScreen.classList.remove('active');
+
+      // Finalize new screen
+      newScreen.classList.add('active');
+      newScreen.style.transition = '';
+
+      currentScreen = num;
+      updateProgress();
+      isAnimating = false;
+
+      // Scroll to top of page on screen change
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 380);
+  }
+
+  function updateProgress() {
+    var pct = (currentScreen / totalScreens) * 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-label').textContent = 'Step ' + currentScreen + ' of ' + totalScreens;
+
+    var dots = document.querySelectorAll('.step-dot');
+    dots.forEach(function(dot, idx) {
+      var step = idx + 1;
+      dot.classList.remove('active', 'done');
+      if (step === currentScreen) {
+        dot.classList.add('active');
+      } else if (step < currentScreen) {
+        dot.classList.add('done');
+      }
+    });
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      if (currentScreen < totalScreens) goTo(currentScreen + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      if (currentScreen > 1) goTo(currentScreen - 1);
+    }
+  });
+
+  // Click dots to navigate
+  document.querySelectorAll('.step-dot').forEach(function(dot) {
+    dot.addEventListener('click', function() {
+      var step = parseInt(dot.getAttribute('data-step'));
+      goTo(step);
+    });
+    dot.style.cursor = 'pointer';
+  });
+
+  // Initial state
+  updateProgress();
+</script>
+
+</body>
+</html>

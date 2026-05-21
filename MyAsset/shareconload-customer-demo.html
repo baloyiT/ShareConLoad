@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShareConLoad — Customer Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1B2A4A;
+      --orange: #F26522;
+      --salmon: #F4A27A;
+      --bg: #F8F9FA;
+      --white: #ffffff;
+      --green: #22c55e;
+      --green-dark: #16a34a;
+      --text: #1B2A4A;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --card-shadow: 0 2px 12px rgba(27,42,74,0.10);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #1B2A4A 0%, #2d4270 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Phone shell */
+    .phone-shell {
+      width: 100%;
+      max-width: 420px;
+      background: var(--white);
+      border-radius: 40px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.45), 0 0 0 8px #0d1a30, 0 0 0 10px #1B2A4A;
+      overflow: hidden;
+      position: relative;
+      min-height: 820px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Status bar notch */
+    .phone-notch {
+      background: #0d1a30;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+    .phone-notch .time { color: #fff; font-size: 13px; font-weight: 600; }
+    .phone-notch .icons { color: #fff; font-size: 11px; display: flex; gap: 6px; }
+
+    /* Progress bar */
+    .progress-bar-wrapper {
+      background: var(--navy);
+      padding: 10px 20px 12px;
+      flex-shrink: 0;
+    }
+    .progress-label {
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .progress-label span:last-child { color: var(--salmon); font-weight: 600; }
+    .progress-track {
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px;
+      height: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--orange), var(--salmon));
+      border-radius: 4px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Screen container */
+    .screens-viewport {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .screens-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .screen {
+      min-width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: var(--bg);
+      padding: 20px 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      scrollbar-width: none;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+
+    /* Navigation footer */
+    .nav-footer {
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 11px 18px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--orange);
+      color: var(--white);
+      flex: 1;
+    }
+    .btn-primary:hover { background: #d9571a; transform: translateY(-1px); }
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--navy); color: var(--navy); }
+    .btn:active { transform: scale(0.97); }
+
+    /* Demo watermark */
+    .demo-watermark {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: rgba(27,42,74,0.85);
+      color: rgba(255,255,255,0.7);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* ===== SCREEN 1 — HERO ===== */
+    .hero-screen {
+      background: linear-gradient(160deg, var(--navy) 0%, #2d4270 55%, #1B2A4A 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 28px 24px 20px;
+      min-height: 100%;
+      gap: 0;
+    }
+    .hero-logo {
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .hero-logo .share { color: #ffffff; }
+    .hero-logo .con { color: var(--orange); }
+    .hero-logo .load { color: #ffffff; }
+    .hero-company {
+      color: rgba(255,255,255,0.45);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .hero-globe {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(242,101,34,0.3) 0%, rgba(244,162,122,0.15) 100%);
+      border: 2px solid rgba(242,101,34,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 46px;
+      margin-bottom: 24px;
+      box-shadow: 0 0 40px rgba(242,101,34,0.2);
+    }
+    .hero-tagline {
+      color: #fff;
+      font-size: 22px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    .hero-sub {
+      color: rgba(255,255,255,0.55);
+      font-size: 13px;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .hero-btns {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 32px;
+    }
+    .btn-hero-primary {
+      flex: 1;
+      padding: 13px;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .btn-hero-primary:hover { background: #d9571a; }
+    .btn-hero-outline {
+      flex: 1;
+      padding: 13px;
+      background: transparent;
+      color: #fff;
+      border: 1.5px solid rgba(255,255,255,0.35);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .btn-hero-outline:hover { border-color: rgba(255,255,255,0.7); }
+    .value-props {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+    .value-prop {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 13px 16px;
+    }
+    .value-prop-icon { font-size: 22px; flex-shrink: 0; }
+    .value-prop-text { }
+    .value-prop-title { color: #fff; font-size: 13px; font-weight: 700; }
+    .value-prop-desc { color: rgba(255,255,255,0.5); font-size: 11px; margin-top: 1px; }
+
+    /* ===== SCREEN 2 — SIGN UP ===== */
+    .form-screen { background: var(--bg); }
+    .screen-header { margin-bottom: 20px; }
+    .screen-header h2 { font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+    .screen-header p { font-size: 13px; color: var(--muted); }
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--white);
+      font-family: inherit;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-input:focus { border-color: var(--orange); }
+    .form-input.filled { border-color: #d1d5db; background: #fafafa; }
+    select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    .form-divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; }
+    .form-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .form-divider-text { font-size: 12px; color: var(--muted); }
+    .auth-link { text-align: center; font-size: 13px; color: var(--muted); margin-top: 10px; }
+    .auth-link a { color: var(--orange); font-weight: 600; text-decoration: none; }
+    .social-btn {
+      width: 100%;
+      padding: 11px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .badge-role {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(242,101,34,0.1);
+      color: var(--orange);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(242,101,34,0.2);
+      margin-top: 10px;
+    }
+
+    /* ===== SCREEN 3 — BROWSE ===== */
+    .filter-card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 16px;
+      box-shadow: var(--card-shadow);
+    }
+    .filter-card h3 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .filter-field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 3px; }
+    .filter-field input, .filter-field select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--bg);
+      font-family: inherit;
+      outline: none;
+    }
+    .filter-field.full { grid-column: 1 / -1; }
+    .results-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .shipment-card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: var(--card-shadow);
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .shipment-card.selected {
+      border-color: var(--orange);
+      background: #fffaf7;
+    }
+    .selected-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--orange);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .card-route {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-route .arrow { color: var(--orange); }
+    .card-operator { font-size: 12px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+    .card-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .meta-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: var(--navy);
+      font-weight: 600;
+    }
+    .meta-chip.green { background: #f0fdf4; border-color: #bbf7d0; color: var(--green-dark); }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-price { font-size: 16px; font-weight: 800; color: var(--navy); }
+    .card-price span { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .btn-book {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-book.outline {
+      background: transparent;
+      color: var(--orange);
+      border: 1.5px solid var(--orange);
+    }
+
+    /* ===== SCREEN 4 — BOOKING FORM ===== */
+    .booking-summary-bar {
+      background: linear-gradient(90deg, var(--navy), #2d4270);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .booking-summary-bar .op-icon {
+      width: 38px;
+      height: 38px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .booking-summary-bar .op-name { color: var(--salmon); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .booking-summary-bar .op-route { color: #fff; font-size: 14px; font-weight: 800; }
+    .booking-summary-bar .op-date { color: rgba(255,255,255,0.55); font-size: 11px; margin-top: 1px; }
+    .section-title { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+    .cargo-form-card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--card-shadow);
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .payment-panel {
+      background: var(--navy);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .payment-panel h3 { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .payment-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .payment-line .label { color: rgba(255,255,255,0.6); font-size: 13px; }
+    .payment-line .value { color: #fff; font-size: 13px; font-weight: 600; }
+    .payment-divider { height: 1px; background: rgba(255,255,255,0.12); margin: 10px 0; }
+    .payment-total .label { color: #fff; font-size: 14px; font-weight: 700; }
+    .payment-total .value { color: var(--salmon); font-size: 16px; font-weight: 800; }
+    .deposit-banner {
+      background: rgba(242,101,34,0.15);
+      border: 1px solid rgba(242,101,34,0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 10px;
+    }
+    .deposit-banner .dep-label { color: rgba(255,255,255,0.6); font-size: 11px; margin-bottom: 2px; }
+    .deposit-banner .dep-amount { color: var(--orange); font-size: 18px; font-weight: 900; }
+
+    /* ===== SCREEN 5 — CONFIRMATION ===== */
+    .confirm-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 18px 16px;
+    }
+    .success-circle {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin-bottom: 18px;
+      box-shadow: 0 8px 28px rgba(34,197,94,0.35);
+      animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .confirm-heading { font-size: 22px; font-weight: 900; color: var(--navy); margin-bottom: 4px; text-align: center; }
+    .confirm-ref { font-size: 13px; color: var(--muted); margin-bottom: 20px; text-align: center; }
+    .confirm-ref strong { color: var(--orange); font-size: 14px; }
+    .summary-table {
+      width: 100%;
+      background: var(--white);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 18px;
+    }
+    .summary-row {
+      display: flex;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .sr-label { font-size: 12px; color: var(--muted); font-weight: 600; flex: 0 0 120px; }
+    .summary-row .sr-value { font-size: 13px; color: var(--navy); font-weight: 700; flex: 1; text-align: right; }
+    .sr-value.green { color: var(--green-dark); }
+    .confetti-bar {
+      background: linear-gradient(90deg, rgba(242,101,34,0.1), rgba(244,162,122,0.1));
+      border: 1px solid rgba(242,101,34,0.2);
+      border-radius: 10px;
+      padding: 11px 14px;
+      text-align: center;
+      width: 100%;
+      margin-bottom: 14px;
+    }
+    .confetti-bar p { font-size: 12px; color: var(--navy); font-weight: 600; }
+    .confetti-bar .next-step { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ===== SCREEN 6 — TRACKING ===== */
+    .tracking-header {
+      background: var(--navy);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .tracking-ref { font-size: 11px; color: var(--salmon); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .tracking-route { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+    .tracking-route .arr { color: var(--salmon); }
+    .tracking-eta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    .tracking-eta .eta-label { font-size: 11px; color: rgba(255,255,255,0.5); }
+    .tracking-eta .eta-date { font-size: 13px; font-weight: 800; color: var(--salmon); }
+    .tracking-progress-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .tracking-progress-fill {
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(90deg, var(--orange), var(--salmon));
+      border-radius: 2px;
+    }
+    .timeline-card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--card-shadow);
+    }
+    .timeline-card h3 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 14px; }
+    .timeline-steps { position: relative; }
+    .timeline-step {
+      display: flex;
+      gap: 14px;
+      padding-bottom: 14px;
+      position: relative;
+    }
+    .timeline-step:last-child { padding-bottom: 0; }
+    .step-line-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .step-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+    .step-dot.done { background: var(--green); color: #fff; }
+    .step-dot.active { background: #3b82f6; color: #fff; position: relative; }
+    .step-dot.active::after {
+      content: '';
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid rgba(59,130,246,0.3);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    .step-dot.pending { background: var(--border); color: var(--muted); }
+    .step-connector {
+      width: 2px;
+      flex: 1;
+      min-height: 14px;
+      background: var(--border);
+      margin: 3px 0;
+    }
+    .step-connector.done { background: var(--green); }
+    .step-content { flex: 1; padding-top: 4px; }
+    .step-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+    .step-title.active { color: #3b82f6; }
+    .step-title.done { color: var(--green-dark); }
+    .step-title.pending { color: var(--muted); }
+    .step-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .payment-due-banner {
+      background: linear-gradient(90deg, #fff7ed, #fff3e0);
+      border: 1.5px solid #fed7aa;
+      border-radius: 12px;
+      padding: 13px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .pdb-label { font-size: 11px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pdb-amount { font-size: 18px; font-weight: 900; color: #c2410c; }
+    .pdb-due { font-size: 11px; color: #92400e; }
+    .pdb-actions { display: flex; gap: 8px; margin-top: 2px; }
+    .btn-pay-now {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-msg {
+      background: transparent;
+      color: var(--orange);
+      border: 1.5px solid var(--orange);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ===== SCREEN 7 — RELEASE ===== */
+    .arrival-banner {
+      background: linear-gradient(90deg, #f0fdf4, #dcfce7);
+      border: 1.5px solid #86efac;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .arrival-icon { font-size: 28px; flex-shrink: 0; }
+    .arrival-title { font-size: 15px; font-weight: 800; color: #15803d; }
+    .arrival-sub { font-size: 12px; color: #166534; margin-top: 2px; }
+    .final-payment-card {
+      background: var(--navy);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .fpc-label { color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+    .fpc-amount { color: #fff; font-size: 28px; font-weight: 900; margin-bottom: 14px; }
+    .fpc-amount span { font-size: 14px; color: rgba(255,255,255,0.5); font-weight: 500; }
+    .btn-release {
+      width: 100%;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .dispute-notice {
+      background: #fefce8;
+      border: 1.5px solid #fde047;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .dispute-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .dispute-text { font-size: 12px; color: #713f12; font-weight: 500; }
+    .dispute-text strong { font-weight: 700; color: #92400e; }
+    .checklist-card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+    }
+    .checklist-card h3 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .check-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .check-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #fff;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .check-label { font-size: 13px; color: var(--navy); font-weight: 600; }
+
+    /* Scrollable screen fix */
+    .screen-inner { display: flex; flex-direction: column; gap: 0; min-height: 100%; }
+
+    /* Responsive tweaks */
+    @media (max-width: 460px) {
+      .phone-shell { border-radius: 0; box-shadow: none; min-height: 100vh; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="phone-shell">
+
+    <!-- STATUS BAR -->
+    <div class="phone-notch">
+      <span class="time">9:41 AM</span>
+      <span class="icons">
+        <span>&#9679;&#9679;&#9679;&#9679;</span>
+        <span>WiFi</span>
+        <span>&#x1F50B; 87%</span>
+      </span>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-bar-wrapper">
+      <div class="progress-label">
+        <span id="progress-text">Step 1 of 7 — Welcome</span>
+        <span id="progress-pct">14%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width: 14%;"></div>
+      </div>
+    </div>
+
+    <!-- SCREENS VIEWPORT -->
+    <div class="screens-viewport">
+      <div class="screens-track" id="screens-track">
+
+        <!-- ======================== SCREEN 1: HERO ======================== -->
+        <div class="screen">
+          <div class="hero-screen">
+            <div class="hero-logo">
+              <span class="share">Share</span><span class="con">Con</span><span class="load">Load</span>
+            </div>
+            <div class="hero-company">VEYQON GROUP (Pty) Ltd</div>
+            <div class="hero-globe">🌍</div>
+            <div class="hero-tagline">Share the Load.<br />Connect the World.</div>
+            <div class="hero-sub">The smarter way to ship goods internationally — fill container space, reduce costs, ship faster.</div>
+            <div class="hero-btns">
+              <button class="btn-hero-primary">Find Shipments</button>
+              <button class="btn-hero-outline">Learn More</button>
+            </div>
+            <div class="value-props">
+              <div class="value-prop">
+                <div class="value-prop-icon">📦</div>
+                <div class="value-prop-text">
+                  <div class="value-prop-title">Affordable Rates</div>
+                  <div class="value-prop-desc">Share container space and split shipping costs</div>
+                </div>
+              </div>
+              <div class="value-prop">
+                <div class="value-prop-icon">✅</div>
+                <div class="value-prop-text">
+                  <div class="value-prop-title">Verified Operators</div>
+                  <div class="value-prop-desc">All freight operators are vetted and licensed</div>
+                </div>
+              </div>
+              <div class="value-prop">
+                <div class="value-prop-icon">📍</div>
+                <div class="value-prop-text">
+                  <div class="value-prop-title">Live Tracking</div>
+                  <div class="value-prop-desc">Monitor your cargo at every stage of transit</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================== SCREEN 2: SIGN UP ======================== -->
+        <div class="screen">
+          <div class="screen-header">
+            <h2>Create Account</h2>
+            <p>Join thousands of shippers across Africa</p>
+          </div>
+          <div class="badge-role">👤 Signing up as: Customer</div>
+          <div style="margin-bottom: 18px;"></div>
+
+          <div class="cargo-form-card">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-input filled" value="Nomvula Dlamini" readonly />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-input filled" value="nomvula.dlamini@gmail.com" readonly />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mobile Number</label>
+              <input type="tel" class="form-input filled" value="+27 82 345 6789" readonly />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Country</label>
+              <select class="form-input filled">
+                <option selected>South Africa</option>
+                <option>Ghana</option>
+                <option>Nigeria</option>
+                <option>Kenya</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-divider">
+            <div class="form-divider-line"></div>
+            <div class="form-divider-text">Or sign up with</div>
+            <div class="form-divider-line"></div>
+          </div>
+
+          <button class="social-btn">
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.5 2.3 30.1 0 24 0 14.7 0 6.7 5.5 2.9 13.5l7.8 6.1C12.5 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.2-4.5 6.8l7 5.4c4.1-3.8 6.5-9.4 6.5-16.2z"/><path fill="#FBBC05" d="M10.7 28.4A14.5 14.5 0 0 1 9.5 24c0-1.5.2-3 .6-4.4L2.3 13.5A24 24 0 0 0 0 24c0 3.8.9 7.5 2.6 10.6l8.1-6.2z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7-5.4c-2.1 1.4-4.7 2.3-8.2 2.3-6.2 0-11.5-4.2-13.3-9.8l-7.8 6.1C6.7 42.5 14.7 48 24 48z"/></svg>
+            Continue with Google
+          </button>
+
+          <button class="social-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#0077B5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            Continue with LinkedIn
+          </button>
+
+          <div class="auth-link">
+            Already have an account? <a href="#">Log in</a>
+          </div>
+        </div>
+
+        <!-- ======================== SCREEN 3: BROWSE ======================== -->
+        <div class="screen">
+          <div class="filter-card">
+            <h3>🔍 Search Containers</h3>
+            <div class="filter-grid">
+              <div class="filter-field">
+                <label>Origin Port</label>
+                <input type="text" value="Durban, SA" readonly />
+              </div>
+              <div class="filter-field">
+                <label>Destination</label>
+                <input type="text" value="Tema, Ghana" readonly />
+              </div>
+              <div class="filter-field">
+                <label>Cargo Type</label>
+                <select>
+                  <option selected>Electronics</option>
+                  <option>General Goods</option>
+                  <option>Textiles</option>
+                </select>
+              </div>
+              <div class="filter-field">
+                <label>Departure Date</label>
+                <input type="text" value="2026-07-15" readonly />
+              </div>
+            </div>
+          </div>
+
+          <div class="results-label">3 containers available</div>
+
+          <!-- Card 1 — SELECTED -->
+          <div class="shipment-card selected">
+            <div class="selected-badge">Selected ✓</div>
+            <div class="card-route">
+              Durban <span class="arrow">→</span> Tema
+            </div>
+            <div class="card-operator">AfriShip Logistics · Verified Operator</div>
+            <div class="card-meta">
+              <span class="meta-chip">📅 15 Jul 2026</span>
+              <span class="meta-chip green">42 CBM available</span>
+              <span class="meta-chip">🚢 FCL Shared</span>
+            </div>
+            <div class="card-footer">
+              <div class="card-price">R 2,800 <span>/ CBM</span></div>
+              <button class="btn-book">Book Now</button>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="shipment-card">
+            <div class="card-route">
+              Durban <span class="arrow">→</span> Tema
+            </div>
+            <div class="card-operator">Cape Cargo Co. · Verified Operator</div>
+            <div class="card-meta">
+              <span class="meta-chip">📅 22 Jul 2026</span>
+              <span class="meta-chip green">18 CBM available</span>
+              <span class="meta-chip">🚢 FCL Shared</span>
+            </div>
+            <div class="card-footer">
+              <div class="card-price">R 3,100 <span>/ CBM</span></div>
+              <button class="btn-book outline">Book Now</button>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="shipment-card">
+            <div class="card-route">
+              Durban <span class="arrow">→</span> Accra
+            </div>
+            <div class="card-operator">Pan-Africa Freight · Verified Operator</div>
+            <div class="card-meta">
+              <span class="meta-chip">📅 5 Aug 2026</span>
+              <span class="meta-chip green">60 CBM available</span>
+              <span class="meta-chip">🚢 FCL Shared</span>
+            </div>
+            <div class="card-footer">
+              <div class="card-price">R 2,600 <span>/ CBM</span></div>
+              <button class="btn-book outline">Book Now</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================== SCREEN 4: BOOKING FORM ======================== -->
+        <div class="screen">
+          <!-- Selected shipment bar -->
+          <div class="booking-summary-bar">
+            <div class="op-icon">🚢</div>
+            <div>
+              <div class="op-name">AfriShip Logistics</div>
+              <div class="op-route">Durban → Tema, Ghana</div>
+              <div class="op-date">Departs 15 Jul 2026 · 42 CBM available</div>
+            </div>
+          </div>
+
+          <div class="section-title">📦 Cargo Details</div>
+
+          <div class="cargo-form-card">
+            <div class="form-group">
+              <label class="form-label">Item Description</label>
+              <input type="text" class="form-input filled" value='Samsung 65" Smart TVs (x5)' readonly />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Weight (kg)</label>
+                <input type="text" class="form-input filled" value="125 kg" readonly />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Volume (CBM)</label>
+                <input type="text" class="form-input filled" value="3.5" readonly />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Declared Value (ZAR)</label>
+              <input type="text" class="form-input filled" value="R 42,500" readonly />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Cargo Type</label>
+              <select class="form-input filled">
+                <option selected>Electronics</option>
+                <option>General Goods</option>
+                <option>Textiles</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="section-title">💳 Payment Summary</div>
+
+          <div class="payment-panel">
+            <h3>🧾 Cost Breakdown</h3>
+            <div class="payment-line">
+              <span class="label">Cargo shipping (3.5 CBM × R 2,800)</span>
+              <span class="value">R 9,800</span>
+            </div>
+            <div class="payment-line">
+              <span class="label">Service fee (5%)</span>
+              <span class="value">R 490</span>
+            </div>
+            <div class="payment-divider"></div>
+            <div class="payment-line payment-total">
+              <span class="label">Total</span>
+              <span class="value">R 10,290</span>
+            </div>
+            <div class="deposit-banner">
+              <div class="dep-label">20% Deposit Due Now</div>
+              <div class="dep-amount">R 2,058</div>
+            </div>
+          </div>
+
+          <!-- Declaration checkbox -->
+          <div style="background:#fff;border-radius:12px;padding:13px 14px;box-shadow:var(--card-shadow);margin-bottom:14px;display:flex;align-items:flex-start;gap:10px;">
+            <div style="width:20px;height:20px;border-radius:5px;background:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+              <span style="color:#fff;font-size:12px;">✓</span>
+            </div>
+            <p style="font-size:12px;color:var(--navy);line-height:1.5;">I declare that the goods listed are accurately described and I agree to the <a href="#" style="color:var(--orange);font-weight:700;text-decoration:none;">ShareConLoad Terms &amp; Conditions</a> and customs requirements.</p>
+          </div>
+        </div>
+
+        <!-- ======================== SCREEN 5: CONFIRMATION ======================== -->
+        <div class="screen confirm-screen">
+          <div class="success-circle">✓</div>
+          <div class="confirm-heading">Booking Confirmed!</div>
+          <div class="confirm-ref">Your reference: <strong>SCL-2026-00847</strong></div>
+
+          <div class="confetti-bar">
+            <p>🎉 Deposit of R 2,058 received successfully</p>
+            <div class="next-step">Your space is reserved on AfriShip Logistics</div>
+          </div>
+
+          <div class="summary-table">
+            <div class="summary-row">
+              <span class="sr-label">Route</span>
+              <span class="sr-value">Durban → Tema, Ghana</span>
+            </div>
+            <div class="summary-row">
+              <span class="sr-label">Operator</span>
+              <span class="sr-value">AfriShip Logistics</span>
+            </div>
+            <div class="summary-row">
+              <span class="sr-label">Departure</span>
+              <span class="sr-value">15 Jul 2026</span>
+            </div>
+            <div class="summary-row">
+              <span class="sr-label">Cargo</span>
+              <span class="sr-value">3.5 CBM — Electronics</span>
+            </div>
+            <div class="summary-row">
+              <span class="sr-label">Deposit Paid</span>
+              <span class="sr-value green">R 2,058 ✓</span>
+            </div>
+            <div class="summary-row">
+              <span class="sr-label">Remaining</span>
+              <span class="sr-value" style="color:#c2410c;">R 8,232</span>
+            </div>
+          </div>
+
+          <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 14px;width:100%;margin-bottom:10px;">
+            <p style="font-size:12px;color:#1e40af;font-weight:600;">📧 Booking receipt sent to</p>
+            <p style="font-size:12px;color:#1d4ed8;margin-top:2px;">nomvula.dlamini@gmail.com</p>
+          </div>
+        </div>
+
+        <!-- ======================== SCREEN 6: TRACKING ======================== -->
+        <div class="screen">
+          <!-- Active shipment header -->
+          <div class="tracking-header">
+            <div class="tracking-ref">SCL-2026-00847</div>
+            <div class="tracking-route">Durban <span class="arr">→</span> Tema, Ghana</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">AfriShip Logistics · 3.5 CBM · Electronics</div>
+            <div class="tracking-eta">
+              <div>
+                <div class="eta-label">Estimated Arrival</div>
+                <div class="eta-date">12 Aug 2026</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="eta-label">Current Status</div>
+                <div style="color:#60a5fa;font-size:13px;font-weight:800;">In Transit</div>
+              </div>
+            </div>
+            <div class="tracking-progress-bar">
+              <div class="tracking-progress-fill"></div>
+            </div>
+          </div>
+
+          <!-- Timeline -->
+          <div class="timeline-card">
+            <h3>Shipment Progress</h3>
+            <div class="timeline-steps">
+
+              <!-- Step 1: Done -->
+              <div class="timeline-step">
+                <div class="step-line-wrapper">
+                  <div class="step-dot done">✓</div>
+                  <div class="step-connector done"></div>
+                </div>
+                <div class="step-content">
+                  <div class="step-title done">Booking Confirmed</div>
+                  <div class="step-sub">16 May 2026 · Deposit paid</div>
+                </div>
+              </div>
+
+              <!-- Step 2: Done -->
+              <div class="timeline-step">
+                <div class="step-line-wrapper">
+                  <div class="step-dot done">✓</div>
+                  <div class="step-connector done"></div>
+                </div>
+                <div class="step-content">
+                  <div class="step-title done">Cargo Loaded</div>
+                  <div class="step-sub">15 Jul 2026 · Durban Port</div>
+                </div>
+              </div>
+
+              <!-- Step 3: ACTIVE -->
+              <div class="timeline-step">
+                <div class="step-line-wrapper">
+                  <div class="step-dot active">🔵</div>
+                  <div class="step-connector"></div>
+                </div>
+                <div class="step-content">
+                  <div class="step-title active">In Transit</div>
+                  <div class="step-sub">Vessel: MSC Zanele · West Africa</div>
+                </div>
+              </div>
+
+              <!-- Step 4: Pending -->
+              <div class="timeline-step">
+                <div class="step-line-wrapper">
+                  <div class="step-dot pending">4</div>
+                  <div class="step-connector"></div>
+                </div>
+                <div class="step-content">
+                  <div class="step-title pending">Arrived at Port</div>
+                  <div class="step-sub">Expected 10 Aug 2026</div>
+                </div>
+              </div>
+
+              <!-- Step 5: Pending -->
+              <div class="timeline-step">
+                <div class="step-line-wrapper">
+                  <div class="step-dot pending">5</div>
+                </div>
+                <div class="step-content">
+                  <div class="step-title pending">Cargo Released</div>
+                  <div class="step-sub">Pending final payment</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Next payment due -->
+          <div class="payment-due-banner">
+            <div class="pdb-label">⏰ Next Payment Due</div>
+            <div class="pdb-amount">R 5,145</div>
+            <div class="pdb-due">50% balance · Due 8 Jul 2026 (7 days before departure)</div>
+            <div class="pdb-actions">
+              <button class="btn-pay-now">Pay Now</button>
+              <button class="btn-msg">Message Operator</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================== SCREEN 7: CARGO RELEASE ======================== -->
+        <div class="screen">
+          <!-- Arrival banner -->
+          <div class="arrival-banner">
+            <div class="arrival-icon">🎉</div>
+            <div>
+              <div class="arrival-title">Your cargo has arrived!</div>
+              <div class="arrival-sub">Tema Port, Ghana · 10 Aug 2026</div>
+            </div>
+          </div>
+
+          <!-- Booking reference -->
+          <div style="background:var(--white);border-radius:12px;padding:12px 14px;box-shadow:var(--card-shadow);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Booking Reference</div>
+              <div style="font-size:15px;font-weight:800;color:var(--navy);">SCL-2026-00847</div>
+            </div>
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:5px 10px;">
+              <span style="font-size:11px;font-weight:700;color:var(--green-dark);">Arrived ✓</span>
+            </div>
+          </div>
+
+          <!-- Final payment -->
+          <div class="final-payment-card">
+            <div class="fpc-label">30% Final Balance Due</div>
+            <div class="fpc-amount">R 3,087 <span>ZAR</span></div>
+            <button class="btn-release">
+              🔓 Pay &amp; Release Cargo
+            </button>
+          </div>
+
+          <!-- Payment breakdown reminder -->
+          <div style="background:rgba(27,42,74,0.05);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Payment Summary</div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px;"><span>Deposit (20%) paid</span><span style="color:var(--green-dark);font-weight:700;">R 2,058 ✓</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px;"><span>Pre-departure (50%) paid</span><span style="color:var(--green-dark);font-weight:700;">R 5,145 ✓</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--navy);"><span>Final release (30%)</span><span style="color:var(--orange);">R 3,087 due</span></div>
+          </div>
+
+          <!-- Dispute notice -->
+          <div class="dispute-notice">
+            <div class="dispute-icon">⚠️</div>
+            <div class="dispute-text">
+              <strong>Dispute Window:</strong> You have 72 hours from arrival to raise a dispute before cargo is automatically released to you.
+            </div>
+          </div>
+
+          <!-- Cargo release checklist -->
+          <div class="checklist-card">
+            <h3>🔒 Cargo Release Conditions</h3>
+            <div class="check-item">
+              <div class="check-icon">✓</div>
+              <span class="check-label">Final payment confirmed</span>
+            </div>
+            <div class="check-item">
+              <div class="check-icon">✓</div>
+              <span class="check-label">Customs cleared</span>
+            </div>
+            <div class="check-item">
+              <div class="check-icon">✓</div>
+              <span class="check-label">Identity verified</span>
+            </div>
+            <div class="check-item">
+              <div class="check-icon">✓</div>
+              <span class="check-label">Operator confirmed release</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /screens-track -->
+    </div><!-- /screens-viewport -->
+
+    <!-- NAVIGATION FOOTER -->
+    <div class="nav-footer">
+      <button class="btn btn-secondary" id="btn-back" onclick="navigate(-1)" style="display:none;">← Back</button>
+      <button class="btn btn-primary" id="btn-next" onclick="navigate(1)">Get Started →</button>
+    </div>
+
+  </div><!-- /phone-shell -->
+
+  <div class="demo-watermark">DEMO MODE</div>
+
+  <script>
+    const TOTAL_SCREENS = 7;
+    let currentScreen = 0;
+
+    const stepLabels = [
+      'Welcome',
+      'Create Account',
+      'Browse Containers',
+      'Booking Details',
+      'Payment Confirmed',
+      'Track Shipment',
+      'Cargo Release'
+    ];
+
+    const nextLabels = [
+      'Get Started →',
+      'Create Account →',
+      'Book Selected →',
+      'Confirm & Pay Deposit →',
+      'View My Shipment →',
+      'Check Arrival →',
+      'Done ✓'
+    ];
+
+    function navigate(dir) {
+      const next = currentScreen + dir;
+      if (next < 0 || next >= TOTAL_SCREENS) return;
+      currentScreen = next;
+      updateUI();
+    }
+
+    function updateUI() {
+      // Move track
+      const track = document.getElementById('screens-track');
+      track.style.transform = `translateX(-${currentScreen * 100}%)`;
+
+      // Progress
+      const pct = Math.round(((currentScreen + 1) / TOTAL_SCREENS) * 100);
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-text').textContent = `Step ${currentScreen + 1} of ${TOTAL_SCREENS} — ${stepLabels[currentScreen]}`;
+      document.getElementById('progress-pct').textContent = pct + '%';
+
+      // Buttons
+      const backBtn = document.getElementById('btn-back');
+      const nextBtn = document.getElementById('btn-next');
+
+      backBtn.style.display = currentScreen === 0 ? 'none' : 'inline-flex';
+      nextBtn.textContent = nextLabels[currentScreen];
+
+      if (currentScreen === TOTAL_SCREENS - 1) {
+        nextBtn.style.background = 'var(--green)';
+        nextBtn.onclick = function() {
+          currentScreen = 0;
+          updateUI();
+        };
+      } else {
+        nextBtn.style.background = 'var(--orange)';
+        nextBtn.onclick = function() { navigate(1); };
+      }
+
+      // Scroll current screen to top
+      const screens = document.querySelectorAll('.screen');
+      if (screens[currentScreen]) {
+        screens[currentScreen].scrollTop = 0;
+      }
+
+      // Re-trigger confirmation animation
+      if (currentScreen === 4) {
+        const circle = document.querySelector('.success-circle');
+        if (circle) {
+          circle.style.animation = 'none';
+          void circle.offsetWidth;
+          circle.style.animation = 'popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards';
+        }
+      }
+    }
+
+    // Swipe support
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const viewport = document.querySelector('.screens-viewport');
+    viewport.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+    viewport.addEventListener('touchend', e => {
+      touchEndX = e.changedTouches[0].screenX;
+      const diff = touchStartX - touchEndX;
+      if (Math.abs(diff) > 50) navigate(diff > 0 ? 1 : -1);
+    }, { passive: true });
+
+    // Initial render
+    updateUI();
+  </script>
+
+</body>
+</html>
