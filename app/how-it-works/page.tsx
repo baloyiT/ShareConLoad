@@ -687,6 +687,11 @@ export default function HowItWorksPage() {
             </p>
             <ul className="flex flex-col gap-2 text-sm text-gray-600">
               <li>
+                <Link href="/pricing" className="hover:text-gray-900 transition-colors">
+                  Pricing
+                </Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="hover:text-gray-900 transition-colors">
                   Privacy Policy
                 </Link>
@@ -694,6 +699,11 @@ export default function HowItWorksPage() {
               <li>
                 <Link href="/terms" className="hover:text-gray-900 transition-colors">
                   Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link href="/cancellation" className="hover:text-gray-900 transition-colors">
+                  Cancellation &amp; Refund Policy
                 </Link>
               </li>
               <li>

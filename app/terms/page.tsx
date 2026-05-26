@@ -140,6 +140,10 @@ export default function TermsPage() {
           <Section number="10" title="Cancellations and Refunds">
             <p>Customers may cancel bookings subject to applicable cancellation terms. Deposits become non-refundable after forty-eight (48) hours from the time of booking confirmation.</p>
             <p>Where an Operator fails to perform a confirmed Shipment, ShareConLoad may investigate the matter, attempt reassignment to an alternative Operator, issue refunds, or provide platform credits where commercially appropriate. Refund timelines may vary depending on payment provider processing requirements, banking systems, and dispute investigation outcomes.</p>
+            <p>
+              For full details on cancellation stages, refund eligibility, operator non-performance, force majeure, and chargeback rules, please refer to the{' '}
+              <Link href="/cancellation" className="font-semibold hover:underline" style={{ color: '#f97316' }}>Cancellation &amp; Refund Policy</Link>.
+            </p>
           </Section>
 
           <Section number="11" title="Disputes and Claims">
