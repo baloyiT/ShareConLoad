@@ -67,9 +67,9 @@ export default function ContainerDetailsPage() {
         <p className="text-gray-400 text-sm max-w-xs">
           This container may no longer be available or the link is invalid.
         </p>
-        <Link href="/" className="btn btn-sm mt-2" style={{ backgroundColor: '#0f2044', color: '#fff' }}>
-          ← Back to listings
-        </Link>
+        <button onClick={() => router.back()} className="btn btn-sm mt-2" style={{ backgroundColor: '#0f2044', color: '#fff' }}>
+          ← Back
+        </button>
       </div>
     );
   }
@@ -92,9 +92,12 @@ export default function ContainerDetailsPage() {
               <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
             </span>
           </Link>
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
-            ← Back to listings
-          </Link>
+          <button
+            onClick={() => router.back()}
+            className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            ← Back
+          </button>
         </div>
       </nav>
 

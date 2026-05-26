@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShareConLoad — Share the Load. Connect the World.</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d1f3c;
+    --orange: #f26522;
+    --white: #ffffff;
+    --muted: rgba(255,255,255,0.55);
+    --border: rgba(255,255,255,0.09);
+    --card: rgba(255,255,255,0.04);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Barlow', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+  .bg-layer {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 90% 60% at 75% -5%, rgba(242,101,34,0.13) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at -5% 90%, rgba(242,101,34,0.08) 0%, transparent 50%);
+  }
+  .bg-grid {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+  .wrap { position: relative; z-index: 1; }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 6%;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(13,31,60,0.9);
+    backdrop-filter: blur(14px);
+    z-index: 100;
+  }
+  .nav-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--orange);
+    border: 1.5px solid var(--orange);
+    padding: 5px 12px; border-radius: 2px;
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 92vh;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+    padding: 80px 6% 60px;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--orange);
+    margin-bottom: 28px;
+    opacity: 0; animation: fadeUp 0.7s 0.1s forwards;
+  }
+  .hero-eyebrow::before, .hero-eyebrow::after {
+    content: ''; display: block; width: 28px; height: 1.5px;
+    background: var(--orange); opacity: 0.6;
+  }
+  .hero-headline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; line-height: 0.95;
+    font-size: clamp(58px, 10vw, 110px);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0; animation: fadeUp 0.7s 0.25s forwards;
+  }
+  .hero-headline .orange { color: var(--orange); }
+  .hero-sub {
+    font-size: clamp(15px, 2vw, 18px); font-weight: 400;
+    color: var(--muted); max-width: 560px; line-height: 1.65;
+    margin-bottom: 52px;
+    opacity: 0; animation: fadeUp 0.7s 0.4s forwards;
+  }
+
+  /* FORM CARD */
+  .form-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 36px 40px;
+    width: 100%; max-width: 520px;
+    backdrop-filter: blur(8px);
+    opacity: 0; animation: fadeUp 0.7s 0.55s forwards;
+  }
+  .form-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .form-subtitle {
+    font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.5;
+  }
+  .role-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px; margin-bottom: 16px;
+  }
+  .role-btn {
+    background: transparent; border: 1.5px solid var(--border);
+    color: var(--muted); font-family: 'Barlow', sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 12px 6px;
+    border-radius: 6px; cursor: pointer;
+    transition: all 0.2s; display: flex; flex-direction: column;
+    align-items: center; gap: 5px;
+  }
+  .role-btn .icon { font-size: 18px; }
+  .role-btn:hover { border-color: var(--orange); color: var(--white); }
+  .role-btn.active {
+    border-color: var(--orange); background: rgba(242,101,34,0.1);
+    color: var(--white);
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .field-row.single { grid-template-columns: 1fr; }
+  input, select {
+    width: 100%; background: rgba(255,255,255,0.06);
+    border: 1.5px solid var(--border); color: var(--white);
+    font-family: 'Barlow', sans-serif; font-size: 14px;
+    padding: 13px 15px; border-radius: 6px;
+    outline: none; transition: border-color 0.2s;
+    -webkit-appearance: none; appearance: none;
+  }
+  input::placeholder { color: rgba(255,255,255,0.35); }
+  input:focus, select:focus { border-color: var(--orange); }
+  select option { background: #0f2345; color: var(--white); }
+  .submit-btn {
+    width: 100%; margin-top: 14px;
+    background: var(--orange); color: var(--white);
+    border: none; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; padding: 16px;
+    border-radius: 6px; cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .submit-btn:hover { background: #ff7a35; transform: translateY(-1px); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .privacy-note {
+    font-size: 11.5px; color: var(--muted); text-align: center;
+    margin-top: 12px; line-height: 1.5;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .success-msg {
+    display: none; text-align: center; padding: 16px 0;
+  }
+  .success-msg .check { font-size: 44px; margin-bottom: 14px; }
+  .success-msg h3 {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 24px;
+    font-weight: 800; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .success-msg p { color: var(--muted); font-size: 14px; line-height: 1.65; }
+
+  /* STATS */
+  .stats-strip {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 6%;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 20px; text-align: center;
+  }
+  .stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(36px, 5vw, 52px); font-weight: 900;
+    color: var(--orange); line-height: 1; margin-bottom: 6px;
+  }
+  .stat-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  /* AUDIENCE */
+  .audience-section { padding: 80px 6%; }
+  .section-eyebrow {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--orange);
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+  }
+  .section-eyebrow::after { content:''; width:32px; height:1.5px; background:var(--orange); opacity:0.5; }
+  .section-headline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(36px, 5vw, 56px); font-weight: 900;
+    text-transform: uppercase; line-height: 1; margin-bottom: 48px;
+  }
+  .section-headline .orange { color: var(--orange); }
+  .audience-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .audience-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 28px 28px 32px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .audience-card:hover { border-color: rgba(242,101,34,0.4); transform: translateY(-2px); }
+  .audience-card .card-icon { font-size: 30px; margin-bottom: 14px; }
+  .audience-card h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 10px;
+  }
+  .audience-card p { font-size: 13.5px; color: var(--muted); line-height: 1.65; }
+  .audience-card ul { list-style: none; margin-top: 14px; }
+  .audience-card ul li {
+    font-size: 13px; color: var(--muted); padding: 4px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .audience-card ul li::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--orange); flex-shrink: 0;
+  }
+
+  /* HOW IT WORKS */
+  .how-section { padding: 80px 6%; border-top: 1px solid var(--border); }
+  .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  .step {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 28px; position: relative; overflow: hidden;
+  }
+  .step::before {
+    content: attr(data-n);
+    position: absolute; right: 16px; top: 12px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 72px; font-weight: 900; color: rgba(242,101,34,0.08);
+    line-height: 1;
+  }
+  .step-icon { font-size: 28px; margin-bottom: 14px; }
+  .step h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 8px;
+  }
+  .step p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+  /* CORRIDORS */
+  .corridors-section { padding: 80px 6%; border-top: 1px solid var(--border); }
+  .corridor-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+  .corridor-tag {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 9px 16px;
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    display: flex; align-items: center; gap: 7px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .corridor-tag:hover { border-color: var(--orange); color: var(--white); }
+  .corridor-tag .dot { width:6px; height:6px; border-radius:50%; background: var(--orange); flex-shrink:0; }
+
+  /* CTA */
+  .cta-section {
+    padding: 90px 6%; border-top: 1px solid var(--border);
+    text-align: center;
+    background: linear-gradient(180deg, transparent 0%, rgba(242,101,34,0.05) 100%);
+  }
+  .cta-section h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(40px, 6vw, 72px); font-weight: 900;
+    text-transform: uppercase; line-height: 1; margin-bottom: 16px;
+  }
+  .cta-section h2 .orange { color: var(--orange); }
+  .cta-section p { color: var(--muted); font-size: 15px; max-width: 480px; margin: 0 auto 32px; line-height: 1.6; }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--orange); color: var(--white);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 16px 36px;
+    border-radius: 6px; text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .cta-btn:hover { background: #ff7a35; transform: translateY(-2px); }
+
+  /* FOOTER */
+  footer {
+    padding: 28px 6%; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  footer p { font-size: 12px; color: var(--muted); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(22px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .stats-strip { grid-template-columns: repeat(2,1fr); }
+    .audience-grid { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    .form-card { padding: 28px 20px; }
+    .field-row { grid-template-columns: 1fr; }
+    footer { flex-direction: column; text-align: center; }
+  }
+  @media (max-width: 480px) {
+    nav { padding: 14px 5%; }
+    .hero { padding: 60px 5% 40px; }
+    .audience-section, .how-section, .corridors-section, .cta-section { padding: 56px 5%; }
+    .stats-strip { padding: 30px 5%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="bg-grid"></div>
+
+<div class="wrap">
+
+  <!-- NAV -->
+  <nav>
+    <svg height="36" viewBox="0 0 280 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Icon blocks matching brand -->
+      <rect x="0" y="1" width="17" height="17" rx="3" fill="#f26522"/>
+      <rect x="0" y="26" width="17" height="17" rx="3" fill="#f2a07a"/>
+      <rect x="21" y="14" width="17" height="17" rx="3" fill="#132d5e"/>
+      <line x1="40" y1="22" x2="50" y2="22" stroke="#2a4a7f" stroke-width="2.2" stroke-linecap="round"/>
+      <polyline points="46,18 50,22 46,26" fill="none" stroke="#2a4a7f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Wordmark -->
+      <text x="56" y="34" font-family="'Barlow Condensed',sans-serif" font-weight="800" font-size="28" fill="white">Share<tspan fill="#f26522">Con</tspan>Load</text>
+    </svg>
+    <span class="nav-badge">Coming Soon</span>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">Africa's Logistics Revolution</div>
+    <h1 class="hero-headline">
+      Share the <span class="orange">Load.</span><br>
+      Connect the <span class="orange">World.</span>
+    </h1>
+    <p class="hero-sub">
+      The global digital freight marketplace connecting container operators and carriers with businesses that need to move goods — smarter, cheaper, and faster across Africa and beyond.
+    </p>
+
+    <!-- WAITLIST FORM -->
+    <div class="form-card" id="form-wrap">
+      <div class="form-title" id="form-title">Get Early Access</div>
+      <div class="form-subtitle" id="form-subtitle">Join the waitlist. Be first when we go live. Your data is private and will never be sold or shared.</div>
+
+      <div class="role-row" id="role-row">
+        <button class="role-btn active" data-role="operator" onclick="selectRole(this)">
+          <span class="icon">🚢</span>I'm an Operator
+        </button>
+        <button class="role-btn" data-role="consignor" onclick="selectRole(this)">
+          <span class="icon">📦</span>I'm a Consignor
+        </button>
+        <button class="role-btn" data-role="other" onclick="selectRole(this)">
+          <span class="icon">👀</span>Just Watching
+        </button>
+      </div>
+
+      <form id="wl-form" onsubmit="handleSubmit(event)">
+        <div class="field-row">
+          <input type="text" id="fname" placeholder="First name" required autocomplete="given-name">
+          <input type="text" id="lname" placeholder="Last name" required autocomplete="family-name">
+        </div>
+        <div class="field-row single">
+          <input type="email" id="email" placeholder="Email address" required autocomplete="email">
+        </div>
+        <div class="field-row single">
+          <input type="tel" id="phone" placeholder="Phone number (optional)" autocomplete="tel">
+        </div>
+        <div class="field-row">
+          <select id="country">
+            <option value="" disabled selected>Country</option>
+            <option>South Africa</option><option>Zimbabwe</option><option>Zambia</option>
+            <option>Nigeria</option><option>Ghana</option><option>DRC</option>
+            <option>Kenya</option><option>Tanzania</option><option>Ethiopia</option>
+            <option>Uganda</option><option>Mozambique</option><option>Namibia</option>
+            <option>Botswana</option><option>China</option><option>United Kingdom</option>
+            <option>United States</option><option>Other</option>
+          </select>
+          <select id="biz_type">
+            <option value="" disabled selected>Business type</option>
+            <option>Container Operator</option><option>Freight Forwarder</option>
+            <option>Trucking Company</option><option>Shipping Agent</option>
+            <option>Importer</option><option>Exporter</option>
+            <option>SME / Trader</option><option>Manufacturer</option>
+            <option>Individual</option><option>Other</option>
+          </select>
+        </div>
+        <input type="hidden" id="role_val" value="operator">
+
+        <button type="submit" class="submit-btn" id="submit-btn">
+          Notify Me at Launch
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+
+      <div class="success-msg" id="success-msg">
+        <div class="check">✅</div>
+        <h3>You're on the list!</h3>
+        <p>We'll notify you the moment ShareConLoad goes live.<br>Your information is safe — no spam, no data selling, ever.</p>
+      </div>
+
+      <p class="privacy-note" id="privacy-note">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        No spam. No selling your data. One email when we launch.
+      </p>
+    </div>
+  </section>
+
+  <!-- STATS STRIP -->
+  <div class="stats-strip">
+    <div>
+      <div class="stat-num">2</div>
+      <div class="stat-label">Sides of the Market</div>
+    </div>
+    <div>
+      <div class="stat-num">0%</div>
+      <div class="stat-label">Empty Miles Tolerated</div>
+    </div>
+    <div>
+      <div class="stat-num">1</div>
+      <div class="stat-label">Platform. Pan-African.</div>
+    </div>
+    <div>
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Connections Possible</div>
+    </div>
+  </div>
+
+  <!-- WHO IT'S FOR -->
+  <section class="audience-section">
+    <div class="section-eyebrow">Who This Is For</div>
+    <h2 class="section-headline">Built for the people<br>who <span class="orange">move Africa</span></h2>
+    <div class="audience-grid">
+      <div class="audience-card">
+        <div class="card-icon">🚢</div>
+        <h3>Freight Capacity Providers</h3>
+        <p>You have space. We find you cargo. Stop running half-empty routes and start earning on every kilometre you move.</p>
+        <ul>
+          <li>Container & shipping operators</li>
+          <li>Trucking & transport companies</li>
+          <li>Freight forwarders & agents</li>
+          <li>Independent logistics operators</li>
+        </ul>
+      </div>
+      <div class="audience-card">
+        <div class="card-icon">📦</div>
+        <h3>Cargo Owners & Consignors</h3>
+        <p>You need to move goods. We connect you to verified operators on your route — faster, transparently, and at better rates.</p>
+        <ul>
+          <li>Importers & exporters</li>
+          <li>SMEs & cross-border traders</li>
+          <li>Manufacturers</li>
+          <li>Individuals shipping internationally</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section">
+    <div class="section-eyebrow">How It Works</div>
+    <h2 class="section-headline" style="margin-bottom:36px">Simple. <span class="orange">Powerful.</span> Digital.</h2>
+    <div class="steps">
+      <div class="step" data-n="1">
+        <div class="step-icon">📋</div>
+        <h4>List or Search</h4>
+        <p>Operators post available container space. Consignors search by route, date, and cargo type — all in real time.</p>
+      </div>
+      <div class="step" data-n="2">
+        <div class="step-icon">🤝</div>
+        <h4>Match & Connect</h4>
+        <p>AI-driven matching connects cargo demand with available capacity. Communicate directly with verified operators.</p>
+      </div>
+      <div class="step" data-n="3">
+        <div class="step-icon">🚀</div>
+        <h4>Move Goods Smarter</h4>
+        <p>Book and coordinate freight movement efficiently — cutting costs and eliminating empty miles across every corridor.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CORRIDORS -->
+  <section class="corridors-section">
+    <div class="section-eyebrow">Trade Corridors</div>
+    <h2 class="section-headline">Where we're <span class="orange">launching first</span></h2>
+    <div class="corridor-tags">
+      <div class="corridor-tag"><span class="dot"></span>South Africa ↔ Zimbabwe</div>
+      <div class="corridor-tag"><span class="dot"></span>South Africa ↔ Zambia</div>
+      <div class="corridor-tag"><span class="dot"></span>South Africa ↔ DRC</div>
+      <div class="corridor-tag"><span class="dot"></span>Ghana ↔ South Africa</div>
+      <div class="corridor-tag"><span class="dot"></span>Ghana ↔ China Import Trade</div>
+      <div class="corridor-tag"><span class="dot"></span>Nigeria ↔ South Africa</div>
+      <div class="corridor-tag"><span class="dot"></span>East African Corridors</div>
+      <div class="corridor-tag"><span class="dot"></span>Major African Port Cities</div>
+      <div class="corridor-tag"><span class="dot"></span>Global Expansion →</div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="cta-section">
+    <h2>Don't get left<br><span class="orange">on the dock.</span></h2>
+    <p>ShareConLoad is coming. Be among the first operators and consignors on the platform when we go live.</p>
+    <a href="#form-wrap" class="cta-btn">
+      Join the Waitlist
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <svg height="26" viewBox="0 0 280 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="1" width="17" height="17" rx="3" fill="#f26522" opacity="0.6"/>
+      <rect x="0" y="26" width="17" height="17" rx="3" fill="#f2a07a" opacity="0.6"/>
+      <rect x="21" y="14" width="17" height="17" rx="3" fill="#132d5e" opacity="0.6"/>
+      <text x="56" y="34" font-family="'Barlow Condensed',sans-serif" font-weight="800" font-size="28" fill="rgba(255,255,255,0.45)">Share<tspan fill="rgba(242,101,34,0.55)">Con</tspan>Load</text>
+    </svg>
+    <p>© 2025 ShareConLoad — Under Veyqon Group. All rights reserved.</p>
+    <p style="font-size:11px;opacity:0.4;">shareconload.com</p>
+  </footer>
+
+</div>
+
+<script>
+  function selectRole(btn) {
+    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('role_val').value = btn.dataset.role;
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = 'Submitting… <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+
+    const entry = {
+      id: Date.now(),
+      submitted: new Date().toISOString(),
+      firstName: document.getElementById('fname').value.trim(),
+      lastName: document.getElementById('lname').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      country: document.getElementById('country').value,
+      businessType: document.getElementById('biz_type').value,
+      role: document.getElementById('role_val').value,
+    };
+
+    // Persist to localStorage
+    try {
+      const list = JSON.parse(localStorage.getItem('scl_waitlist') || '[]');
+      list.push(entry);
+      localStorage.setItem('scl_waitlist', JSON.stringify(list));
+    } catch(err) {}
+
+    setTimeout(() => {
+      document.getElementById('wl-form').style.display = 'none';
+      document.getElementById('form-title').style.display = 'none';
+      document.getElementById('form-subtitle').style.display = 'none';
+      document.getElementById('role-row').style.display = 'none';
+      document.getElementById('privacy-note').style.display = 'none';
+      document.getElementById('success-msg').style.display = 'block';
+    }, 600);
+  }
+
+  // Scroll-triggered fade-in
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.audience-card, .step, .corridor-tag, .stat-num').forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = `opacity 0.5s ${i * 0.06}s ease, transform 0.5s ${i * 0.06}s ease`;
+    io.observe(el);
+  });
+</script>
+
+</body>
+</html>
