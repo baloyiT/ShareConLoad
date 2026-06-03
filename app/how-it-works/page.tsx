@@ -692,6 +692,21 @@ export default function HowItWorksPage() {
                 </Link>
               </li>
               <li>
+                <Link href="/payment-flow" className="hover:text-gray-900 transition-colors">
+                  Payment Flow
+                </Link>
+              </li>
+              <li>
+                <Link href="/operator-verification" className="hover:text-gray-900 transition-colors">
+                  Operator Verification
+                </Link>
+              </li>
+              <li>
+                <Link href="/dispute-resolution" className="hover:text-gray-900 transition-colors">
+                  Dispute Resolution
+                </Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="hover:text-gray-900 transition-colors">
                   Privacy Policy
                 </Link>
@@ -704,11 +719,6 @@ export default function HowItWorksPage() {
               <li>
                 <Link href="/cancellation" className="hover:text-gray-900 transition-colors">
                   Cancellation &amp; Refund Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-gray-900 transition-colors">
-                  Cookie Policy
                 </Link>
               </li>
             </ul>

@@ -238,6 +238,18 @@ export default function PricingPage() {
         {/* ── Related links ── */}
         <div className="flex flex-col sm:flex-row gap-3 text-sm">
           <Link
+            href="/payment-flow"
+            className="flex-1 flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 shadow-sm hover:border-orange-200 transition-colors"
+          >
+            <div>
+              <p className="font-semibold text-gray-800">Payment Flow</p>
+              <p className="text-xs text-gray-400 mt-0.5">End-to-end explanation of how Paystack processes payments</p>
+            </div>
+            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <Link
             href="/cancellation"
             className="flex-1 flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 shadow-sm hover:border-orange-200 transition-colors"
           >
