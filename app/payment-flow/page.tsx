@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
 
-export const metadata = { title: 'Payment Flow — ShareConLoad' };
+export const metadata = {
+  title: 'Payment Flow — ShareConLoad',
+  description: 'How payments flow between customers, ShareConLoad, and operators — staged payments processed securely via Paystack.',
+};
 
 export default function PaymentFlowPage() {
   return (
@@ -120,7 +123,7 @@ export default function PaymentFlowPage() {
               aria-hidden="true"
             />
 
-            <div className="space-y-0">
+            <div>
               {[
                 {
                   step: 1,
