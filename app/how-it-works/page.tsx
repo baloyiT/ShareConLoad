@@ -1,4 +1,4 @@
-import Image from 'next/image';
+﻿import Image from 'next/image';
 import Link from 'next/link';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ const SHIPPER_STEPS: Step[] = [
   {
     num: 2,
     title: 'Book Your Space',
-    desc: 'Enter the CBM you need — no whole-container commitment. Add shipment details and reserve your slot. Space is held once the deposit is paid.',
+    desc: 'Enter the CBM you need, no whole-container commitment. Add shipment details and reserve your slot. Space is held once the deposit is paid.',
     badge: 'Takes under 5 minutes',
     numColor: '#f97316',
   },
@@ -49,7 +49,7 @@ const SHIPPER_STEPS: Step[] = [
   {
     num: 5,
     title: 'Track & Receive',
-    desc: 'Follow the shipment through every milestone — loading, departure, transit, arrival, customs clearance, delivery. Pay the remaining 30% before cargo is released at the destination.',
+    desc: 'Follow the shipment through every milestone, loading, departure, transit, arrival, customs clearance, delivery. Pay the remaining 30% before cargo is released at the destination.',
     badge: 'Cargo released once final payment clears',
     numColor: '#0f2044',
   },
@@ -65,14 +65,14 @@ const OPERATOR_STEPS: Step[] = [
   {
     num: 2,
     title: 'Complete Verification',
-    desc: 'Submit KYC documents — identity, business registration, banking, insurance, and warehouse address. Done once. Verified operators display a trust badge on all listings.',
+    desc: 'Submit KYC documents, identity, business registration, banking, insurance, and warehouse address. Done once. Verified operators display a trust badge on all listings.',
     badge: 'One-time compliance check',
     numColor: '#0f2044',
   },
   {
     num: 3,
     title: 'Accept Bookings',
-    desc: 'Shippers find the listing and book space. Review declarations, manage the manifest, and coordinate collection — all from the operator portal.',
+    desc: 'Shippers find the listing and book space. Review declarations, manage the manifest, and coordinate collection, all from the operator portal.',
     numColor: '#0f2044',
   },
   {
@@ -84,8 +84,8 @@ const OPERATOR_STEPS: Step[] = [
   {
     num: 5,
     title: 'Get Paid',
-    desc: 'Payouts are released as each payment stage clears — after booking confirmation, pre-departure, and final cargo release.',
-    badge: 'Staged payouts — predictable cash flow',
+    desc: 'Payouts are released as each payment stage clears, after booking confirmation, pre-departure, and final cargo release.',
+    badge: 'Staged payouts, predictable cash flow',
     numColor: '#f97316',
   },
 ];
@@ -295,6 +295,9 @@ export default function HowItWorksPage() {
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-5 text-sm font-medium text-gray-600">
+            <Link href="/about" className="hover:text-gray-900 transition-colors">
+              About
+            </Link>
             <Link
               href="/how-it-works"
               className="font-semibold"
@@ -338,7 +341,7 @@ export default function HowItWorksPage() {
             <span style={{ color: '#f97316' }}>Share the container.</span>
           </h1>
           <p className="text-gray-300 text-lg mb-10 max-w-2xl mx-auto">
-            ShareConLoad lets multiple shippers share a single container — so you only pay for the
+            ShareConLoad lets multiple shippers share a single container, so you only pay for the
             space you actually use, on a route that&apos;s already going your way.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
@@ -374,7 +377,7 @@ export default function HowItWorksPage() {
           </h2>
           <p className="text-gray-600 text-sm leading-relaxed mb-6">
             Small and mid-size businesses have historically been forced to pay for a full container
-            or wait for a consolidator to fill one. ShareConLoad changes that — operators list spare
+            or wait for a consolidator to fill one. ShareConLoad changes that, operators list spare
             capacity, shippers book exactly the CBM they need, and everyone pays their fair share.
           </p>
           <blockquote className="border-l-4 pl-5 py-2" style={{ borderColor: '#f97316' }}>
@@ -399,7 +402,7 @@ export default function HowItWorksPage() {
             Book space in minutes
           </h2>
           <p className="text-gray-400 text-sm mb-8">
-            From discovery to delivery — five steps, fully online.
+            From discovery to delivery, five steps, fully online.
           </p>
           <div>
             {SHIPPER_STEPS.map((step, i) => (
@@ -428,11 +431,11 @@ export default function HowItWorksPage() {
             How payments work
           </p>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
-            Pay in three stages — never all at once
+            Pay in three stages, never all at once
           </h2>
           <p className="text-gray-400 text-sm mb-10">
             Your payment is split across the shipment lifecycle. You&apos;re protected at every
-            stage — no large upfront risk.
+            stage, no large upfront risk.
           </p>
 
           <div className="flex flex-col sm:flex-row items-stretch gap-3">

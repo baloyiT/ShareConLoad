@@ -1,8 +1,8 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Operator Verification — ShareConLoad',
+  title: 'Operator Verification, ShareConLoad',
   description: 'KYC documents and vetting process required for logistics providers on ShareConLoad.',
 };
 
@@ -38,7 +38,7 @@ const STEPS: Step[] = [
     num: 3,
     title: 'Admin review',
     detail:
-      'The ShareConLoad compliance team reviews each document individually, typically within 2 business days. Documents are approved or rejected — a reason is always provided for rejections.',
+      'The ShareConLoad compliance team reviews each document individually, typically within 2 business days. Documents are approved or rejected, a reason is always provided for rejections.',
   },
   {
     num: 4,
@@ -53,37 +53,37 @@ const DOCS: DocDef[] = [
     label: 'Proof of Identity',
     required: true,
     desc: 'Valid passport or national ID of the company director or individual owner.',
-    purpose: 'Identity verification — confirms the person behind the account.',
+    purpose: 'Identity verification, confirms the person behind the account.',
   },
   {
     label: 'Business Registration',
     required: true,
     desc: "Certificate of incorporation or registration from your country's business registry.",
-    purpose: 'Entity verification — confirms the business is legally registered.',
+    purpose: 'Entity verification, confirms the business is legally registered.',
   },
   {
     label: 'Proof of Warehouse Address',
     required: true,
     desc: 'Lease agreement, rates account, or utility bill confirming your warehouse or storage facility address.',
-    purpose: 'Address verification — confirms a legitimate operational location.',
+    purpose: 'Address verification, confirms a legitimate operational location.',
   },
   {
     label: 'Tax Clearance Certificate',
     required: true,
     desc: "Tax compliance certificate issued by your country's revenue authority.",
-    purpose: 'Tax compliance — required for payout approval.',
+    purpose: 'Tax compliance, required for payout approval.',
   },
   {
     label: 'Banking Confirmation',
     required: true,
     desc: 'Official letter from your bank confirming your account number and details.',
-    purpose: 'Account verification — required before any payout can be initiated via Paystack.',
+    purpose: 'Account verification, required before any payout can be initiated via Paystack.',
   },
   {
     label: 'Cargo Insurance Certificate',
     required: true,
     desc: 'Valid cargo or freight insurance policy covering goods in your care, custody, and control.',
-    purpose: 'Insurance verification — protects customers whose goods you carry.',
+    purpose: 'Insurance verification, protects customers whose goods you carry.',
   },
   {
     label: 'Freight Forwarding License',
@@ -208,7 +208,7 @@ export default function OperatorVerificationPage() {
         <div className="rounded-xl border border-amber-100 bg-amber-50 px-5 py-5">
           <p className="text-sm font-semibold text-amber-800 mb-1">Payout gate</p>
           <p className="text-sm text-amber-700 leading-relaxed">
-            Operators cannot receive any payment until all required documents are individually approved by the ShareConLoad compliance team. This check is enforced at the system level — payouts cannot be manually bypassed.{' '}
+            Operators cannot receive any payment until all required documents are individually approved by the ShareConLoad compliance team. This check is enforced at the system level, payouts cannot be manually bypassed.{' '}
             See{' '}
             <Link href="/payment-flow" style={{ color: '#f97316' }} className="font-medium hover:underline">
               How Payments Work

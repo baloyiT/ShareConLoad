@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -49,7 +49,7 @@ const COUNTRIES = Object.keys(COUNTRY_CODES).sort((a, b) => {
 
 function validatePhone(value: string, countryCode: string): string | null {
   const stripped = value.replace(/[\s\-\(\)]/g, '');
-  if (!stripped || stripped === countryCode) return null; // optional — not filled in
+  if (!stripped || stripped === countryCode) return null; // optional, not filled in
 
   if (!stripped.startsWith(countryCode)) {
     return `Number must start with ${countryCode} for the selected country.`;

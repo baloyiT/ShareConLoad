@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -434,7 +434,7 @@ export default function OperatorBookingsPage() {
                 {pendingCount} booking{pendingCount !== 1 ? 's' : ''} awaiting your confirmation
               </p>
               <p className="text-orange-200 text-xs">
-                Shippers are waiting — confirm or cancel to keep your rating high.
+                Shippers are waiting, confirm or cancel to keep your rating high.
               </p>
             </div>
             <button
@@ -602,7 +602,7 @@ export default function OperatorBookingsPage() {
           <div className="modal-box max-w-lg">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-base">
-                Messages — {messageBooking.id.slice(0, 8).toUpperCase()}
+                Messages, {messageBooking.id.slice(0, 8).toUpperCase()}
               </h3>
               <button type="button" className="btn btn-ghost btn-xs" onClick={() => setMessageBooking(null)}>✕</button>
             </div>
@@ -851,7 +851,7 @@ function BookingCard({
 
               {booking.status === 'delivered' && (
                 <span className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl text-green-600 bg-green-50">
-                  ✔️ Delivered — no further action needed
+                  ✔️ Delivered, no further action needed
                 </span>
               )}
 

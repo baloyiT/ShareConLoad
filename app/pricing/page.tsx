@@ -1,7 +1,7 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import Image from 'next/image';
 
-export const metadata = { title: 'Pricing — ShareConLoad' };
+export const metadata = { title: 'Pricing, ShareConLoad' };
 
 export default function PricingPage() {
   return (
@@ -53,7 +53,7 @@ export default function PricingPage() {
           <h2 className="text-lg font-extrabold text-gray-900 mb-1">How shipping costs work</h2>
           <p className="text-sm text-gray-500 mb-6">
             Each operator sets their own price per CBM (cubic metre) on their container listing. You
-            pay only for the exact space your cargo occupies — no whole-container commitment required.
+            pay only for the exact space your cargo occupies, no whole-container commitment required.
             Your total cost is calculated as:
           </p>
 
@@ -65,26 +65,26 @@ export default function PricingPage() {
           <h3 className="text-sm font-bold text-gray-800 mb-3">Payment stages</h3>
           <p className="text-sm text-gray-500 mb-5">
             Your total is never charged at once. It is split into three stages tied to shipment
-            milestones — so your money moves only as the shipment progresses.
+            milestones, so your money moves only as the shipment progresses.
           </p>
 
           <div className="space-y-3 mb-6">
             {[
               {
                 pct: '20%',
-                label: 'Deposit — paid at booking',
+                label: 'Deposit, paid at booking',
                 detail: 'Secures your space immediately. Refundable within 48 hours of booking confirmation. Non-refundable after that window.',
                 color: '#f97316',
               },
               {
                 pct: '50%',
-                label: 'Pre-Departure — due 7 days before sailing',
+                label: 'Pre-Departure, due 7 days before sailing',
                 detail: 'Required before the container departs the origin port. Booking may be cancelled if not paid in time.',
                 color: '#0f2044',
               },
               {
                 pct: '30%',
-                label: 'Final Release — paid at destination',
+                label: 'Final Release, paid at destination',
                 detail: 'Due before cargo is released to you at the destination. Cargo is held until this stage is cleared.',
                 color: '#0f2044',
               },

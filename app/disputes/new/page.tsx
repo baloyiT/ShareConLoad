@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -131,10 +131,10 @@ function NewDisputeForm() {
                 onChange={(e) => setBookingId(e.target.value)}
                 required
               >
-                <option value="">— Select a booking —</option>
+                <option value="">- Select a booking -</option>
                 {bookings.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.route} ({b.status}) — #{b.id.slice(0, 8).toUpperCase()}
+                    {b.route} ({b.status}), #{b.id.slice(0, 8).toUpperCase()}
                   </option>
                 ))}
               </select>
@@ -175,7 +175,7 @@ function NewDisputeForm() {
             <label className="text-sm font-semibold text-gray-700">Description</label>
             <textarea
               className="textarea textarea-bordered w-full h-32 resize-none"
-              placeholder="Describe the issue in detail — what happened, when, and what resolution you expect."
+              placeholder="Describe the issue in detail, what happened, when, and what resolution you expect."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required

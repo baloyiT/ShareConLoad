@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -193,7 +193,7 @@ export default function OperatorDashboard() {
                 <span className="text-2xl shrink-0">⚠️</span>
                 <div className="flex-1">
                   <p className="text-white font-bold text-sm">
-                    {urgent.length} container{urgent.length !== 1 ? 's' : ''} departing within 10 days — notice not yet sent
+                    {urgent.length} container{urgent.length !== 1 ? 's' : ''} departing within 10 days, notice not yet sent
                   </p>
                   <p className="text-amber-200 text-xs mt-0.5">
                     The system auto-sends customer notices at T-7 days (daily at 06:00 UTC). You can also send manually now.
@@ -274,7 +274,7 @@ export default function OperatorDashboard() {
         )}
         {noticeSent && (
           <div className="alert text-sm font-semibold" style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
-            ✓ Departure notice sent — customers have been notified.
+            ✓ Departure notice sent, customers have been notified.
           </div>
         )}
 
@@ -420,7 +420,7 @@ export default function OperatorDashboard() {
                           {sendingNotice === c.id
                             ? <span className="loading loading-spinner loading-sm" />
                             : urgent
-                              ? `⚠️ Urgent — Send Notice (T-${d}d)`
+                              ? `⚠️ Urgent, Send Notice (T-${d}d)`
                               : '📢 Send 7-Day Departure Notice'}
                         </button>
                       );

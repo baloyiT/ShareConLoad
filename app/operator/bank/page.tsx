@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -195,7 +195,7 @@ export default function OperatorBankPage() {
             <p className="text-sm text-gray-500 mb-1">
               <span className="font-semibold text-gray-700">{bankAccountName}</span>
               {successManual
-                ? ' — our team will be in touch to arrange manual payout transfers for your region.'
+                ? ', our team will be in touch to arrange manual payout transfers for your region.'
                 : ' is registered and ready to receive payouts.'}
             </p>
             {recipientCode && (
@@ -205,7 +205,7 @@ export default function OperatorBankPage() {
               <Link href="/operator/compliance/agreement"
                 className="btn text-white font-bold rounded-xl hover:opacity-90"
                 style={{ backgroundColor: '#0f2044' }}>
-                Next — Service Agreement →
+                Next, Service Agreement →
               </Link>
               <button onClick={() => setSuccess(false)}
                 className="btn btn-ghost rounded-xl text-gray-500 text-sm">

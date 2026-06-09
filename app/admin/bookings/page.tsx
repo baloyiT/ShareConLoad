@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -57,9 +57,9 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 };
 
 const STAGE_LABELS: Record<string, string> = {
-  deposit_20:        'Stage 1 — Deposit (20%)',
-  pre_departure_50:  'Stage 2 — Pre-departure (50%)',
-  final_release_30:  'Stage 3 — Final release (30%)',
+  deposit_20:        'Stage 1, Deposit (20%)',
+  pre_departure_50:  'Stage 2, Pre-departure (50%)',
+  final_release_30:  'Stage 3, Final release (30%)',
 };
 
 const STATUS_TABS: StatusFilter[] = ['all', 'pending', 'confirmed', 'loaded', 'in_transit', 'delivered', 'cancelled'];
@@ -285,7 +285,7 @@ export default function AdminBookingsPage() {
                         {b.customer_id.slice(0, 8)}…
                       </td>
                       <td className="py-3.5 px-4 text-sm font-medium text-gray-700">
-                        {b.containers ? `${b.containers.origin_city} → ${b.containers.destination_city}` : '—'}
+                        {b.containers ? `${b.containers.origin_city} → ${b.containers.destination_city}` : '-'}
                       </td>
                       <td className="py-3.5 px-4 text-sm text-gray-700">{b.total_cbm} CBM</td>
                       <td className="py-3.5 px-4">
@@ -343,7 +343,7 @@ export default function AdminBookingsPage() {
           <div className="modal-box max-w-lg">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-base">
-                Messages — {messageBookingId.slice(0, 8).toUpperCase()}
+                Messages, {messageBookingId.slice(0, 8).toUpperCase()}
               </h3>
               <button type="button" className="btn btn-ghost btn-xs" onClick={() => setMessageBookingId(null)}>✕</button>
             </div>

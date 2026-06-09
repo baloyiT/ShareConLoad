@@ -1,9 +1,9 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Payment Flow — ShareConLoad',
-  description: 'How payments flow between customers, ShareConLoad, and operators — staged payments processed securely via Paystack.',
+  title: 'Payment Flow, ShareConLoad',
+  description: 'How payments flow between customers, ShareConLoad, and operators, staged payments processed securely via Paystack.',
 };
 
 export default function PaymentFlowPage() {
@@ -35,7 +35,7 @@ export default function PaymentFlowPage() {
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#f97316' }}>Transparency</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">How Payments Work</h1>
           <p className="text-gray-400 text-sm">
-            End-to-end explanation of how money flows between customers, ShareConLoad, and operators — all processed securely via Paystack.
+            End-to-end explanation of how money flows between customers, ShareConLoad, and operators, all processed securely via Paystack.
           </p>
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function PaymentFlowPage() {
                   actorBg: '#fff7ed',
                   action: 'Initiates payment',
                   detail:
-                    "Customer clicks Pay Now on the staged payment page. ShareConLoad's Edge Function generates a Paystack payment link. The customer is redirected to Paystack's secure hosted payment page — no card data touches ShareConLoad servers.",
+                    "Customer clicks Pay Now on the staged payment page. ShareConLoad's Edge Function generates a Paystack payment link. The customer is redirected to Paystack's secure hosted payment page, no card data touches ShareConLoad servers.",
                 },
                 {
                   step: 2,
@@ -159,7 +159,7 @@ export default function PaymentFlowPage() {
                   actorBg: '#eef2ff',
                   action: 'Releases payout to operator',
                   detail:
-                    "Once payout eligibility conditions are met (KYC approved, no active dispute, refund window elapsed), ShareConLoad initiates a Paystack Transfer to the operator's verified bank account — minus the tiered platform commission.",
+                    "Once payout eligibility conditions are met (KYC approved, no active dispute, refund window elapsed), ShareConLoad initiates a Paystack Transfer to the operator's verified bank account, minus the tiered platform commission.",
                 },
                 {
                   step: 5,

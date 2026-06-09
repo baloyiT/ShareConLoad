@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -145,7 +145,7 @@ export default function AdminCommissionPage() {
       return `R${c.toFixed(2)} (${fixedPct}%)`;
     }
     const tier = tiers.find(t => gross >= t.min && (t.max === null || gross <= t.max));
-    if (!tier) return '—';
+    if (!tier) return '-';
     const c = Math.round(gross * tier.rate * 100) / 100;
     return `R${c.toFixed(2)} (${pct(tier.rate)}%)`;
   }
@@ -208,7 +208,7 @@ export default function AdminCommissionPage() {
 
               {type === 'tiered' && (
                 <p className="text-xs text-gray-400 mt-3">
-                  Commission rate decreases as shipment value increases — operators pay less as their volumes grow.
+                  Commission rate decreases as shipment value increases, operators pay less as their volumes grow.
                 </p>
               )}
               {type === 'fixed' && (
@@ -318,7 +318,7 @@ export default function AdminCommissionPage() {
                 <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
                   <p className="text-xs text-gray-400">
                     Leave Max blank for the highest tier (&ldquo;R50 001 and above&rdquo;).
-                    Tiers are matched from top to bottom — ensure ranges are non-overlapping.
+                    Tiers are matched from top to bottom, ensure ranges are non-overlapping.
                   </p>
                 </div>
               </div>

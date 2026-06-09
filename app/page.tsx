@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
@@ -316,6 +316,9 @@ export default function HomePage() {
 
           {/* Nav links (desktop) */}
           <div className="hidden lg:flex items-center gap-5 text-sm font-medium text-gray-600">
+            <Link href="/about" className="hover:text-gray-900 transition-colors whitespace-nowrap">
+              About
+            </Link>
             <Link
               href="/how-it-works"
               className="hover:text-gray-900 transition-colors whitespace-nowrap"
@@ -469,6 +472,13 @@ export default function HomePage() {
 
             {/* Nav links */}
             <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
+              <Link
+                href="/about"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                About
+              </Link>
               <Link
                 href="/how-it-works"
                 onClick={() => setMobileNavOpen(false)}
@@ -732,7 +742,7 @@ export default function HomePage() {
             </div>
             {searched && !loading && (
               <p className="text-sm text-gray-400 mt-0.5">
-                Showing filtered results —{" "}
+                Showing filtered results -{" "}
                 <button
                   type="button"
                   onClick={handleReset}
@@ -857,13 +867,14 @@ export default function HomePage() {
               </span>
             </Link>
             <p className="text-xs text-gray-400 leading-relaxed max-w-[220px]">
-              The smarter way to move goods globally — shared container logistics for everyone.
+              The smarter way to move goods globally, shared container logistics for everyone.
             </p>
           </div>
 
           {/* Platform links */}
           <div className="flex flex-col gap-2">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Platform</p>
+            <Link href="/about" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">About</Link>
             <Link href="/how-it-works" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">How It Works</Link>
             <a href="#listings"        className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Browse Containers</a>
             <button

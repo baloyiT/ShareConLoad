@@ -1,7 +1,7 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import Image from 'next/image';
 
-export const metadata = { title: 'Cancellation & Refund Policy — ShareConLoad' };
+export const metadata = { title: 'Cancellation & Refund Policy, ShareConLoad' };
 
 function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
   return (
@@ -117,7 +117,7 @@ export default function CancellationPolicyPage() {
                   <tr>
                     <td className="px-4 py-3">After 2nd payment (pre-departure)</td>
                     <td className="px-4 py-3">50% payment</td>
-                    <td className="px-4 py-3">Partial — subject to review · Deposit &amp; service fees non-refundable</td>
+                    <td className="px-4 py-3">Partial, subject to review · Deposit &amp; service fees non-refundable</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-3">After vessel departure</td>
@@ -239,7 +239,7 @@ export default function CancellationPolicyPage() {
                   { step: 'Step 4', label: 'Refund Determination', items: ['Recovered funds and available reserves', 'Applicable liabilities and operational findings', 'Third-party costs already incurred', 'Applicable Platform fees'] },
                 ].map(({ step, label, items }) => (
                   <div key={step} className="border border-gray-100 rounded-xl p-4">
-                    <p className="font-semibold text-gray-700 mb-2"><span style={{ color: '#f97316' }}>{step}</span> — {label}</p>
+                    <p className="font-semibold text-gray-700 mb-2"><span style={{ color: '#f97316' }}>{step}</span>, {label}</p>
                     <Bullets items={items} />
                   </div>
                 ))}

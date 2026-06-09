@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -178,7 +178,7 @@ export default function AdminDisputesPage() {
                   {filtered.map((d) => {
                     const route = d.booking?.containers
                       ? `${d.booking.containers.origin_city} → ${d.booking.containers.destination_city}`
-                      : '—';
+                      : '-';
                     return (
                       <tr key={d.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                         <td className="py-3.5 px-4 font-mono text-xs text-gray-400">{d.id.slice(0, 8)}…</td>

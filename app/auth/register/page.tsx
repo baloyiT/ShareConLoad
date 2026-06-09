@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -129,7 +129,7 @@ export default function RegisterPage() {
             <span style={{ color: '#f97316' }}>Infinite routes.</span>
           </h2>
           <p className="text-gray-400 text-sm leading-relaxed mb-8">
-            Ship goods or list container space — switch roles anytime from one account.
+            Ship goods or list container space, switch roles anytime from one account.
           </p>
           <ul className="flex flex-col gap-3">
             {[
@@ -170,7 +170,7 @@ export default function RegisterPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
             <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Create your account</h1>
             <p className="text-gray-400 text-sm mb-6">
-              One account. Ship goods or list container space — switch anytime.
+              One account. Ship goods or list container space, switch anytime.
             </p>
 
             {errors.submit && (

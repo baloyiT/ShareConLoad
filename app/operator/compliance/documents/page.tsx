@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -38,7 +38,7 @@ const DOC_DEFS: { type: DocType; label: string; desc: string; optional?: boolean
   { type: 'identity',                   label: 'Proof of Identity',           desc: 'Valid passport or national ID of the director or owner' },
   { type: 'business_registration',      label: 'Business Registration',       desc: "Certificate of incorporation or registration from your country's business registry" },
   { type: 'proof_of_warehouse_address', label: 'Proof of Warehouse Address',  desc: 'Lease agreement, rates account, or utility bill confirming your warehouse or storage facility address' },
-  { type: 'tax_clearance',              label: 'Tax Clearance Certificate',   desc: "Tax compliance certificate from your country's revenue authority — required for payout approval" },
+  { type: 'tax_clearance',              label: 'Tax Clearance Certificate',   desc: "Tax compliance certificate from your country's revenue authority, required for payout approval" },
   { type: 'banking_confirmation',       label: 'Banking Confirmation',        desc: 'Official letter from your bank confirming your account details' },
   { type: 'cargo_insurance',            label: 'Cargo Insurance Certificate', desc: 'Valid cargo or freight insurance policy covering goods in your care, custody, and control' },
   { type: 'freight_forwarding_license', label: 'Freight Forwarding License',  desc: "Freight forwarding or customs broker license issued by your country's relevant authority (if applicable)", optional: true },
@@ -207,7 +207,7 @@ export default function ComplianceDocumentsPage() {
                 <div className="mt-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                   <p className="text-xs font-semibold text-red-600 mb-0.5">Reason for failure</p>
                   <p className="text-xs text-red-500">
-                    {slot.record.admin_notes ?? 'No reason provided — contact support if you need clarification.'}
+                    {slot.record.admin_notes ?? 'No reason provided, contact support if you need clarification.'}
                   </p>
                 </div>
               )}
@@ -217,7 +217,7 @@ export default function ComplianceDocumentsPage() {
                 <p className="text-xs text-red-500 mt-2">{slot.error}</p>
               )}
 
-              {/* Upload area — hidden if approved */}
+              {/* Upload area, hidden if approved */}
               {!isApproved && (
                 <div className="mt-3">
                   <input
@@ -253,7 +253,7 @@ export default function ComplianceDocumentsPage() {
               {/* Approved lock message */}
               {isApproved && (
                 <p className="text-xs text-green-600 mt-2">
-                  Document verified — no changes required.
+                  Document verified, no changes required.
                 </p>
               )}
             </div>

@@ -1,8 +1,8 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Dispute Resolution — ShareConLoad',
+  title: 'Dispute Resolution, ShareConLoad',
   description: 'How disputes are raised, reviewed, and resolved on ShareConLoad.',
 };
 
@@ -60,7 +60,7 @@ const PROCESS_STEPS: ProcessStep[] = [
     num: 2,
     title: 'Upload evidence',
     detail:
-      'Attach supporting files — photos of damaged goods, weight certificates, payment records, or communications with the operator. Multiple files are accepted.',
+      'Attach supporting files, photos of damaged goods, weight certificates, payment records, or communications with the operator. Multiple files are accepted.',
   },
   {
     num: 3,

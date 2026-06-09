@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -149,10 +149,10 @@ export default function NewSupportTicketPage() {
                 value={bookingId}
                 onChange={(e) => setBookingId(e.target.value)}
               >
-                <option value="">— No specific booking —</option>
+                <option value="">- No specific booking -</option>
                 {bookings.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.route} — #{b.id.slice(0, 8).toUpperCase()}
+                    {b.route}, #{b.id.slice(0, 8).toUpperCase()}
                   </option>
                 ))}
               </select>

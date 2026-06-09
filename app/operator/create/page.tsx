@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -328,11 +328,11 @@ export default function CreateContainerPage() {
             {/* Route preview */}
             {(form.origin_city || form.destination_city) && (
               <div className="mt-4 flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm">
-                <span className="font-semibold text-gray-700">{form.origin_city || '—'}</span>
+                <span className="font-semibold text-gray-700">{form.origin_city || '-'}</span>
                 <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
-                <span className="font-semibold text-gray-700">{form.destination_city || '—'}</span>
+                <span className="font-semibold text-gray-700">{form.destination_city || '-'}</span>
                 {form.origin_country && form.destination_country && (
                   <span className="text-gray-400 ml-auto text-xs">
                     {form.origin_country} → {form.destination_country}

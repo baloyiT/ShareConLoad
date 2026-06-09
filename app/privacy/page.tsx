@@ -1,7 +1,7 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import Image from 'next/image';
 
-export const metadata = { title: 'Privacy Policy — ShareConLoad' };
+export const metadata = { title: 'Privacy Policy, ShareConLoad' };
 
 function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
   return (

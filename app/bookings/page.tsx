@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -51,7 +51,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 };
 
 const STATUS_MESSAGE: Record<string, { icon: string; text: string; color: string; bg: string; border: string }> = {
-  pending:    { icon: '⏳', text: 'Awaiting operator confirmation — your space is reserved but not yet accepted.', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  pending:    { icon: '⏳', text: 'Awaiting operator confirmation, your space is reserved but not yet accepted.', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
   confirmed:  { icon: '✅', text: 'Booking confirmed by operator. Proceed with your payment schedule.', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
   loaded:     { icon: '📦', text: 'Your cargo has been loaded into the container.', color: '#5b21b6', bg: '#f5f3ff', border: '#ddd6fe' },
   in_transit: { icon: '🚢', text: 'Your container is on its way to the destination.', color: '#0e7490', bg: '#ecfeff', border: '#a5f3fc' },

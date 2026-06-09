@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -293,14 +293,14 @@ export default function AdminDashboard() {
                         </div>
                       </Td>
                       <Td>
-                        <span className="text-sm text-gray-600">{u.email ?? '—'}</span>
+                        <span className="text-sm text-gray-600">{u.email ?? '-'}</span>
                       </Td>
                       <Td>
                         <span
                           className="badge badge-sm text-white font-semibold"
                           style={{ backgroundColor: u.role_type === 'operator' ? '#f97316' : '#0f2044' }}
                         >
-                          {u.role_type ?? '—'}
+                          {u.role_type ?? '-'}
                         </span>
                       </Td>
                       <Td><span className="text-gray-500 text-sm">{fmt(u.created_at)}</span></Td>

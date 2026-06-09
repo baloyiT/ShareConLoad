@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -77,7 +77,7 @@ export default function ComplianceProfilePage() {
       .eq('profile_id', profileId);
 
     if (upsertErr) { setError(upsertErr.message); setSaving(false); return; }
-    // Navigate to next step — sidebar re-fetches on pathname change
+    // Navigate to next step, sidebar re-fetches on pathname change
     router.push('/operator/compliance/contact');
   }
 

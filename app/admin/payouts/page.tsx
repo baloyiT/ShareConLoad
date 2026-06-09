@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -54,7 +54,7 @@ function eligibilityReason(op: OperatorProfile | null, eligibleAfter: string | n
   if (op.payout_hold) return 'Operator on payout hold';
   if (eligibleAfter && new Date(eligibleAfter) > new Date()) {
     const hoursLeft = Math.ceil((new Date(eligibleAfter).getTime() - Date.now()) / (1000 * 60 * 60));
-    return `In 48h refund window — eligible in ${hoursLeft}h`;
+    return `In 48h refund window, eligible in ${hoursLeft}h`;
   }
   return null;
 }
@@ -69,7 +69,7 @@ export default function AdminPayoutsPage() {
 
   useEffect(() => {
     async function fetchPayouts() {
-      // Step 1: fetch payouts + bookings (no operator_profiles — no FK path exists)
+      // Step 1: fetch payouts + bookings (no operator_profiles, no FK path exists)
       const { data: payoutRows, error: err } = await supabase
         .from('payouts')
         .select(`
@@ -241,7 +241,7 @@ export default function AdminPayoutsPage() {
                   {filtered.map((p) => {
                     const route     = p.booking?.containers
                       ? `${p.booking.containers.origin_city} → ${p.booking.containers.destination_city}`
-                      : '—';
+                      : '-';
                     const blockReason = p.status === 'pending' ? eligibilityReason(p.operator_profile, p.eligible_after) : null;
                     const isTriggering = triggering === p.id;
 
@@ -261,7 +261,7 @@ export default function AdminPayoutsPage() {
                           {p.net_amount != null ? (
                             <span className="font-semibold" style={{ color: '#22c55e' }}>{ZAR(p.net_amount)}</span>
                           ) : (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-gray-400">-</span>
                           )}
                           {p.commission_amount != null && (
                             <p className="text-xs text-gray-400">commission: {ZAR(p.commission_amount)}</p>
@@ -277,7 +277,7 @@ export default function AdminPayoutsPage() {
                           )}
                         </td>
                         <td className="py-3.5 px-4 font-mono text-xs text-gray-400 whitespace-nowrap">
-                          {p.paystack_transfer_code ?? '—'}
+                          {p.paystack_transfer_code ?? '-'}
                         </td>
                         <td className="py-3.5 px-4 text-sm text-gray-500 whitespace-nowrap">{fmt(p.created_at)}</td>
                         <td className="py-3.5 px-4">
