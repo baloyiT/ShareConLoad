@@ -791,18 +791,13 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleSwitchToOperator}
-            disabled={switchingRole}
-            className="shrink-0 text-sm font-bold px-8 py-3 rounded-xl text-white hover:opacity-90 disabled:opacity-60 transition-opacity whitespace-nowrap"
+          <Link
+            href="/onboarding/operator"
+            className="shrink-0 text-sm font-bold px-8 py-3 rounded-xl text-white hover:opacity-90 transition-opacity whitespace-nowrap"
             style={{ backgroundColor: "#f97316" }}
           >
-            {switchingRole ? (
-              <span className="loading loading-spinner loading-sm" />
-            ) : (
-              "I Have Container Space →"
-            )}
-          </button>
+            I Have Container Space →
+          </Link>
         </div>
       </section>
 
@@ -831,12 +826,7 @@ export default function HomePage() {
             <Link href="/about" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">About</Link>
             <Link href="/how-it-works" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">How It Works</Link>
             <a href="#listings"        className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Browse Containers</a>
-            <button
-              onClick={handleSwitchToOperator}
-              className="text-sm text-gray-500 hover:text-gray-800 transition-colors text-left"
-            >
-              List Your Container
-            </button>
+            <Link href="/onboarding/operator" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">List Your Container</Link>
             <Link href="/auth/register" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Create Account</Link>
           </div>
 
