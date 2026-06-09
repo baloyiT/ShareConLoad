@@ -142,6 +142,7 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [isOperator, setIsOperator] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAgent, setIsAgent] = useState(false);
   const [switchingRole, setSwitchingRole] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [containers, setContainers] = useState<Container[]>([]);
@@ -169,6 +170,7 @@ export default function HomePage() {
         .eq("user_id", u.id);
       setIsOperator(data?.some((p) => p.role_type === "operator") ?? false);
       setIsAdmin(data?.some((p) => p.is_admin === true) ?? false);
+      setIsAgent(data?.some((p) => p.role_type === "agent") ?? false);
     }
 
     supabase.auth.getUser().then(({ data }) => resolveUser(data.user));
@@ -391,6 +393,15 @@ export default function HomePage() {
                     )}
                   </button>
                 )}
+                {isAgent && (
+                  <Link
+                    href="/agent"
+                    className="hidden md:flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white hover:opacity-90 transition-opacity"
+                    style={{ backgroundColor: "#16a34a" }}
+                  >
+                    🤝 Agent Portal
+                  </Link>
+                )}
 
                 {/* Avatar + name + badge */}
                 <div className="flex items-center gap-2 pl-1">
@@ -512,6 +523,16 @@ export default function HomePage() {
                     >
                       🚢 Operator Portal
                     </button>
+                  )}
+                  {isAgent && (
+                    <Link
+                      href="/agent"
+                      onClick={() => setMobileNavOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+                      style={{ backgroundColor: "#16a34a" }}
+                    >
+                      🤝 Agent Portal
+                    </Link>
                   )}
                   {isAdmin && (
                     <Link
