@@ -561,14 +561,27 @@ export default function HomePage() {
       )}
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-1 lg:grid-cols-2">
+      <section className="relative overflow-hidden min-h-[600px] lg:min-h-[680px] flex items-center">
 
-        {/* Left panel — dark navy */}
+        {/* Background image */}
+        <Image
+          src="/hero-port.png"
+          alt="Container port"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+
+        {/* Dark overlay */}
         <div
-          className="flex items-center px-5 sm:px-12 lg:px-14 py-16 lg:py-24"
-          style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}
-        >
-          <div className="max-w-xl w-full">
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(135deg, rgba(15,32,68,0.92) 0%, rgba(26,58,107,0.80) 60%, rgba(15,32,68,0.60) 100%)' }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 px-5 sm:px-12 lg:px-20 py-16 lg:py-24 w-full">
+          <div className="max-w-xl">
             <h1
               className="font-extrabold leading-[1.1] mb-5 text-white"
               style={{ fontSize: 'clamp(2.25rem, 4vw, 3.5rem)' }}
@@ -625,18 +638,6 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Right panel — port photo */}
-        <div className="relative min-h-[280px] lg:min-h-0">
-          <Image
-            src="/hero-port.png"
-            alt="Container port"
-            fill
-            priority
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover object-center"
-          />
         </div>
 
       </section>
