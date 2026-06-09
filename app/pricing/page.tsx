@@ -131,54 +131,6 @@ export default function PricingPage() {
             </span>
           </div>
 
-          <h2 className="text-lg font-extrabold text-gray-900 mb-1">Platform commission</h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Operators set their own price per CBM and keep the majority of every booking.
-            ShareConLoad charges a tiered commission on each payout stage — the rate decreases
-            automatically as shipment value grows, rewarding higher-volume operators.
-          </p>
-
-          {/* Commission table */}
-          <div className="rounded-xl border border-gray-100 overflow-hidden mb-5">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="py-3 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">Shipment Value</th>
-                  <th className="py-3 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">Commission Rate</th>
-                  <th className="py-3 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left hidden sm:table-cell">Operator Keeps</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {[
-                  { range: 'R0 – R5 000',         rate: '12%', keeps: '88%' },
-                  { range: 'R5 001 – R20 000',     rate: '10%', keeps: '90%', highlight: true },
-                  { range: 'R20 001 – R50 000',    rate: '8%',  keeps: '92%' },
-                  { range: 'R50 001 and above',    rate: '6%',  keeps: '94%' },
-                ].map(({ range, rate, keeps, highlight }) => (
-                  <tr key={range} className={highlight ? 'bg-orange-50' : ''}>
-                    <td className="py-3.5 px-5 font-medium text-gray-700">{range}</td>
-                    <td className="py-3.5 px-5">
-                      <span
-                        className="inline-block px-2.5 py-0.5 rounded-full text-sm font-extrabold"
-                        style={highlight
-                          ? { backgroundColor: '#fff7ed', color: '#f97316' }
-                          : { backgroundColor: '#f3f4f6', color: '#374151' }}
-                      >
-                        {rate}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-5 text-gray-500 hidden sm:table-cell">{keeps}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <p className="text-xs text-gray-400 mb-6">
-            Commission is charged on the gross payout per shipment stage, not on the total booking value.
-            Rates apply independently to each stage.
-          </p>
-
           {/* Payout stages */}
           <h3 className="text-sm font-bold text-gray-800 mb-3">Payout schedule</h3>
           <p className="text-sm text-gray-500 mb-4">

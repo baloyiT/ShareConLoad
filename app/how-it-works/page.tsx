@@ -84,7 +84,7 @@ const OPERATOR_STEPS: Step[] = [
   {
     num: 5,
     title: 'Get Paid',
-    desc: 'Payouts are released as each payment stage clears — after booking confirmation, pre-departure, and final cargo release. Platform commission is tiered: 12% on shipments up to R5 000, 10% up to R20 000, 8% up to R50 000, and 6% above R50 000.',
+    desc: 'Payouts are released as each payment stage clears — after booking confirmation, pre-departure, and final cargo release.',
     badge: 'Staged payouts — predictable cash flow',
     numColor: '#f97316',
   },
@@ -469,63 +469,6 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* ── Commission Rates ── */}
-      <section className="py-16 px-4 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <p
-            className="text-xs font-extrabold uppercase tracking-widest mb-3"
-            style={{ color: '#0f2044' }}
-          >
-            Platform commission
-          </p>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-2">
-            Pay less as your volumes grow
-          </h2>
-          <p className="text-gray-400 text-sm mb-8">
-            Commission is charged on the gross payout per shipment stage and decreases automatically
-            as the shipment value increases — rewarding higher-value cargo operators.
-          </p>
-          <div className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-            <table className="table w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="py-3 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">Shipment Value</th>
-                  <th className="py-3 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">Commission Rate</th>
-                  <th className="py-3 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">Example payout on R10 000</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { range: 'R0 – R5 000',        rate: '12%', example: null },
-                  { range: 'R5 001 – R20 000',    rate: '10%', example: 'R9 000 net' },
-                  { range: 'R20 001 – R50 000',   rate: '8%',  example: null },
-                  { range: 'R50 001 and above',   rate: '6%',  example: null },
-                ].map(({ range, rate, example }, i) => (
-                  <tr key={range} className={`border-b border-gray-50 ${i === 1 ? 'bg-orange-50' : ''}`}>
-                    <td className="py-3.5 px-5 text-sm font-medium text-gray-700">{range}</td>
-                    <td className="py-3.5 px-5">
-                      <span
-                        className="inline-block px-2.5 py-0.5 rounded-full text-sm font-extrabold"
-                        style={i === 1
-                          ? { backgroundColor: '#fff7ed', color: '#f97316' }
-                          : { backgroundColor: '#f3f4f6', color: '#374151' }}
-                      >
-                        {rate}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-5 text-sm text-gray-500">
-                      {example ?? '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-gray-400 mt-3">
-            Commission is deducted from each payout stage automatically. Rates apply to the gross amount per stage, not the total booking value.
-          </p>
-        </div>
-      </section>
 
       {/* ── Operator Journey ── */}
       <section className="py-16 px-4 bg-white">
