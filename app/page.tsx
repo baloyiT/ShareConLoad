@@ -567,18 +567,13 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </a>
-              <button
-                onClick={handleSwitchToOperator}
-                disabled={switchingRole}
-                className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl border-2 hover:bg-white/10 transition-colors disabled:opacity-60"
+              <Link
+                href="/onboarding/operator"
+                className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl border-2 hover:bg-white/10 transition-colors"
                 style={{ borderColor: 'rgba(255,255,255,0.4)', color: '#ffffff' }}
               >
-                {switchingRole ? (
-                  <span className="loading loading-spinner loading-xs" />
-                ) : (
-                  <>List Your Container</>
-                )}
-              </button>
+                List Your Container
+              </Link>
             </div>
 
             {/* Feature grid */}
