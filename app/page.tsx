@@ -339,10 +339,7 @@ export default function HomePage() {
 
 */}
 
-            <Link href="#" className="hover:text-gray-900 transition-colors">
-              About Us
-            </Link>
-            <Link href="#" className="hover:text-gray-900 transition-colors">
+            <Link href="/contact" className="hover:text-gray-900 transition-colors">
               Contact
             </Link>
           </div>
@@ -480,14 +477,7 @@ export default function HomePage() {
                 How It Works
               </Link>
               <Link
-                href="#"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                About Us
-              </Link>
-              <Link
-                href="#"
+                href="/contact"
                 onClick={() => setMobileNavOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >

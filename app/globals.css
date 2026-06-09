@@ -4,3 +4,9 @@
 html {
   scroll-behavior: smooth;
 }
+
+@layer utilities {
+  .font-condensed {
+    font-family: var(--font-barlow-condensed), sans-serif;
+  }
+}
