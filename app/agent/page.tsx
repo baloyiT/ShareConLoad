@@ -22,7 +22,9 @@ type BookingSummary = {
   managed_shipper_id: string | null;
   shipper_name: string | null;
   origin_city: string | null;
+  origin_country: string | null;
   destination_city: string | null;
+  destination_country: string | null;
 };
 
 type RecentBookingRow = {
@@ -35,7 +37,9 @@ type RecentBookingRow = {
   agent_managed_shippers: { name: string } | null;
   containers: {
     origin_city: string | null;
+    origin_country: string | null;
     destination_city: string | null;
+    destination_country: string | null;
   } | null;
 };
 
@@ -96,7 +100,7 @@ export default function AgentDashboard() {
           .not('status', 'in', '("delivered","cancelled")'),
         supabase
           .from('bookings')
-          .select('id, total_cbm, total_price, status, created_at, managed_shipper_id, agent_managed_shippers(name), containers(origin_city, origin_country, destination_city, destination_country, departure_date)')
+          .select('id, total_cbm, total_price, status, created_at, managed_shipper_id, agent_managed_shippers(name), containers(origin_city, origin_country, destination_city, destination_country)')
           .eq('agent_profile_id', ap.id)
           .order('created_at', { ascending: false })
           .limit(5),
@@ -114,7 +118,9 @@ export default function AgentDashboard() {
         managed_shipper_id: b.managed_shipper_id,
         shipper_name: b.agent_managed_shippers?.name ?? null,
         origin_city: b.containers?.origin_city ?? null,
+        origin_country: b.containers?.origin_country ?? null,
         destination_city: b.containers?.destination_city ?? null,
+        destination_country: b.containers?.destination_country ?? null,
       })));
       setLoading(false);
     }
@@ -218,7 +224,6 @@ export default function AgentDashboard() {
             <div className="flex flex-col gap-3">
               {bookings.map((b) => {
                 const style = STATUS_STYLES[b.status] ?? STATUS_STYLES.pending;
-                const c = b.containers;
                 return (
                   <Link
                     key={b.id}
@@ -226,13 +231,13 @@ export default function AgentDashboard() {
                     className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between hover:border-green-200 transition-colors"
                   >
                     <div>
-                      {c && (
+                      {b.origin_city && (
                         <p className="text-sm font-bold text-gray-900">
-                          {c.origin_city}, {c.origin_country} to {c.destination_city}, {c.destination_country}
+                          {b.origin_city}{b.origin_country ? `, ${b.origin_country}` : ''} to {b.destination_city}{b.destination_country ? `, ${b.destination_country}` : ''}
                         </p>
                       )}
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {b.agent_managed_shippers?.name ?? 'Direct booking'} · {b.total_cbm} CBM · ZAR {b.total_price.toLocaleString()}
+                        {b.shipper_name ?? 'Direct booking'} · {b.total_cbm} CBM · ZAR {b.total_price.toLocaleString()}
                       </p>
                     </div>
                     <span
