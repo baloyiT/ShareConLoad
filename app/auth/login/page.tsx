@@ -58,6 +58,12 @@ function LoginContent() {
       return;
     }
 
+    if (!authData?.user) {
+      setErrors({ submit: 'Please confirm your email address before signing in.' });
+      setLoading(false);
+      return;
+    }
+
     // Honour explicit ?next= redirect
     if (nextPath !== '/') {
       router.push(nextPath);
@@ -66,18 +72,22 @@ function LoginContent() {
     }
 
     // Route to the user's primary portal
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('role_type, is_admin')
-      .eq('user_id', authData.user.id);
+    try {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('role_type, is_admin')
+        .eq('user_id', authData.user.id);
 
-    if (profiles?.some((p) => p.is_admin)) {
-      router.push('/admin');
-    } else if (profiles?.some((p) => p.role_type === 'operator')) {
-      router.push('/operator');
-    } else if (profiles?.some((p) => p.role_type === 'agent')) {
-      router.push('/agent');
-    } else {
+      if (profiles?.some((p) => p.is_admin)) {
+        router.push('/admin');
+      } else if (profiles?.some((p) => p.role_type === 'operator')) {
+        router.push('/operator');
+      } else if (profiles?.some((p) => p.role_type === 'agent')) {
+        router.push('/agent');
+      } else {
+        router.push('/');
+      }
+    } catch {
       router.push('/');
     }
     router.refresh();
