@@ -155,7 +155,7 @@ export default function HomePage() {
 
   // ── Auth ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    async function resolveUser(u: User | null) {
+    async function resolveUser(u: User | null, isNewLogin = false) {
       setUser(u);
       if (!u) {
         setIsAdmin(false);
@@ -163,19 +163,31 @@ export default function HomePage() {
       }
       const { data } = await supabase
         .from("profiles")
-        .select("is_admin")
+        .select("role_type, is_admin")
         .eq("user_id", u.id);
+
       setIsAdmin(data?.some((p) => p.is_admin === true) ?? false);
+
+      // On fresh login, route to the user's primary portal
+      if (isNewLogin) {
+        if (data?.some((p) => p.is_admin)) {
+          router.push("/admin");
+        } else if (data?.some((p) => p.role_type === "operator")) {
+          router.push("/operator");
+        } else if (data?.some((p) => p.role_type === "agent")) {
+          router.push("/agent");
+        }
+      }
     }
 
-    supabase.auth.getUser().then(({ data }) => resolveUser(data.user));
+    supabase.auth.getUser().then(({ data }) => resolveUser(data.user, false));
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_e, session) => {
-      resolveUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      resolveUser(session?.user ?? null, event === "SIGNED_IN");
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();

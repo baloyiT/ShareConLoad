@@ -47,7 +47,7 @@ function LoginContent() {
     setErrors({});
     setLoading(true);
 
-    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setErrors({
         submit: error.message === 'Invalid login credentials'
@@ -58,38 +58,7 @@ function LoginContent() {
       return;
     }
 
-    if (!authData?.user) {
-      setErrors({ submit: 'Please confirm your email address before signing in.' });
-      setLoading(false);
-      return;
-    }
-
-    // Honour explicit ?next= redirect
-    if (nextPath !== '/') {
-      router.push(nextPath);
-      router.refresh();
-      return;
-    }
-
-    // Route to the user's primary portal
-    try {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('role_type, is_admin')
-        .eq('user_id', authData.user.id);
-
-      if (profiles?.some((p) => p.is_admin)) {
-        router.push('/admin');
-      } else if (profiles?.some((p) => p.role_type === 'operator')) {
-        router.push('/operator');
-      } else if (profiles?.some((p) => p.role_type === 'agent')) {
-        router.push('/agent');
-      } else {
-        router.push('/');
-      }
-    } catch {
-      router.push('/');
-    }
+    router.push(nextPath);
     router.refresh();
   }
 
