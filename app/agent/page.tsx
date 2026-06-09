@@ -20,13 +20,22 @@ type BookingSummary = {
   status: string;
   created_at: string;
   managed_shipper_id: string | null;
+  shipper_name: string | null;
+  origin_city: string | null;
+  destination_city: string | null;
+};
+
+type RecentBookingRow = {
+  id: string;
+  total_cbm: number;
+  total_price: number;
+  status: string;
+  created_at: string;
+  managed_shipper_id: string | null;
   agent_managed_shippers: { name: string } | null;
   containers: {
-    origin_city: string;
-    origin_country: string;
-    destination_city: string;
-    destination_country: string;
-    departure_date: string;
+    origin_city: string | null;
+    destination_city: string | null;
   } | null;
 };
 
@@ -96,7 +105,17 @@ export default function AgentDashboard() {
       setShipperCount(sCount ?? 0);
       setBookingCount(bCount ?? 0);
       setActiveCount(aCount ?? 0);
-      setBookings((recentBookings as BookingSummary[]) ?? []);
+      setBookings(((recentBookings as RecentBookingRow[]) ?? []).map((b) => ({
+        id: b.id,
+        total_cbm: b.total_cbm,
+        total_price: b.total_price,
+        status: b.status,
+        created_at: b.created_at,
+        managed_shipper_id: b.managed_shipper_id,
+        shipper_name: b.agent_managed_shippers?.name ?? null,
+        origin_city: b.containers?.origin_city ?? null,
+        destination_city: b.containers?.destination_city ?? null,
+      })));
       setLoading(false);
     }
     load();

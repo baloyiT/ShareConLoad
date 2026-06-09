@@ -29,6 +29,22 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'badge-error',
 };
 
+type BookingRow = {
+  id: string;
+  total_cbm: number;
+  total_price: number;
+  status: string;
+  created_at: string;
+  managed_shipper_id: string | null;
+  agent_managed_shippers: { name: string } | null;
+  containers: {
+    origin_city: string | null;
+    origin_country: string | null;
+    destination_city: string | null;
+    destination_country: string | null;
+  } | null;
+};
+
 function AgentBookingsContent() {
   const searchParams = useSearchParams();
   const shipperFilter = searchParams.get('shipper');
@@ -81,7 +97,7 @@ function AgentBookingsContent() {
 
       const { data } = await query;
 
-      const mapped: Booking[] = (data ?? []).map((b: any) => ({
+      const mapped: Booking[] = ((data as BookingRow[]) ?? []).map((b) => ({
         id: b.id,
         total_cbm: b.total_cbm,
         total_price: b.total_price,
