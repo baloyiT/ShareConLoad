@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 
 export type ActiveSession = {
   profile_id: string;
-  role_type: 'customer' | 'operator';
+  role_type: 'customer' | 'operator' | 'agent';
 };
 
 export async function setActiveSession(data: ActiveSession): Promise<void> {
