@@ -87,6 +87,11 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
+  // Agent state
+  const [agentProfileId, setAgentProfileId] = useState<string | null>(null);
+  const [managedShippers, setManagedShippers] = useState<{ id: string; name: string }[]>([]);
+  const [selectedShipperId, setSelectedShipperId] = useState<string>('');
+
   // ── Fetch container ────────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchContainer() {
@@ -106,6 +111,41 @@ export default function BookingPage() {
     }
     if (containerId) fetchContainer();
   }, [containerId]);
+
+  // Detect agent session and load managed shippers
+  useEffect(() => {
+    async function detectAgent() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role_type', 'agent')
+        .maybeSingle();
+
+      if (!profile) return;
+
+      const { data: ap } = await supabase
+        .from('agent_profiles')
+        .select('id')
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+
+      if (!ap) return;
+      setAgentProfileId(ap.id);
+
+      const { data: shippers } = await supabase
+        .from('agent_managed_shippers')
+        .select('id, name')
+        .eq('agent_profile_id', ap.id)
+        .order('name', { ascending: true });
+
+      setManagedShippers(shippers ?? []);
+    }
+    detectAgent();
+  }, []);
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const cbmValue = parseFloat(totalCbm) || 0;
@@ -239,6 +279,8 @@ export default function BookingPage() {
           total_cbm: cbmValue,
           total_price: estimatedTotal,
           status: 'pending',
+          ...(agentProfileId && { agent_profile_id: agentProfileId }),
+          ...(selectedShipperId && { managed_shipper_id: selectedShipperId }),
         })
         .select('id')
         .single();
@@ -465,6 +507,35 @@ export default function BookingPage() {
                 )}
               </div>
             </section>
+
+            {/* ── SECTION 2b: Booking on behalf of (agents only) ─────────────── */}
+            {agentProfileId && managedShippers.length > 0 && (
+              <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#16a34a' }}>A</span>
+                  <h2 className="font-bold text-gray-800">Booking on behalf of</h2>
+                  <span className="badge badge-sm text-white border-none ml-1" style={{ backgroundColor: '#16a34a' }}>Agent</span>
+                </div>
+                <div className="p-6">
+                  <label className="block mb-1 text-sm font-semibold text-gray-700">
+                    Select Shipper <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <p className="text-xs text-gray-400 mb-2">
+                    Which of your managed shippers is this booking for?
+                  </p>
+                  <select
+                    value={selectedShipperId}
+                    onChange={(e) => setSelectedShipperId(e.target.value)}
+                    className="select select-bordered w-full text-sm"
+                  >
+                    <option value="">No shipper selected</option>
+                    {managedShippers.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </section>
+            )}
 
             {/* ── SECTION 3: Shipment Items ─────────────────────────────────── */}
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
