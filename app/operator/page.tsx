@@ -1,11 +1,13 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 import { notify } from '@/services/notificationService';
+import RoleSwitcher from '@/components/RoleSwitcher';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -165,6 +167,31 @@ export default function OperatorDashboard() {
 
   return (
     <div className="bg-[#f8fafc]">
+
+      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-14">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/logo1.png" alt="ShareConLoad" width={36} height={36} className="h-8 w-auto" />
+            <span className="text-lg font-extrabold tracking-tight hidden sm:block">
+              <span style={{ color: '#0f2044' }}>Share</span>
+              <span style={{ color: '#f97316' }}>Con</span>
+              <span style={{ color: '#0f2044' }}>Load</span>
+            </span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <RoleSwitcher currentRole="operator" />
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push('/auth/login');
+              }}
+              className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </nav>
 
       <PageHero
         showMap

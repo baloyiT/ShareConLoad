@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
+import RoleSwitcher from '@/components/RoleSwitcher';
 
 type AgentProfile = {
   id: string;
@@ -153,15 +154,18 @@ export default function AgentDashboard() {
             <Link href="/agent/bookings" className="hover:text-gray-900 transition-colors">Bookings</Link>
             <Link href="/#listings" className="hover:text-gray-900 transition-colors">Browse Containers</Link>
           </div>
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push('/auth/login');
-            }}
-            className="text-sm font-medium text-gray-700 hover:text-gray-900 px-4 py-1.5 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
-          >
-            Sign Out
-          </button>
+          <div className="flex items-center gap-2">
+            <RoleSwitcher currentRole="agent" />
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push('/auth/login');
+              }}
+              className="text-sm font-medium text-gray-700 hover:text-gray-900 px-4 py-1.5 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </nav>
 

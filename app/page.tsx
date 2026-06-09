@@ -9,6 +9,7 @@ import { supabase } from "@/services/supabaseClient";
 import ContainerList from "@/components/ContainerList";
 import { Container } from "@/components/ContainerCard";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 // ─── Brand data ───────────────────────────────────────────────────────────────
 
@@ -140,10 +141,7 @@ export default function HomePage() {
   const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
-  const [isOperator, setIsOperator] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isAgent, setIsAgent] = useState(false);
-  const [switchingRole, setSwitchingRole] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [containers, setContainers] = useState<Container[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,17 +158,14 @@ export default function HomePage() {
     async function resolveUser(u: User | null) {
       setUser(u);
       if (!u) {
-        setIsOperator(false);
         setIsAdmin(false);
         return;
       }
       const { data } = await supabase
         .from("profiles")
-        .select("role_type, is_admin")
+        .select("is_admin")
         .eq("user_id", u.id);
-      setIsOperator(data?.some((p) => p.role_type === "operator") ?? false);
       setIsAdmin(data?.some((p) => p.is_admin === true) ?? false);
-      setIsAgent(data?.some((p) => p.role_type === "agent") ?? false);
     }
 
     supabase.auth.getUser().then(({ data }) => resolveUser(data.user));
@@ -185,16 +180,6 @@ export default function HomePage() {
   async function handleSignOut() {
     await supabase.auth.signOut();
     router.refresh();
-  }
-
-  function handleSwitchToOperator() {
-    if (!user) {
-      router.push("/auth/login");
-      return;
-    }
-    if (switchingRole) return;
-    setSwitchingRole(true);
-    router.push(isOperator ? "/operator" : "/onboarding/operator");
   }
 
   // ── Containers ─────────────────────────────────────────────────────────────
@@ -379,29 +364,7 @@ export default function HomePage() {
                     ⚙️ Admin
                   </Link>
                 )}
-                {isOperator && (
-                  <button
-                    onClick={handleSwitchToOperator}
-                    disabled={switchingRole}
-                    className="hidden md:flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
-                    style={{ backgroundColor: "#f97316" }}
-                  >
-                    {switchingRole ? (
-                      <span className="loading loading-spinner loading-xs" />
-                    ) : (
-                      "🚢 Operator Portal"
-                    )}
-                  </button>
-                )}
-                {isAgent && (
-                  <Link
-                    href="/agent"
-                    className="hidden md:flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: "#16a34a" }}
-                  >
-                    🤝 Agent Portal
-                  </Link>
-                )}
+                <RoleSwitcher currentRole="customer" />
 
                 {/* Avatar + name + badge */}
                 <div className="flex items-center gap-2 pl-1">
@@ -411,17 +374,9 @@ export default function HomePage() {
                   >
                     {userInitials}
                   </div>
-                  <div className="hidden sm:flex flex-col leading-tight">
-                    <span className="text-sm font-medium text-gray-700 max-w-[130px] truncate">
-                      {userName}
-                    </span>
-                    <span
-                      className="text-xs font-semibold px-1.5 py-0.5 rounded-full w-fit mt-0.5"
-                      style={{ backgroundColor: "#e8eef8", color: "#0f2044" }}
-                    >
-                      👤 Shipper
-                    </span>
-                  </div>
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[130px] truncate">
+                    {userName}
+                  </span>
                 </div>
 
                 <button
@@ -516,24 +471,7 @@ export default function HomePage() {
                   >
                     📦 My Bookings
                   </Link>
-                  {isOperator && (
-                    <button
-                      onClick={() => { setMobileNavOpen(false); handleSwitchToOperator(); }}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-left"
-                    >
-                      🚢 Operator Portal
-                    </button>
-                  )}
-                  {isAgent && (
-                    <Link
-                      href="/agent"
-                      onClick={() => setMobileNavOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
-                      style={{ backgroundColor: "#16a34a" }}
-                    >
-                      🤝 Agent Portal
-                    </Link>
-                  )}
+                  <RoleSwitcher variant="flat" currentRole="customer" onNavigate={() => setMobileNavOpen(false)} />
                   {isAdmin && (
                     <Link
                       href="/admin"
