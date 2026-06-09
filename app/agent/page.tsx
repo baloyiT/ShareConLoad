@@ -110,7 +110,7 @@ export default function AgentDashboard() {
       setShipperCount(sCount ?? 0);
       setBookingCount(bCount ?? 0);
       setActiveCount(aCount ?? 0);
-      setBookings(((recentBookings as RecentBookingRow[]) ?? []).map((b) => ({
+      setBookings(((recentBookings as unknown as RecentBookingRow[]) ?? []).map((b) => ({
         id: b.id,
         total_cbm: b.total_cbm,
         total_price: b.total_price,

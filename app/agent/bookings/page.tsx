@@ -97,7 +97,7 @@ function AgentBookingsContent() {
 
       const { data } = await query;
 
-      const mapped: Booking[] = ((data as BookingRow[]) ?? []).map((b) => ({
+      const mapped: Booking[] = ((data as unknown as BookingRow[]) ?? []).map((b) => ({
         id: b.id,
         total_cbm: b.total_cbm,
         total_price: b.total_price,
