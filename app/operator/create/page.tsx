@@ -168,7 +168,7 @@ export default function CreateContainerPage() {
 
     const cbm = parseFloat(form.total_capacity_cbm);
     const rate = fxRates[form.currency_code] ?? null;
-    const priceUsd = rate ? Math.round(parseFloat(form.price_per_cbm) * rate * 100) / 100 : null;
+    const priceUsd = rate ? parseFloat((parseFloat(form.price_per_cbm) * rate).toFixed(2)) : null;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -278,7 +278,7 @@ export default function CreateContainerPage() {
             <Row label="Countries" value={`${form.origin_country} → ${form.destination_country}`} />
             <Row label="Departure" value={new Date(form.departure_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} />
             <Row label="Capacity"  value={`${form.total_capacity_cbm} CBM`} />
-            <Row label="Price"     value={`R${parseFloat(form.price_per_cbm).toFixed(2)} / CBM`} />
+            <Row label="Price"     value={`${form.currency_code} ${parseFloat(form.price_per_cbm).toFixed(2)} / CBM`} />
             <div className="flex items-center justify-between">
               <span className="text-gray-500">Status</span>
               <span className="badge badge-sm text-white" style={{ backgroundColor: '#22c55e' }}>Open</span>
@@ -486,12 +486,12 @@ export default function CreateContainerPage() {
                   />
                   <PricingPreviewTile
                     label="Price / CBM"
-                    value={`R${parseFloat(form.price_per_cbm).toFixed(2)}`}
+                    value={`${form.currency_code} ${parseFloat(form.price_per_cbm).toFixed(2)}`}
                     highlight
                   />
                   <PricingPreviewTile
                     label="Max revenue"
-                    value={`R${(parseFloat(form.total_capacity_cbm) * parseFloat(form.price_per_cbm)).toFixed(2)}`}
+                    value={`${form.currency_code} ${(parseFloat(form.total_capacity_cbm) * parseFloat(form.price_per_cbm)).toFixed(2)}`}
                   />
                 </div>
               )}
