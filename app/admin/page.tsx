@@ -182,6 +182,7 @@ export default function AdminDashboard() {
                   { href: '/admin/release',    label: 'Release',     icon: '🔓', desc: 'Cargo release auth'          },
                   { href: '/admin/fx-rates',  label: 'FX Rates',    icon: '💱', desc: 'Currency exchange rates'      },
                   { href: '/admin/agents',    label: 'Agents',      icon: '👤', desc: 'Review agent KYC applications' },
+                  { href: '/admin/customers', label: 'Customers',   icon: '🪪', desc: 'Review customer identity KYC'  },
                 ].map(({ href, label, icon, desc }) => (
                   <Link
                     key={href}

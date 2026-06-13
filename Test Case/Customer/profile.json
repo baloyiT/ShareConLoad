@@ -3,6 +3,18 @@
   "email": "customer.shareconload@gmail.com",
   "password": "TestCustomer@2026!",
   "full_name": "Alex Mensah",
+  "kyc": {
+    "full_name": "Alexander Kwame Mensah",
+    "date_of_birth": "1991-03-22",
+    "id_type": "passport",
+    "id_number": "A12345678",
+    "phone_number": "+27 83 456 7890",
+    "residential_address": "42 Rissik Street, Johannesburg CBD, Gauteng, 2001, South Africa",
+    "documents": {
+      "id_document": "documents/identity-document.pdf",
+      "proof_of_address": "documents/proof-of-address.pdf"
+    }
+  },
   "shipping_details": {
     "typical_route": {
       "origin_country": "South Africa",
@@ -18,15 +30,19 @@
     "shipment_items": [
       {
         "description": "Clothing and textiles — mixed lot",
+        "category": "Clothing & Apparel",
         "quantity": 120,
         "weight_kg": 85,
-        "declared_value": 4500
+        "declared_value": 4500,
+        "photo": "documents/item-photo-clothing-lot.pdf"
       },
       {
         "description": "Accessories and personal care items",
+        "category": "Cosmetics & Health",
         "quantity": 60,
         "weight_kg": 20,
-        "declared_value": 1200
+        "declared_value": 1200,
+        "photo": "documents/item-photo-accessories.pdf"
       }
     ],
     "declaration": {
@@ -35,5 +51,13 @@
       "currency": "ZAR",
       "agreed_terms": true
     }
+  },
+  "test_dispute": {
+    "type": "cargo_damage",
+    "description": "Clothing lot arrived with water damage. Approximately 30% of garments are unsaleable.",
+    "evidence": [
+      "documents/dispute-evidence-damage.pdf",
+      "documents/delivery-receipt.pdf"
+    ]
   }
 }

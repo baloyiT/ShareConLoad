@@ -87,6 +87,10 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
+  // Submission state
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
+  const [kycLoading, setKycLoading] = useState(true);
+
   // Agent state
   const [agentProfileId, setAgentProfileId] = useState<string | null>(null);
   const [managedShippers, setManagedShippers] = useState<{ id: string; name: string }[]>([]);
@@ -111,6 +115,33 @@ export default function BookingPage() {
     }
     if (containerId) fetchContainer();
   }, [containerId]);
+
+  // ── Check customer KYC status ─────────────────────────────────────────────
+  useEffect(() => {
+    async function checkKyc() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setKycLoading(false); return; }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role_type', 'customer')
+        .maybeSingle();
+
+      if (!profile) { setKycLoading(false); return; }
+
+      const { data: kyc } = await supabase
+        .from('customer_kyc')
+        .select('status')
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+
+      setKycStatus(kyc?.status ?? null);
+      setKycLoading(false);
+    }
+    checkKyc();
+  }, []);
 
   // Detect agent session and load managed shippers
   useEffect(() => {
@@ -374,10 +405,45 @@ export default function BookingPage() {
   }
 
   // ── Loading state ──────────────────────────────────────────────────────────
-  if (loadingContainer) {
+  if (loadingContainer || kycLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+      </div>
+    );
+  }
+
+  // ── KYC gate ──────────────────────────────────────────────────────────────
+  if (kycStatus !== 'verified') {
+    const isPending = kycStatus === 'pending_review';
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-gray-50 px-4 text-center">
+        <div className="text-5xl">{isPending ? '🔍' : '🪪'}</div>
+        <div className="max-w-sm">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            {isPending ? 'Verification In Progress' : 'Identity Verification Required'}
+          </h1>
+          <p className="text-gray-500 text-sm mb-6">
+            {isPending
+              ? 'Your identity is currently under review. You will be notified once approved — this usually takes 1–2 business days.'
+              : 'International shipping regulations require us to verify your identity before you can book container space.'}
+          </p>
+          {isPending ? (
+            <div className="flex flex-col gap-3">
+              <Link href="/onboarding/customer/status" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#f97316' }}>
+                Check Verification Status
+              </Link>
+              <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Browse Containers</Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <Link href="/onboarding/customer" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#f97316' }}>
+                {kycStatus === 'rejected' ? 'Resubmit Verification' : 'Verify My Identity'}
+              </Link>
+              <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Browse Containers</Link>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
