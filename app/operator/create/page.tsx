@@ -19,11 +19,24 @@ type ContainerForm = {
   arrival_date: string;
   total_capacity_cbm: string;
   price_per_cbm: string;
+  currency_code: string;
 };
 
 type FormErrors = Partial<Record<keyof ContainerForm, string>> & { submit?: string };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+const SUPPORTED_CURRENCIES = [
+  { code: 'ZAR', label: 'ZAR — South African Rand' },
+  { code: 'USD', label: 'USD — US Dollar' },
+  { code: 'GHS', label: 'GHS — Ghanaian Cedi' },
+  { code: 'NGN', label: 'NGN — Nigerian Naira' },
+  { code: 'KES', label: 'KES — Kenyan Shilling' },
+  { code: 'GBP', label: 'GBP — British Pound' },
+  { code: 'EUR', label: 'EUR — Euro' },
+  { code: 'XOF', label: 'XOF — West African CFA Franc' },
+  { code: 'EGP', label: 'EGP — Egyptian Pound' },
+];
 
 const EMPTY_FORM: ContainerForm = {
   origin_country: '',
@@ -34,6 +47,7 @@ const EMPTY_FORM: ContainerForm = {
   arrival_date: '',
   total_capacity_cbm: '',
   price_per_cbm: '',
+  currency_code: 'ZAR',
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -47,6 +61,23 @@ export default function CreateContainerPage() {
   const [createdId, setCreatedId] = useState<string | null>(null);
 
   const [compliance, setCompliance] = useState<'loading' | 'ok' | 'blocked'>('loading');
+
+  const [fxRates, setFxRates] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    supabase
+      .from('fx_rates')
+      .select('currency_code, rate_to_usd')
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<string, number> = {};
+          data.forEach((r: { currency_code: string; rate_to_usd: number }) => {
+            map[r.currency_code] = r.rate_to_usd;
+          });
+          setFxRates(map);
+        }
+      });
+  }, []);
 
   useEffect(() => {
     async function checkCompliance() {
@@ -136,6 +167,8 @@ export default function CreateContainerPage() {
     setSubmitting(true);
 
     const cbm = parseFloat(form.total_capacity_cbm);
+    const rate = fxRates[form.currency_code] ?? null;
+    const priceUsd = rate ? Math.round(parseFloat(form.price_per_cbm) * rate * 100) / 100 : null;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -154,6 +187,8 @@ export default function CreateContainerPage() {
           total_capacity_cbm: cbm,
           available_capacity_cbm: cbm,           // always equals total on creation
           price_per_cbm: parseFloat(form.price_per_cbm),
+          currency_code: form.currency_code,
+          price_per_cbm_usd: priceUsd,
           status: 'open',
         })
         .select('id')
@@ -379,7 +414,7 @@ export default function CreateContainerPage() {
 
           {/* ── SECTION 3: Capacity & Pricing ────────────────────────────── */}
           <Section step="3" title="Capacity &amp; Pricing">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <Field
                 label="Total Capacity (CBM)"
                 required
@@ -403,13 +438,24 @@ export default function CreateContainerPage() {
                 </div>
               </Field>
 
+              <Field label="Currency" required>
+                <select
+                  value={form.currency_code}
+                  onChange={(e) => update('currency_code', e.target.value)}
+                  className="select select-bordered w-full"
+                >
+                  {SUPPORTED_CURRENCIES.map(({ code, label }) => (
+                    <option key={code} value={code}>{label}</option>
+                  ))}
+                </select>
+              </Field>
+
               <Field
-                label="Price per CBM (ZAR)"
+                label={`Price per CBM (${form.currency_code})`}
                 required
                 error={errors.price_per_cbm}
               >
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">R</span>
                   <input
                     type="number"
                     placeholder="e.g. 150"
@@ -417,10 +463,15 @@ export default function CreateContainerPage() {
                     step={0.01}
                     value={form.price_per_cbm}
                     onChange={(e) => update('price_per_cbm', e.target.value)}
-                    className={`input input-bordered w-full pl-8 ${errors.price_per_cbm ? 'input-error' : ''}`}
+                    className={`input input-bordered w-full ${errors.price_per_cbm ? 'input-error' : ''}`}
                     data-error={errors.price_per_cbm ? 'true' : undefined}
                   />
                 </div>
+                {form.price_per_cbm && fxRates[form.currency_code] && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    ≈ USD {(parseFloat(form.price_per_cbm) * fxRates[form.currency_code]).toFixed(2)} / CBM
+                  </p>
+                )}
               </Field>
             </div>
 
