@@ -12,6 +12,8 @@ export type Container = {
   available_capacity_cbm: number;
   total_capacity_cbm: number;
   price_per_cbm: number;
+  currency_code?: string;
+  price_per_cbm_usd?: number;
   status: string;
   operator_name?: string;
   operator_id?: string;
@@ -48,9 +50,12 @@ export default function ContainerCard({ container }: ContainerCardProps) {
           </span>
           <div className="text-right">
             <span className="text-2xl font-bold" style={{ color: '#f97316' }}>
-              R{container.price_per_cbm}
+              {container.currency_code ?? 'ZAR'} {container.price_per_cbm.toLocaleString()}
             </span>
             <span className="text-xs text-gray-400 block">/CBM</span>
+            {container.price_per_cbm_usd != null && (container.currency_code ?? 'ZAR') !== 'USD' && (
+              <span className="text-xs text-gray-400">≈ USD {container.price_per_cbm_usd.toFixed(2)}</span>
+            )}
           </div>
         </div>
 
