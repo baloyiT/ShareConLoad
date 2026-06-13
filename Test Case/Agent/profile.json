@@ -1,0 +1,33 @@
+{
+  "role": "agent",
+  "email": "justice_baloyi@yahoo.com",
+  "password": "TestAgent@2026!",
+  "full_name": "Justice Baloyi",
+  "business": {
+    "business_name": "Baloyi International Freight Solutions",
+    "contact_person": "Justice Baloyi",
+    "phone_number": "+27 82 345 6789",
+    "country": "South Africa",
+    "years_in_operation": 7,
+    "operating_corridors": ["Africa", "Europe", "Middle East"],
+    "service_description": "Full-service freight forwarding specialising in consolidated container loads between Southern Africa and key global ports. We handle customs brokerage, documentation, and last-mile delivery coordination across Sub-Saharan Africa and Europe."
+  },
+  "credentials": {
+    "license_number": "FF-ZA-2019-10583",
+    "license_authority": "SAAFF — South African Association of Freight Forwarders",
+    "license_expiry": "2028-06-30",
+    "registration_number": "2019/078341/07"
+  },
+  "bank": {
+    "bank_name": "Nedbank",
+    "bank_account_holder": "Baloyi International Freight Solutions Pty Ltd",
+    "bank_account_number": "1098765432",
+    "bank_branch_code": "198765"
+  },
+  "documents": {
+    "doc_license": "Freight_Forwarder_License_BIFL_2019.pdf",
+    "doc_business_reg": "CIPC_Registration_BIFL_2019.pdf",
+    "doc_identity": "SA_ID_Justice_Baloyi.pdf",
+    "doc_proof_address": "Utility_Bill_BIFL_2026.pdf"
+  }
+}

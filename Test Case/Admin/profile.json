@@ -1,0 +1,14 @@
+{
+  "role": "admin",
+  "email": "justice.baloyi@gmail.com",
+  "full_name": "Justice Baloyi",
+  "note": "Admin account. Password is the user's own Supabase password — not stored here for security. This account must have is_admin=true set in the profiles table.",
+  "admin_tasks": [
+    "Approve / reject agent KYC applications at /admin/agents",
+    "Manage FX rates at /admin/fx-rates",
+    "Review operator compliance at /admin/operators",
+    "Manage payouts at /admin/payouts",
+    "Handle disputes at /admin/disputes",
+    "Authorize cargo release at /admin/release"
+  ]
+}

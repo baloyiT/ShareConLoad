@@ -1,0 +1,39 @@
+{
+  "role": "customer",
+  "email": "customer.shareconload@gmail.com",
+  "password": "TestCustomer@2026!",
+  "full_name": "Alex Mensah",
+  "shipping_details": {
+    "typical_route": {
+      "origin_country": "South Africa",
+      "origin_city": "Johannesburg",
+      "destination_country": "Ghana",
+      "destination_city": "Accra"
+    },
+    "typical_cbm": 5,
+    "goods_type": "General merchandise — clothing and textiles"
+  },
+  "test_booking": {
+    "total_cbm": 3.5,
+    "shipment_items": [
+      {
+        "description": "Clothing and textiles — mixed lot",
+        "quantity": 120,
+        "weight_kg": 85,
+        "declared_value": 4500
+      },
+      {
+        "description": "Accessories and personal care items",
+        "quantity": 60,
+        "weight_kg": 20,
+        "declared_value": 1200
+      }
+    ],
+    "declaration": {
+      "goods_description": "Mixed clothing, textiles, and personal care items for retail sale",
+      "total_declared_value": 5700,
+      "currency": "ZAR",
+      "agreed_terms": true
+    }
+  }
+}
