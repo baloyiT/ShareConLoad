@@ -584,6 +584,13 @@ export default function HomePage() {
               >
                 List Your Container
               </Link>
+              <Link
+                href="/onboarding/agent"
+                className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl border-2 hover:bg-white/10 transition-colors"
+                style={{ borderColor: 'rgba(22,163,74,0.6)', color: '#86efac' }}
+              >
+                Join as Agent
+              </Link>
             </div>
 
             {/* Feature grid */}
