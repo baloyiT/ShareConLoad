@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
-import { createAgentProfile } from '@/actions/agentActions';
+import { saveAgentStep1 } from '@/actions/agentActions';
 
 const COUNTRIES = [
   'South Africa', 'Angola', 'Botswana', 'Cameroon', 'Congo', 'Egypt',
@@ -16,7 +16,7 @@ const COUNTRIES = [
 });
 
 export default function AgentOnboardingPage() {
-  const [state, formAction, isPending] = useActionState(createAgentProfile, null);
+  const [state, formAction, isPending] = useActionState(saveAgentStep1, null);
 
   return (
     <div
