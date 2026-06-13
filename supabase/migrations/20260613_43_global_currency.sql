@@ -36,10 +36,12 @@ create policy "fx_rates_admin_write"
 
 -- Add currency fields to containers
 alter table public.containers
-  add column if not exists currency_code    text not null default 'ZAR',
+  add column if not exists currency_code    text not null default 'ZAR' references public.fx_rates(currency_code),
   add column if not exists price_per_cbm_usd numeric(18, 2);
 
--- Back-fill existing containers: assume ZAR, compute USD equiv
-update public.containers
-  set price_per_cbm_usd = round(price_per_cbm * 0.054, 2)
-  where currency_code = 'ZAR' and price_per_cbm_usd is null;
+-- Back-fill existing containers using seeded rates
+update public.containers c
+  set price_per_cbm_usd = round(c.price_per_cbm * r.rate_to_usd, 2)
+  from public.fx_rates r
+  where r.currency_code = c.currency_code
+    and c.price_per_cbm_usd is null;
