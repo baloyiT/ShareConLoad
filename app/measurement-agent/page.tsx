@@ -27,6 +27,7 @@ export default function MeasurementAgentDashboard() {
   const [agentProfile, setAgentProfile] = useState<MeasurementAgentProfile | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [jobCounts, setJobCounts] = useState({ assigned: 0, in_progress: 0, completed: 0 });
 
   useEffect(() => {
     async function fetchProfile() {
@@ -68,6 +69,22 @@ export default function MeasurementAgentDashboard() {
       }
 
       setAgentProfile(agentData ?? null);
+
+      if (agentData) {
+        const { data: jobs } = await supabase
+          .from('measurement_jobs')
+          .select('status')
+          .eq('measurement_agent_profile_id', agentData.id);
+
+        const counts = { assigned: 0, in_progress: 0, completed: 0 };
+        for (const job of jobs ?? []) {
+          if (job.status === 'assigned') counts.assigned++;
+          else if (job.status === 'in_progress') counts.in_progress++;
+          else if (job.status === 'completed') counts.completed++;
+        }
+        setJobCounts(counts);
+      }
+
       setLoading(false);
     }
 
@@ -167,24 +184,42 @@ export default function MeasurementAgentDashboard() {
             </div>
           </div>
           <div className="stat">
-            <div className="stat-title text-xs text-gray-400">Average Rating</div>
+            <div className="stat-title text-xs text-gray-400">Active Jobs</div>
             <div className="stat-value text-2xl font-extrabold" style={{ color: '#f97316' }}>
+              {jobCounts.assigned + jobCounts.in_progress}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="stat-title text-xs text-gray-400">Average Rating</div>
+            <div className="stat-value text-2xl font-extrabold" style={{ color: '#0f2044' }}>
               {agentProfile.average_rating != null ? agentProfile.average_rating.toFixed(1) : 'N/A'}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="stat-title text-xs text-gray-400">Awaiting Start</div>
+            <div className="stat-value text-2xl font-extrabold" style={{ color: '#0f2044' }}>
+              {jobCounts.assigned}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="badge badge-outline text-xs font-semibold" style={{ color: '#6b7280', borderColor: '#e5e7eb' }}>
-              Phase 2
-            </span>
-            <span className="text-xs text-gray-400 font-medium">Coming Soon</span>
+        <Link
+          href="/measurement-agent/jobs"
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center justify-between hover:border-orange-200 hover:bg-orange-50 transition-colors group"
+        >
+          <div>
+            <p className="font-bold text-gray-800 group-hover:text-orange-600 transition-colors">My Jobs</p>
+            <p className="text-sm text-gray-500 mt-0.5">View assigned and in-progress measurement jobs</p>
           </div>
-          <p className="text-gray-500 text-sm">
-            Cargo measurement job assignments coming in Phase 2.
-          </p>
-        </div>
+          <div className="flex items-center gap-3">
+            {(jobCounts.assigned + jobCounts.in_progress) > 0 && (
+              <span className="badge text-white font-bold text-xs px-3 py-2" style={{ backgroundColor: '#f97316' }}>
+                {jobCounts.assigned + jobCounts.in_progress} active
+              </span>
+            )}
+            <span className="text-gray-300 group-hover:text-orange-400 text-xl transition-colors">→</span>
+          </div>
+        </Link>
       </div>
     );
   }
