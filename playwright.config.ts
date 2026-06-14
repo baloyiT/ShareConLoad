@@ -1,4 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
+
+// Load .env.local — Playwright doesn't inherit Next.js env injection
+try {
+  const envFile = fs.readFileSync(path.join(process.cwd(), '.env.local'), 'utf-8');
+  for (const line of envFile.split('\n')) {
+    const m = line.match(/^([^#\s][^=]*)=(.*)/);
+    if (m) process.env[m[1].trim()] ??= m[2].trim().replace(/^["']|["']$/g, '');
+  }
+} catch { /* .env.local not found — skip */ }
 
 export default defineConfig({
   testDir: './tests',
@@ -16,20 +27,15 @@ export default defineConfig({
   },
 
   projects: [
-    // Auth setup runs first
-    {
-      name: 'setup',
-      testMatch: /auth\.setup\.ts/,
-    },
-    // Agent onboarding tests depend on auth
+    { name: 'setup-agent',    testMatch: /auth\.setup\.ts/ },
+    { name: 'setup-operator', testMatch: /operator\.setup\.ts/ },
+    { name: 'setup-customer', testMatch: /customer\.setup\.ts/ },
+    { name: 'setup-admin',    testMatch: /admin\.setup\.ts/ },
     {
       name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: 'tests/.auth/agent-user.json',
-      },
-      dependencies: ['setup'],
-      testIgnore: /auth\.setup\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup-agent', 'setup-operator', 'setup-customer', 'setup-admin'],
+      testIgnore: /\.setup\.ts/,
     },
   ],
 

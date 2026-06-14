@@ -7,8 +7,8 @@ import { revalidatePath } from 'next/cache';
 async function assertAdmin(supabase: Awaited<ReturnType<typeof createServerActionClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  const { data } = await supabase.from('profiles').select('is_admin').eq('user_id', user.id).maybeSingle();
-  return data?.is_admin === true;
+  const { data } = await supabase.from('profiles').select('is_admin').eq('user_id', user.id);
+  return Array.isArray(data) && data.some((p) => p.is_admin === true);
 }
 
 export async function approveCustomerKyc(kycId: string): Promise<{ error?: string }> {

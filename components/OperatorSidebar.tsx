@@ -86,13 +86,13 @@ function ComplianceItem({
   const pathname = usePathname();
   const active   = pathname === href || pathname.startsWith(href + '/');
 
-  const color = active
-    ? '#0f2044'
-    : done
-      ? '#16a34a'
+  const color = done
+    ? '#16a34a'
+    : active
+      ? '#0f2044'
       : '#6b7280';
 
-  const bg = active ? '#f0f4ff' : done ? '#f0fdf4' : 'transparent';
+  const bg = done ? '#f0fdf4' : active ? '#f0f4ff' : 'transparent';
 
   return (
     <Link
@@ -103,7 +103,7 @@ function ComplianceItem({
     >
       <CheckIcon done={done} />
       <span className="flex-1 truncate">{label}</span>
-      {done && !active && (
+      {done && (
         <svg className="w-3 h-3 shrink-0" style={{ color: '#16a34a' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
         </svg>
@@ -147,7 +147,6 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
         'proof_of_warehouse_address',
         'tax_clearance',
         'banking_confirmation',
-        'cargo_insurance',
       ] as const;
 
       let documentsComplete = false;

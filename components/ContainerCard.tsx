@@ -45,9 +45,16 @@ export default function ContainerCard({ container }: ContainerCardProps) {
       <div className="card-body p-5 gap-3">
         {/* Status + price */}
         <div className="flex items-start justify-between">
-          <span className="badge badge-sm text-white font-semibold px-2" style={{ backgroundColor: '#22c55e' }}>
-            LIVE
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="badge badge-sm text-white font-semibold px-2" style={{ backgroundColor: '#22c55e' }}>
+              LIVE
+            </span>
+            {(container.origin_country === 'Test Country' || container.destination_country === 'Test Country') && (
+              <span className="badge badge-sm font-semibold px-2 border" style={{ backgroundColor: '#fef9c3', color: '#854d0e', borderColor: '#fde047' }}>
+                TEST
+              </span>
+            )}
+          </div>
           <div className="text-right">
             <span className="text-2xl font-bold" style={{ color: '#f97316' }}>
               {container.currency_code ?? 'ZAR'} {container.price_per_cbm.toLocaleString()}

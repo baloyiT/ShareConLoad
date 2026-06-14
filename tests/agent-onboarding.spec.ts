@@ -12,6 +12,9 @@ function snap(page: Page, name: string) {
   });
 }
 
+// Agent onboarding uses server actions that require auth
+test.use({ storageState: 'tests/.auth/agent-user.json' });
+
 test.describe('Agent Onboarding Flow', () => {
 
   test('Step 1 — Business Details page renders correctly', async ({ page }) => {

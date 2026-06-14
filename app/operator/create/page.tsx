@@ -105,7 +105,7 @@ export default function CreateContainerPage() {
         .from('compliance_documents')
         .select('id', { count: 'exact', head: true })
         .eq('operator_profile_id', op.id)
-        .in('doc_type', ['identity', 'business_registration', 'proof_of_warehouse_address', 'tax_clearance', 'banking_confirmation', 'cargo_insurance'])
+        .in('doc_type', ['identity', 'business_registration', 'proof_of_warehouse_address', 'tax_clearance', 'banking_confirmation'])
         .eq('status', 'approved');
 
       const compliant =
@@ -113,7 +113,7 @@ export default function CreateContainerPage() {
         !!op.phone_number &&
         !!op.paystack_recipient_code &&
         !!op.service_agreement_signed_at &&
-        (count ?? 0) === 6;
+        (count ?? 0) === 5;
 
       setCompliance(compliant ? 'ok' : 'blocked');
     }

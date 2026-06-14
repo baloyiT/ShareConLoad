@@ -68,7 +68,7 @@ export default function OperatorBankPage() {
         .select('id, paystack_recipient_code, bank_account_number, bank_code, bank_account_name, bank_country, bank_swift_code, payout_method')
         .eq('profile_id', profile.id).single();
 
-      if (!op) { setSubmitError('Operator details not found.'); setLoadingProfile(false); return; }
+      if (!op) { router.replace('/onboarding/operator?reason=bank'); return; }
 
       setOperatorProfileId(op.id);
       setExistingCode(op.paystack_recipient_code ?? null);

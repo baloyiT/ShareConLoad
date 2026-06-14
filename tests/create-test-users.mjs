@@ -1,7 +1,6 @@
 /**
- * Creates test users in Supabase, bypassing email confirmation.
- * Also upserts the correct profiles row for each user using the service role
- * client, bypassing RLS and any trigger-assigned defaults.
+ * Creates / updates test users in Supabase, bypassing email confirmation.
+ * Resets passwords for existing users so test credentials always match.
  *
  * Usage:
  *   node tests/create-test-users.mjs
@@ -9,7 +8,6 @@
  * Prerequisites:
  *   Add to .env.local:
  *     SUPABASE_SERVICE_ROLE_KEY=your_key_here
- *   (Supabase Dashboard → Project Settings → API → service_role)
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -44,33 +42,43 @@ const TEST_USERS = [
     password:  'TestCustomer@2026!',
     full_name: 'Alex Mensah',
     role_type: 'customer',
+    is_admin:  false,
   },
   {
     email:     'mercy.affulbaloyi@gmail.com',
     password:  'TestOperator@2026!',
     full_name: 'Mercy Afful-Baloyi',
     role_type: 'operator',
+    is_admin:  false,
   },
   {
     email:     'justice_baloyi@yahoo.com',
     password:  'TestAgent@2026!',
     full_name: 'Justice Baloyi',
     role_type: 'agent',
+    is_admin:  false,
+  },
+  {
+    email:     'admin.shareconload@test.com',
+    password:  'TestAdmin@2026!',
+    full_name: 'Test Admin',
+    role_type: 'admin',
+    is_admin:  true,
   },
 ];
 
 async function getUserByEmail(email) {
-  // listUsers paginates — search first page (enough for small projects)
   const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
   if (error) return null;
   return data.users.find(u => u.email === email) ?? null;
 }
 
-async function ensureUser({ email, password, full_name, role_type }) {
+async function ensureUser({ email, password, full_name, role_type, is_admin }) {
   console.log(`\n→ ${role_type.toUpperCase()}: ${email}`);
 
   let userId;
 
+  // Try creating the user
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
@@ -80,11 +88,21 @@ async function ensureUser({ email, password, full_name, role_type }) {
 
   if (error) {
     if (error.message.includes('already been registered') || error.message.includes('already exists')) {
-      console.log('  ⚠️  Auth user already exists — finding...');
+      console.log('  ⚠️  Auth user already exists — finding and resetting password...');
       const existing = await getUserByEmail(email);
       if (!existing) { console.error('  ❌ Could not find existing user'); return; }
       userId = existing.id;
-      console.log(`  ℹ️  User ID: ${userId}`);
+
+      // Reset password so test credentials always work
+      const { error: resetErr } = await admin.auth.admin.updateUserById(userId, {
+        password,
+        user_metadata: { full_name, active_role: role_type },
+      });
+      if (resetErr) {
+        console.error(`  ❌ Password reset error: ${resetErr.message}`);
+      } else {
+        console.log(`  ✅ Password reset for user: ${userId}`);
+      }
     } else {
       console.error(`  ❌ Auth create error: ${error.message}`);
       return;
@@ -94,10 +112,7 @@ async function ensureUser({ email, password, full_name, role_type }) {
     console.log(`  ✅ Auth user created: ${userId}`);
   }
 
-  // Upsert the profiles row with the correct role_type.
-  // Uses service role client (bypasses RLS) so it works regardless of
-  // what the trigger created or whether a row already exists.
-  // Check if a profile with this role already exists
+  // Ensure the correct role_type profile row exists
   const { data: existing } = await admin
     .from('profiles')
     .select('id')
@@ -105,17 +120,50 @@ async function ensureUser({ email, password, full_name, role_type }) {
     .eq('role_type', role_type)
     .maybeSingle();
 
+  let profileId;
+
   if (existing) {
+    profileId = existing.id;
     console.log(`  ✅ Profile already exists: role_type=${role_type}`);
+    if (is_admin) {
+      await admin.from('profiles').update({ is_admin: true }).eq('id', existing.id);
+      console.log(`  ✅ is_admin set to true`);
+    }
   } else {
-    const { error: profileError } = await admin
+    const { data: newProfile, error: profileError } = await admin
       .from('profiles')
-      .insert({ user_id: userId, role_type });
+      .insert({ user_id: userId, role_type, is_admin })
+      .select('id')
+      .single();
 
     if (profileError) {
       console.error(`  ❌ Profile insert error: ${profileError.message}`);
+      return;
+    }
+    profileId = newProfile.id;
+    console.log(`  ✅ Profile created: role_type=${role_type}, is_admin=${is_admin}`);
+  }
+
+  // Seed operator_profiles so /operator/bank and compliance pages work without onboarding
+  if (role_type === 'operator' && profileId) {
+    const { data: existingOp } = await admin
+      .from('operator_profiles')
+      .select('id')
+      .eq('profile_id', profileId)
+      .maybeSingle();
+
+    if (!existingOp) {
+      const { error: opError } = await admin
+        .from('operator_profiles')
+        .insert({ profile_id: profileId, legal_name: full_name, entity_type: 'individual', country: 'South Africa' });
+
+      if (opError) {
+        console.error(`  ❌ operator_profiles insert error: ${opError.message}`);
+      } else {
+        console.log(`  ✅ operator_profiles seeded`);
+      }
     } else {
-      console.log(`  ✅ Profile created: role_type=${role_type}`);
+      console.log(`  ✅ operator_profiles already exists`);
     }
   }
 }

@@ -1,6 +1,8 @@
 export type Location = { city: string; country: string };
 
 const LOCATIONS: Location[] = [
+  // Test / sandbox — hidden from marketplace, for internal testing only
+  { city: 'Test Hub', country: 'Test Country' },
   // Africa
   { city: 'Johannesburg', country: 'South Africa' },
   { city: 'Cape Town', country: 'South Africa' },

@@ -15,7 +15,7 @@
 
 # playwright
 /tests/.auth/
-/tests/snapshots/
+/tests/snapshots/**/*.png
 /test-results/
 /playwright-report/
 
