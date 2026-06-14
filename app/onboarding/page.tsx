@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import { switchToCustomer } from '@/actions/operatorActions';
 
-type HeldRole = 'operator' | 'agent';
+type HeldRole = 'operator' | 'agent' | 'measurement_agent' | 'transporter';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -30,6 +30,8 @@ export default function OnboardingPage() {
       data?.forEach((p) => {
         if (p.role_type === 'operator') roles.push('operator');
         if (p.role_type === 'agent') roles.push('agent');
+        if (p.role_type === 'measurement_agent') roles.push('measurement_agent');
+        if (p.role_type === 'transporter') roles.push('transporter');
       });
       setHeldRoles(roles);
       setLoading(false);
@@ -39,6 +41,8 @@ export default function OnboardingPage() {
 
   const operatorHeld = heldRoles.includes('operator');
   const agentHeld = heldRoles.includes('agent');
+  const measurementAgentHeld = heldRoles.includes('measurement_agent');
+  const transporterHeld = heldRoles.includes('transporter');
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
@@ -63,7 +67,7 @@ export default function OnboardingPage() {
         {loading ? (
           <div className="flex justify-center py-8"><span className="loading loading-spinner loading-lg text-white" /></div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-3xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
 
             {/* Operator card */}
             <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${operatorHeld && isAuthed ? 'opacity-80' : ''}`}>
@@ -152,6 +156,69 @@ export default function OnboardingPage() {
                   style={{ backgroundColor: '#16a34a' }}
                 >
                   {isAuthed ? 'Register as Agent' : 'Join as Agent'}
+                </button>
+              )}
+            </div>
+
+
+            {/* Measurement Agent card */}
+            <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${measurementAgentHeld && isAuthed ? 'opacity-80' : ''}`}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#eff6ff' }}>📐</div>
+              <div>
+                <h2 className="text-lg font-extrabold text-gray-800">Measurement Agent</h2>
+                <p className="text-gray-500 text-sm mt-1">Measure and verify cargo dimensions for shipments. Join as a certified measurement professional.</p>
+              </div>
+              {measurementAgentHeld && isAuthed ? (
+                <div className="flex flex-col gap-2 mt-auto">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-green-600">
+                    <span>✓</span> You have this role
+                  </div>
+                  <Link
+                    href="/measurement-agent"
+                    className="btn w-full font-bold rounded-xl hover:opacity-90 text-sm"
+                    style={{ backgroundColor: '#eff6ff', color: '#1d4ed8' }}
+                  >
+                    Go to Measurement Portal
+                  </Link>
+                </div>
+              ) : (
+                <button
+                  onClick={() => router.push('/onboarding/measurement-agent')}
+                  className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90"
+                  style={{ backgroundColor: '#1d4ed8' }}
+                >
+                  {isAuthed ? 'Register as Measurement Agent' : 'Join as Measurement Agent'}
+                </button>
+              )}
+            </div>
+
+            {/* Transporter card */}
+            <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${transporterHeld && isAuthed ? 'opacity-80' : ''}`}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#fefce8' }}>🚚</div>
+              <div>
+                <h2 className="text-lg font-extrabold text-gray-800">Transporter</h2>
+                <p className="text-gray-500 text-sm mt-1">Provide pickup and delivery services for cargo. Register your vehicle and start earning.</p>
+              </div>
+              {transporterHeld && isAuthed ? (
+                <div className="flex flex-col gap-2 mt-auto">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-green-600">
+                    <span>✓</span> You have this role
+                  </div>
+                  <Link
+                    href="/transporter"
+                    className="btn w-full font-bold rounded-xl hover:opacity-90 text-sm"
+                    style={{ backgroundColor: '#fefce8', color: '#854d0e' }}
+                  >
+                    Go to Transporter Portal
+                  </Link>
+                </div>
+              ) : (
+                <button
+                  onClick={() => router.push('/onboarding/transporter')}
+                  className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90"
+                  style={{ backgroundColor: '#854d0e' }}
+                >
+                  {isAuthed ? 'Register as Transporter' : 'Join as Transporter'}
                 </button>
               )}
             </div>
