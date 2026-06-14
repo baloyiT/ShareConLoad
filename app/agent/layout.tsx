@@ -16,5 +16,15 @@ export default async function AgentLayout({ children }: { children: React.ReactN
 
   if (!profile) redirect('/onboarding/agent');
 
+  const { data: agentProfile } = await supabase
+    .from('agent_profiles')
+    .select('status')
+    .eq('profile_id', profile.id)
+    .maybeSingle();
+
+  if (!agentProfile || agentProfile.status !== 'approved') {
+    redirect('/onboarding/agent/status');
+  }
+
   return <>{children}</>;
 }

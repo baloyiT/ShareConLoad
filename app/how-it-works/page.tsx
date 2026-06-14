@@ -112,6 +112,50 @@ const OPERATOR_BENEFITS = [
   'Dispute protection built in',
 ];
 
+const AGENT_STEPS: Step[] = [
+  {
+    num: 1,
+    title: 'Apply & Get Verified',
+    desc: 'Submit your freight agent application — business registration, forwarder license, and identity documents. ShareConLoad reviews and approves your account before you go live.',
+    badge: 'One-time vetting',
+    numColor: '#16a34a',
+  },
+  {
+    num: 2,
+    title: 'Add Your Client Shippers',
+    desc: 'Build your client roster on the platform. Each shipper gets their own profile — name, contact, country, and shipping notes. No need for clients to create accounts.',
+    badge: 'Unlimited clients',
+    numColor: '#16a34a',
+  },
+  {
+    num: 3,
+    title: 'Browse & Book on Their Behalf',
+    desc: 'Search available containers by route, date, and price. Book space for any of your managed shippers directly from the agent portal.',
+    numColor: '#16a34a',
+  },
+  {
+    num: 4,
+    title: 'Manage Declarations & Tracking',
+    desc: 'Submit goods declarations for each booking, track milestones as the shipment progresses, and keep your clients informed at every stage.',
+    numColor: '#16a34a',
+  },
+  {
+    num: 5,
+    title: 'Coordinate Cargo Release',
+    desc: 'Handle final payment, customs clearance confirmation, and cargo release on behalf of your shippers. Bill your clients directly — your fee is outside the platform.',
+    badge: 'Final 30% triggers release',
+    numColor: '#16a34a',
+  },
+];
+
+const AGENT_BENEFITS = [
+  'Manage unlimited client shippers',
+  'Book space without clients needing accounts',
+  'Centralised tracking across all clients',
+  'Dispute handling on clients’ behalf',
+  'Commission-free — bill your clients directly',
+];
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StepContent({
@@ -505,6 +549,38 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      {/* ── Agent Journey ── */}
+      <section className="py-16 px-4">
+        <div className="max-w-3xl mx-auto">
+          <span
+            className="inline-block text-xs font-extrabold uppercase tracking-widest mb-3 px-3 py-1.5 rounded-full"
+            style={{ backgroundColor: '#f0fdf4', color: '#16a34a' }}
+          >
+            For Freight Agents
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-1">
+            Manage your clients&apos; shipments in one place
+          </h2>
+          <p className="text-gray-400 text-sm mb-8">
+            Apply once, get verified, then book and track on behalf of unlimited shippers.
+          </p>
+          <div>
+            {AGENT_STEPS.map((step, i) => (
+              <StepRow
+                key={step.num}
+                step={step}
+                side={i % 2 === 0 ? 'right' : 'left'}
+                spineColor="#16a34a"
+                accentColor="#16a34a"
+                badgeVariant="orange"
+                isFirst={i === 0}
+                isLast={i === AGENT_STEPS.length - 1}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Why ShareConLoad ── */}
       <section className="py-16 px-4">
         <div className="max-w-3xl mx-auto">
@@ -514,7 +590,7 @@ export default function HowItWorksPage() {
           <p className="text-gray-400 text-sm text-center mb-10">
             Benefits for both sides of the marketplace
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <span
                 className="inline-block text-xs font-extrabold uppercase tracking-widest mb-1 px-2.5 py-1 rounded-full"
@@ -543,6 +619,22 @@ export default function HowItWorksPage() {
               </h3>
               <ul className="flex flex-col gap-3">
                 {OPERATOR_BENEFITS.map((b) => (
+                  <BenefitItem key={b} text={b} />
+                ))}
+              </ul>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <span
+                className="inline-block text-xs font-extrabold uppercase tracking-widest mb-1 px-2.5 py-1 rounded-full"
+                style={{ backgroundColor: '#f0fdf4', color: '#16a34a' }}
+              >
+                Agents
+              </span>
+              <h3 className="font-extrabold text-gray-900 text-base mt-2 mb-4">
+                Grow your freight business
+              </h3>
+              <ul className="flex flex-col gap-3">
+                {AGENT_BENEFITS.map((b) => (
                   <BenefitItem key={b} text={b} />
                 ))}
               </ul>
@@ -579,6 +671,13 @@ export default function HowItWorksPage() {
               className="px-7 py-3 rounded-xl font-bold text-white text-sm border-2 border-white/40 hover:bg-white/10 transition-colors"
             >
               Become an Operator
+            </Link>
+            <Link
+              href="/onboarding/agent"
+              className="px-7 py-3 rounded-xl font-bold text-white text-sm border-2 hover:bg-white/10 transition-colors"
+              style={{ borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.15)' }}
+            >
+              Become an Agent
             </Link>
           </div>
         </div>

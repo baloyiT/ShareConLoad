@@ -26,6 +26,7 @@ type FormErrors = Partial<{
   total_cbm: string;
   items: string;
   agreed_terms: string;
+  cbm_step1: string;
   submit: string;
   [key: string]: string | undefined;
 }>;
@@ -87,10 +88,19 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
+  // Submission state
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
+  const [kycLoading, setKycLoading] = useState(true);
+
   // Agent state
   const [agentProfileId, setAgentProfileId] = useState<string | null>(null);
   const [managedShippers, setManagedShippers] = useState<{ id: string; name: string }[]>([]);
   const [selectedShipperId, setSelectedShipperId] = useState<string>('');
+
+  // CBM declaration state
+  const [cbmDeclarationType, setCbmDeclarationType] = useState<'self_declared' | 'measurement_verified'>('self_declared');
+  const [cbmStep1Ack, setCbmStep1Ack] = useState(false);
+  const [showCbmModal, setShowCbmModal] = useState(false);
 
   // ── Fetch container ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -111,6 +121,33 @@ export default function BookingPage() {
     }
     if (containerId) fetchContainer();
   }, [containerId]);
+
+  // ── Check customer KYC status ─────────────────────────────────────────────
+  useEffect(() => {
+    async function checkKyc() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setKycLoading(false); return; }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role_type', 'customer')
+        .maybeSingle();
+
+      if (!profile) { setKycLoading(false); return; }
+
+      const { data: kyc } = await supabase
+        .from('customer_kyc')
+        .select('status')
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+
+      setKycStatus(kyc?.status ?? null);
+      setKycLoading(false);
+    }
+    checkKyc();
+  }, []);
 
   // Detect agent session and load managed shippers
   useEffect(() => {
@@ -251,16 +288,11 @@ export default function BookingPage() {
     return errs;
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      document.querySelector('[data-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    setErrors({});
+  // ── CBM disclaimer constant ────────────────────────────────────────────────
+  const CBM_DISCLAIMER = 'I confirm my declared CBM is accurate. A ±5% variance is allowed. Overages will be billed; underages will be credited against Stage 2 payment.';
+
+  // ── Perform submit (core booking logic) ────────────────────────────────────
+  async function performSubmit() {
     setSubmitting(true);
 
     try {
@@ -279,6 +311,8 @@ export default function BookingPage() {
           total_cbm: cbmValue,
           total_price: estimatedTotal,
           status: 'pending',
+          cbm_declaration_type: cbmDeclarationType,
+          cbm_disclaimer_acknowledged_count: cbmDeclarationType === 'self_declared' ? 2 : 0,
           ...(agentProfileId && { agent_profile_id: agentProfileId }),
           ...(selectedShipperId && { managed_shipper_id: selectedShipperId }),
         })
@@ -294,6 +328,7 @@ export default function BookingPage() {
         declared_value: parseFloat(item.estimated_value) || 0,
         quantity: parseInt(item.quantity) || 1,
         weight_kg: item.weight_kg ? parseFloat(item.weight_kg) : null,
+        volume_cbm: item.volume_cbm ? parseFloat(item.volume_cbm) : null,
       }));
 
       const { data: insertedItems, error: itemsError } = await supabase
@@ -373,11 +408,70 @@ export default function BookingPage() {
     }
   }
 
+  // ── Submit (validates then gates on CBM modal for self_declared) ───────────
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const errs = validate();
+
+    if (cbmDeclarationType === 'self_declared' && !cbmStep1Ack) {
+      errs.cbm_step1 = 'You must check the CBM accuracy acknowledgement.';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      document.querySelector('[data-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setErrors({});
+
+    if (cbmDeclarationType === 'self_declared') {
+      setShowCbmModal(true);
+      return;
+    }
+
+    await performSubmit();
+  }
+
   // ── Loading state ──────────────────────────────────────────────────────────
-  if (loadingContainer) {
+  if (loadingContainer || kycLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+      </div>
+    );
+  }
+
+  // ── KYC gate ──────────────────────────────────────────────────────────────
+  if (kycStatus !== 'verified') {
+    const isPending = kycStatus === 'pending_review';
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-gray-50 px-4 text-center">
+        <div className="text-5xl">{isPending ? '🔍' : '🪪'}</div>
+        <div className="max-w-sm">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            {isPending ? 'Verification In Progress' : 'Identity Verification Required'}
+          </h1>
+          <p className="text-gray-500 text-sm mb-6">
+            {isPending
+              ? 'Your identity is currently under review. You will be notified once approved — this usually takes 1–2 business days.'
+              : 'International shipping regulations require us to verify your identity before you can book container space.'}
+          </p>
+          {isPending ? (
+            <div className="flex flex-col gap-3">
+              <Link href="/onboarding/customer/status" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#f97316' }}>
+                Check Verification Status
+              </Link>
+              <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Browse Containers</Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <Link href="/onboarding/customer" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#f97316' }}>
+                {kycStatus === 'rejected' ? 'Resubmit Verification' : 'Verify My Identity'}
+              </Link>
+              <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Browse Containers</Link>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -467,10 +561,65 @@ export default function BookingPage() {
               </div>
             </section>
 
-            {/* ── SECTION 2: Booking Input ──────────────────────────────────── */}
+            {/* ── SECTION 2: CBM Declaration ───────────────────────────────── */}
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>2</span>
+                <h2 className="font-bold text-gray-800">CBM Declaration</h2>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-gray-600 mb-4">How do you know your cargo dimensions?</p>
+                <div className="flex flex-col gap-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="radio" name="cbmType" value="self_declared"
+                      checked={cbmDeclarationType === 'self_declared'}
+                      onChange={() => setCbmDeclarationType('self_declared')}
+                      className="radio radio-sm" style={{ accentColor: '#f97316' }} />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">I know my dimensions (self-declare)</p>
+                      <p className="text-xs text-gray-400">I will provide my own CBM estimate</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="radio" name="cbmType" value="measurement_verified"
+                      checked={cbmDeclarationType === 'measurement_verified'}
+                      onChange={() => setCbmDeclarationType('measurement_verified')}
+                      className="radio radio-sm" style={{ accentColor: '#f97316' }} />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">I have an official measurement report</p>
+                      <p className="text-xs text-gray-400">My CBM was verified by a ShareConLoad measurement agent</p>
+                    </div>
+                  </label>
+                </div>
+                {cbmDeclarationType === 'measurement_verified' && (
+                  <a href="/measurement-service" target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-orange-500 hover:underline mt-3 block">
+                    → Don&apos;t have a report yet? Request a measurement agent
+                  </a>
+                )}
+
+                {/* Step 1 acknowledgement for self-declared */}
+                {cbmDeclarationType === 'self_declared' && (
+                  <label className="flex items-start gap-3 cursor-pointer mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl"
+                    data-error={errors.cbm_step1 ? 'true' : undefined}>
+                    <input type="checkbox" checked={cbmStep1Ack}
+                      onChange={(e) => { setCbmStep1Ack(e.target.checked); setErrors((prev) => ({ ...prev, cbm_step1: undefined })); }}
+                      className="checkbox checkbox-sm mt-0.5 shrink-0" style={{ accentColor: '#f97316' }} />
+                    <span className="text-xs text-amber-800 leading-relaxed">
+                      I understand that my CBM declaration affects my booking price and may be verified at loading. A ±5% variance is allowed; overages will be billed and underages credited.
+                    </span>
+                  </label>
+                )}
+                {errors.cbm_step1 && (
+                  <p className="text-red-500 text-xs mt-2" data-error="true">{errors.cbm_step1}</p>
+                )}
+              </div>
+            </section>
+
+            {/* ── SECTION 3: Booking Input ──────────────────────────────────── */}
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>3</span>
                 <h2 className="font-bold text-gray-800">Booking Details</h2>
               </div>
               <div className="p-6">
@@ -537,11 +686,11 @@ export default function BookingPage() {
               </section>
             )}
 
-            {/* ── SECTION 3: Shipment Items ─────────────────────────────────── */}
+            {/* ── SECTION 4: Shipment Items ─────────────────────────────────── */}
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>3</span>
+                  <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>4</span>
                   <h2 className="font-bold text-gray-800">Shipment Items</h2>
                   <span className="badge badge-sm bg-gray-100 text-gray-600 border-none">{items.length}</span>
                 </div>
@@ -638,64 +787,95 @@ export default function BookingPage() {
                         />
                       </div>
 
-                      {/* Estimated value */}
-                      <div>
-                        <label className="label py-0 mb-1">
-                          <span className="label-text text-xs font-semibold text-gray-600">
-                            Declared Value (ZAR) <span className="text-red-500">*</span>
-                          </span>
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">R</span>
-                          <input
-                            type="number"
-                            placeholder="0.00"
-                            min={0}
-                            step={0.01}
-                            value={item.estimated_value}
-                            onChange={(e) => {
-                              updateItem(item._key, 'estimated_value', e.target.value);
-                              setErrors((prev) => ({ ...prev, [`item_value_${idx}`]: undefined }));
-                            }}
-                            className={`input input-bordered input-sm w-full pl-7 text-sm ${errors[`item_value_${idx}`] ? 'input-error' : ''}`}
-                            data-error={errors[`item_value_${idx}`] ? 'true' : undefined}
-                          />
+                      {/* Declared Value · Weight · Volume — per unit with live totals */}
+                      <div className="sm:col-span-2">
+                        <div className="flex items-center gap-2 mb-2 pt-1">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Per unit</span>
+                          {parseInt(item.quantity) > 1 && (
+                            <span className="text-xs text-gray-400">— totals calculated for ×{item.quantity} units</span>
+                          )}
                         </div>
-                        {errors[`item_value_${idx}`] && (
-                          <p className="text-red-500 text-xs mt-1">{errors[`item_value_${idx}`]}</p>
-                        )}
-                      </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-                      {/* Weight */}
-                      <div>
-                        <label className="label py-0 mb-1">
-                          <span className="label-text text-xs font-semibold text-gray-600">Weight (kg)</span>
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="0.0"
-                          min={0}
-                          step={0.1}
-                          value={item.weight_kg}
-                          onChange={(e) => updateItem(item._key, 'weight_kg', e.target.value)}
-                          className="input input-bordered input-sm w-full text-sm"
-                        />
-                      </div>
+                          {/* Declared Value per unit */}
+                          <div>
+                            <label className="label py-0 mb-1 flex items-center justify-between gap-1">
+                              <span className="label-text text-xs font-semibold text-gray-600">
+                                Declared Value (ZAR) <span className="text-red-500">*</span>
+                              </span>
+                              <span className="text-[10px] text-gray-400 italic shrink-0">per unit</span>
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">R</span>
+                              <input
+                                type="number"
+                                placeholder="0.00"
+                                min={0}
+                                step={0.01}
+                                value={item.estimated_value}
+                                onChange={(e) => {
+                                  updateItem(item._key, 'estimated_value', e.target.value);
+                                  setErrors((prev) => ({ ...prev, [`item_value_${idx}`]: undefined }));
+                                }}
+                                className={`input input-bordered input-sm w-full pl-7 text-sm ${errors[`item_value_${idx}`] ? 'input-error' : ''}`}
+                                data-error={errors[`item_value_${idx}`] ? 'true' : undefined}
+                              />
+                            </div>
+                            {parseInt(item.quantity) > 1 && parseFloat(item.estimated_value) > 0 && (
+                              <p className="text-xs text-orange-500 font-medium mt-1">
+                                = R{(parseFloat(item.estimated_value) * parseInt(item.quantity)).toFixed(2)} total
+                              </p>
+                            )}
+                            {errors[`item_value_${idx}`] && (
+                              <p className="text-red-500 text-xs mt-1">{errors[`item_value_${idx}`]}</p>
+                            )}
+                          </div>
 
-                      {/* Volume */}
-                      <div>
-                        <label className="label py-0 mb-1">
-                          <span className="label-text text-xs font-semibold text-gray-600">Volume (CBM)</span>
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="0.0"
-                          min={0}
-                          step={0.01}
-                          value={item.volume_cbm}
-                          onChange={(e) => updateItem(item._key, 'volume_cbm', e.target.value)}
-                          className="input input-bordered input-sm w-full text-sm"
-                        />
+                          {/* Weight per unit */}
+                          <div>
+                            <label className="label py-0 mb-1 flex items-center justify-between gap-1">
+                              <span className="label-text text-xs font-semibold text-gray-600">Weight (kg)</span>
+                              <span className="text-[10px] text-gray-400 italic shrink-0">per unit</span>
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="0.0"
+                              min={0}
+                              step={0.1}
+                              value={item.weight_kg}
+                              onChange={(e) => updateItem(item._key, 'weight_kg', e.target.value)}
+                              className="input input-bordered input-sm w-full text-sm"
+                            />
+                            {parseInt(item.quantity) > 1 && parseFloat(item.weight_kg) > 0 && (
+                              <p className="text-xs text-orange-500 font-medium mt-1">
+                                = {(parseFloat(item.weight_kg) * parseInt(item.quantity)).toFixed(1)} kg total
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Volume per unit */}
+                          <div>
+                            <label className="label py-0 mb-1 flex items-center justify-between gap-1">
+                              <span className="label-text text-xs font-semibold text-gray-600">Volume (CBM)</span>
+                              <span className="text-[10px] text-gray-400 italic shrink-0">per unit</span>
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              min={0}
+                              step={0.01}
+                              value={item.volume_cbm}
+                              onChange={(e) => updateItem(item._key, 'volume_cbm', e.target.value)}
+                              className="input input-bordered input-sm w-full text-sm"
+                            />
+                            {parseInt(item.quantity) > 1 && parseFloat(item.volume_cbm) > 0 && (
+                              <p className="text-xs text-orange-500 font-medium mt-1">
+                                = {(parseFloat(item.volume_cbm) * parseInt(item.quantity)).toFixed(2)} CBM total
+                              </p>
+                            )}
+                          </div>
+
+                        </div>
                       </div>
                     </div>
 
@@ -774,13 +954,13 @@ export default function BookingPage() {
               </div>
             </section>
 
-            {/* ── SECTION 4: Goods Declaration ──────────────────────────────── */}
+            {/* ── SECTION 5: Goods Declaration ──────────────────────────────── */}
             <section
               className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${errors.agreed_terms ? 'border-red-300' : 'border-gray-100'}`}
               data-error={errors.agreed_terms ? 'true' : undefined}
             >
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>4</span>
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>5</span>
                 <h2 className="font-bold text-gray-800">Goods Declaration</h2>
                 <span className="badge badge-sm badge-error text-white border-none ml-1">Required</span>
               </div>
@@ -891,6 +1071,28 @@ export default function BookingPage() {
 
         </div>
       </form>
+
+      {/* CBM confirmation modal */}
+      {showCbmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+          onClick={() => setShowCbmModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-extrabold text-gray-800 mb-3">Confirm CBM Declaration</h3>
+            <p className="text-sm text-gray-600 mb-5">{CBM_DISCLAIMER}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowCbmModal(false)}
+                className="btn btn-ghost flex-1 rounded-xl">Cancel</button>
+              <button
+                onClick={async () => { setShowCbmModal(false); await performSubmit(); }}
+                className="btn flex-1 text-white font-bold rounded-xl"
+                style={{ backgroundColor: '#f97316' }}>
+                I Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

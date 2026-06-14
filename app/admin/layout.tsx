@@ -13,13 +13,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login?next=/admin'); return; }
 
-      const { data: profile } = await supabase
+      // Use array query — .single() fails when user has multiple profile rows (multi-role users)
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('is_admin')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', user.id);
 
-      if (!profile?.is_admin) { router.replace('/'); return; }
+      const isAdmin = Array.isArray(profiles) && profiles.some((p) => p.is_admin === true);
+      if (!isAdmin) { router.replace('/'); return; }
 
       setAuthorized(true);
     }

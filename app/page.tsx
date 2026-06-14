@@ -176,6 +176,10 @@ export default function HomePage() {
           router.push("/operator");
         } else if (data?.some((p) => p.role_type === "agent")) {
           router.push("/agent");
+        } else if (data?.some((p) => p.role_type === "measurement_agent")) {
+          router.push("/measurement-agent");
+        } else if (data?.some((p) => p.role_type === "transporter")) {
+          router.push("/transporter");
         }
       }
     }
@@ -255,7 +259,7 @@ export default function HomePage() {
         c.destination_country,
       );
       const dateMatch = !dateFilter || c.departure_date >= dateFilter;
-      const priceMatch = !maxPrice || c.price_per_cbm <= parseFloat(maxPrice);
+      const priceMatch = !maxPrice || (c.price_per_cbm_usd ?? c.price_per_cbm) <= parseFloat(maxPrice);
       return originMatch && destMatch && dateMatch && priceMatch;
     });
   }, [
@@ -562,9 +566,7 @@ export default function HomePage() {
               <span style={{ color: '#f97316' }}>Connect the World.</span>
             </h1>
             <p className="text-gray-300 text-base lg:text-lg mb-8 max-w-lg leading-relaxed">
-              ShareConLoad connects shippers and carriers to move containers
-              smarter, reduce empty miles, and build a more efficient logistics
-              network.
+              ShareConLoad connects shippers, operators, and freight agents to move containers smarter across every global route — reducing empty miles and building a more efficient logistics network.
             </p>
 
             {/* CTA buttons */}
@@ -585,6 +587,13 @@ export default function HomePage() {
                 style={{ borderColor: 'rgba(255,255,255,0.4)', color: '#ffffff' }}
               >
                 List Your Container
+              </Link>
+              <Link
+                href="/onboarding/agent"
+                className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl border-2 hover:bg-white/10 transition-colors"
+                style={{ borderColor: 'rgba(22,163,74,0.6)', color: '#86efac' }}
+              >
+                Join as Agent
               </Link>
             </div>
 
@@ -657,7 +666,7 @@ export default function HomePage() {
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                Max Price / CBM (ZAR)
+                Max Price / CBM (USD equiv.)
               </label>
               <input
                 type="number"
@@ -783,33 +792,60 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Operator CTA ───────────────────────────────────────────────────── */}
-      <section style={{ backgroundColor: "#0f2044" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
+      {/* ── Supply-side CTA ──────────────────────────────────────────────── */}
+      <section style={{ backgroundColor: '#0f2044' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 sm:grid-cols-2 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
+
+          {/* Operator column */}
+          <div className="flex items-center gap-4 pb-6 sm:pb-0 sm:pr-6">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
-              style={{ backgroundColor: "rgba(249,115,22,0.15)" }}
+              style={{ backgroundColor: 'rgba(249,115,22,0.15)' }}
             >
               🚢
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-white font-bold text-lg leading-tight">
                 Got container space? List it globally.
               </p>
-              <p className="text-gray-400 text-sm mt-1">
-                Reach verified shippers on every route and fill your container
-                faster.
+              <p className="text-gray-400 text-sm mt-1 mb-4">
+                Reach verified shippers on every route and fill your container faster.
               </p>
+              <Link
+                href="/onboarding/operator"
+                className="inline-block text-sm font-bold px-6 py-2.5 rounded-xl text-white hover:opacity-90 transition-opacity whitespace-nowrap"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                I Have Container Space →
+              </Link>
             </div>
           </div>
-          <Link
-            href="/onboarding/operator"
-            className="shrink-0 text-sm font-bold px-8 py-3 rounded-xl text-white hover:opacity-90 transition-opacity whitespace-nowrap"
-            style={{ backgroundColor: "#f97316" }}
-          >
-            I Have Container Space →
-          </Link>
+
+          {/* Agent column */}
+          <div className="flex items-center gap-4 pt-6 sm:pt-0 sm:pl-6">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
+              style={{ backgroundColor: 'rgba(22,163,74,0.15)' }}
+            >
+              🤝
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-bold text-lg leading-tight">
+                You&apos;re a freight agent? Bring your clients here.
+              </p>
+              <p className="text-gray-400 text-sm mt-1 mb-4">
+                Book container space on behalf of your shippers — all from one portal.
+              </p>
+              <Link
+                href="/onboarding/agent"
+                className="inline-block text-sm font-bold px-6 py-2.5 rounded-xl text-white hover:opacity-90 transition-opacity whitespace-nowrap"
+                style={{ backgroundColor: '#16a34a' }}
+              >
+                Join as Agent →
+              </Link>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -839,6 +875,7 @@ export default function HomePage() {
             <Link href="/how-it-works" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">How It Works</Link>
             <a href="#listings"        className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Browse Containers</a>
             <Link href="/onboarding/operator" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">List Your Container</Link>
+            <Link href="/onboarding/agent" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Become an Agent</Link>
             <Link href="/auth/register" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">Create Account</Link>
           </div>
 

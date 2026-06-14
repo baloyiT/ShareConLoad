@@ -37,10 +37,10 @@ type DocSlot = {
 const DOC_DEFS: { type: DocType; label: string; desc: string; optional?: boolean }[] = [
   { type: 'identity',                   label: 'Proof of Identity',           desc: 'Valid passport or national ID of the director or owner' },
   { type: 'business_registration',      label: 'Business Registration',       desc: "Certificate of incorporation or registration from your country's business registry" },
-  { type: 'proof_of_warehouse_address', label: 'Proof of Warehouse Address',  desc: 'Lease agreement, rates account, or utility bill confirming your warehouse or storage facility address' },
+  { type: 'proof_of_warehouse_address', label: 'Proof of Business Address',   desc: 'Utility bill, lease agreement, or rates notice confirming your business or office address' },
   { type: 'tax_clearance',              label: 'Tax Clearance Certificate',   desc: "Tax compliance certificate from your country's revenue authority, required for payout approval" },
   { type: 'banking_confirmation',       label: 'Banking Confirmation',        desc: 'Official letter from your bank confirming your account details' },
-  { type: 'cargo_insurance',            label: 'Cargo Insurance Certificate', desc: 'Valid cargo or freight insurance policy covering goods in your care, custody, and control' },
+  { type: 'cargo_insurance',            label: 'Cargo Insurance Certificate', desc: 'Cargo or freight insurance policy covering goods in your care, custody, and control', optional: true },
   { type: 'freight_forwarding_license', label: 'Freight Forwarding License',  desc: "Freight forwarding or customs broker license issued by your country's relevant authority (if applicable)", optional: true },
 ];
 

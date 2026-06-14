@@ -1,0 +1,45 @@
+{
+  "role": "operator",
+  "email": "mercy.affulbaloyi@gmail.com",
+  "password": "TestOperator@2026!",
+  "full_name": "Mercy Afful-Baloyi",
+  "company": {
+    "company_name": "AffulBaloyi Container Lines",
+    "contact_person": "Mercy Afful-Baloyi",
+    "phone_number": "+233 24 789 0123",
+    "country": "Ghana",
+    "registration_number": "GH-2018-CS-44987"
+  },
+  "bank": {
+    "bank_name": "Ecobank Ghana",
+    "account_holder": "AffulBaloyi Container Lines Ltd",
+    "account_number": "1441002345678",
+    "swift_code": "ECOCGHAC"
+  },
+  "test_containers": [
+    {
+      "origin_country": "South Africa",
+      "origin_city": "Durban",
+      "destination_country": "Ghana",
+      "destination_city": "Tema",
+      "departure_date": "2026-08-15",
+      "arrival_date": "2026-09-05",
+      "total_capacity_cbm": 40,
+      "price_per_cbm": 1850,
+      "currency_code": "ZAR",
+      "description": "Full 40ft container. Weekly departures. Consolidated loads welcome."
+    },
+    {
+      "origin_country": "Ghana",
+      "origin_city": "Tema",
+      "destination_country": "United Kingdom",
+      "destination_city": "Tilbury",
+      "departure_date": "2026-08-20",
+      "arrival_date": "2026-09-25",
+      "total_capacity_cbm": 25,
+      "price_per_cbm": 180,
+      "currency_code": "GBP",
+      "description": "Shared 20ft container. UK-bound consolidated freight."
+    }
+  ]
+}

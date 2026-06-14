@@ -180,6 +180,13 @@ export default function AdminDashboard() {
                   { href: '/admin/disputes',   label: 'Disputes',    icon: '⚖️', desc: 'Resolve disputes'            },
                   { href: '/admin/compliance', label: 'Compliance',  icon: '🚩', desc: 'Compliance flags'            },
                   { href: '/admin/release',    label: 'Release',     icon: '🔓', desc: 'Cargo release auth'          },
+                  { href: '/admin/fx-rates',  label: 'FX Rates',    icon: '💱', desc: 'Currency exchange rates'      },
+                  { href: '/admin/agents',               label: 'Agents',              icon: '👤', desc: 'Review agent KYC applications'    },
+                  { href: '/admin/customers',            label: 'Customers',           icon: '🪪', desc: 'Review customer identity KYC'       },
+                  { href: '/admin/measurement-agents',   label: 'Measurement Agents',  icon: '📐', desc: 'Manage measurement agents'           },
+                  { href: '/admin/transporters',         label: 'Transporters',        icon: '🚛', desc: 'Manage transporters'                 },
+                  { href: '/admin/measurement-jobs',     label: 'Measurement Jobs',    icon: '📏', desc: 'Assign & track measurement jobs'      },
+                  { href: '/admin/rate-bands',           label: 'Rate Bands',          icon: '💲', desc: 'Measurement pricing zones'             },
                 ].map(({ href, label, icon, desc }) => (
                   <Link
                     key={href}

@@ -117,7 +117,7 @@ export default function ComplianceAgreementPage() {
 
       {signedAt ? (
         <p className="text-sm text-gray-400 text-center">
-          To update your signed agreement, contact <span className="font-mono">compliance@shareconload.com</span>.
+          To update your signed agreement, contact <span className="font-mono">support@shareconload.com</span>.
         </p>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4">

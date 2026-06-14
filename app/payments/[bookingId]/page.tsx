@@ -24,6 +24,7 @@ type BookingDetail = {
   id: string;
   total_price: number;
   status: string;
+  cbm_variance_adjustment: number | null;
   containers: {
     origin_city: string;
     destination_city: string;
@@ -33,6 +34,10 @@ type BookingDetail = {
 };
 
 const STAGE_ORDER = ['deposit_20', 'pre_departure_50', 'final_release_30'];
+
+function fmtMoney(v: number) {
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(v);
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -56,7 +61,7 @@ export default function PaymentPage() {
       const [bookingRes, paymentsRes, milestonesRes] = await Promise.all([
         supabase
           .from('bookings')
-          .select('id, total_price, status, containers(origin_city, destination_city, departure_date, departure_notice_sent_at)')
+          .select('id, total_price, status, cbm_variance_adjustment, containers(origin_city, destination_city, departure_date, departure_notice_sent_at)')
           .eq('id', bookingId)
           .single(),
         supabase
@@ -245,6 +250,26 @@ export default function PaymentPage() {
                   paying={paying}
                 />
               ))}
+          </div>
+        )}
+
+        {/* CBM variance notice for Stage 2 */}
+        {booking.cbm_variance_adjustment != null && booking.cbm_variance_adjustment !== 0 &&
+          payments.some((p) => p.stage === 'pre_departure_50' && p.status === 'pending') && (
+          <div className={`rounded-2xl border px-5 py-4 text-sm ${
+            booking.cbm_variance_adjustment > 0
+              ? 'bg-red-50 border-red-200 text-red-800'
+              : 'bg-green-50 border-green-200 text-green-800'
+          }`}>
+            <p className="font-semibold mb-1">
+              {booking.cbm_variance_adjustment > 0 ? 'CBM Overage Surcharge' : 'CBM Underage Credit'}
+            </p>
+            <p className="text-xs leading-relaxed">
+              Your actual cargo measured {booking.cbm_variance_adjustment > 0 ? 'more' : 'less'} than declared.
+              A {booking.cbm_variance_adjustment > 0 ? 'surcharge' : 'credit'} of{' '}
+              <strong>{fmtMoney(Math.abs(booking.cbm_variance_adjustment))}</strong>{' '}
+              has been {booking.cbm_variance_adjustment > 0 ? 'added to' : 'deducted from'} your Stage 2 payment.
+            </p>
           </div>
         )}
 

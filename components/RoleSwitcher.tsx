@@ -63,7 +63,10 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
     return () => document.removeEventListener('mousedown', handler);
   }, [variant]);
 
-  if (availableRoles.length <= 1) return null;
+  const ALL_REGISTERABLE: RoleKey[] = ['customer', 'operator', 'agent'];
+  const canAddRole = ALL_REGISTERABLE.some((r) => !availableRoles.includes(r));
+
+  if (availableRoles.length <= 1 && !canAddRole) return null;
 
   const otherRoles = availableRoles.filter((r) => r !== currentRole);
 
@@ -83,6 +86,15 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
             </Link>
           );
         })}
+        {canAddRole && (
+          <Link
+            href="/onboarding"
+            onClick={onNavigate}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+          >
+            ＋ Add a role
+          </Link>
+        )}
       </>
     );
   }
@@ -134,6 +146,19 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
               </Link>
             );
           })}
+          {canAddRole && (
+            <>
+              <div className="border-t border-gray-100 my-1" />
+              <Link
+                href="/onboarding"
+                onClick={() => { setOpen(false); onNavigate?.(); }}
+                className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                <span className="text-gray-400">＋</span>
+                <span>Add a role</span>
+              </Link>
+            </>
+          )}
         </div>
       )}
     </div>
