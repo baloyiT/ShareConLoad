@@ -176,6 +176,10 @@ export default function HomePage() {
           router.push("/operator");
         } else if (data?.some((p) => p.role_type === "agent")) {
           router.push("/agent");
+        } else if (data?.some((p) => p.role_type === "measurement_agent")) {
+          router.push("/measurement-agent");
+        } else if (data?.some((p) => p.role_type === "transporter")) {
+          router.push("/transporter");
         }
       }
     }
