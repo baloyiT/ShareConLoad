@@ -1,7 +1,7 @@
 // app/admin/measurement-agents/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
@@ -167,8 +167,8 @@ export default function AdminMeasurementAgentsPage() {
                   const isRejectOpen = rejectingId === row.id;
 
                   return (
-                    <>
-                      <tr key={row.id} className="hover:bg-gray-50 align-top">
+                    <Fragment key={row.id}>
+                      <tr className="hover:bg-gray-50 align-top">
                         <td className="font-semibold text-sm text-gray-800">{row.full_name}</td>
                         <td className="text-sm text-gray-600">{row.base_city}, {row.base_country}</td>
                         <td>
@@ -248,7 +248,7 @@ export default function AdminMeasurementAgentsPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
