@@ -17,8 +17,23 @@ type MeasurementAgentRow = {
   total_jobs_completed: number;
   rejection_reason: string | null;
   created_at: string;
+  id_document_url: string | null;
+  selfie_url: string | null;
+  equipment_photo_url: string | null;
   profiles: { user_id: string } | null;
 };
+
+type DocLinks = { id_doc: string | null; selfie: string | null; equipment: string | null };
+
+async function getSignedUrl(storedUrl: string | null, bucket: string): Promise<string | null> {
+  if (!storedUrl) return null;
+  const marker = `/object/public/${bucket}/`;
+  const idx = storedUrl.indexOf(marker);
+  if (idx < 0) return null;
+  const path = decodeURIComponent(storedUrl.slice(idx + marker.length));
+  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+  return data?.signedUrl ?? null;
+}
 
 type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected' | 'suspended';
 
@@ -42,6 +57,9 @@ export default function AdminMeasurementAgentsPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError]     = useState<string | null>(null);
+  const [docsOpenId, setDocsOpenId]       = useState<string | null>(null);
+  const [docLinks, setDocLinks]           = useState<DocLinks>({ id_doc: null, selfie: null, equipment: null });
+  const [docsLoading, setDocsLoading]     = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -64,6 +82,20 @@ export default function AdminMeasurementAgentsPage() {
       .order('created_at', { ascending: false });
     setRows((data ?? []) as MeasurementAgentRow[]);
     setLoading(false);
+  }
+
+  async function handleToggleDocs(row: MeasurementAgentRow) {
+    if (docsOpenId === row.id) { setDocsOpenId(null); return; }
+    setDocsOpenId(row.id);
+    setDocLinks({ id_doc: null, selfie: null, equipment: null });
+    setDocsLoading(true);
+    const [id_doc, selfie, equipment] = await Promise.all([
+      getSignedUrl(row.id_document_url, 'measurement-agent-docs'),
+      getSignedUrl(row.selfie_url, 'measurement-agent-docs'),
+      getSignedUrl(row.equipment_photo_url, 'measurement-agent-docs'),
+    ]);
+    setDocLinks({ id_doc, selfie, equipment });
+    setDocsLoading(false);
   }
 
   async function handleApprove(id: string) {
@@ -190,6 +222,12 @@ export default function AdminMeasurementAgentsPage() {
                         <td className="text-sm text-gray-500">{fmt(row.created_at)}</td>
                         <td>
                           <div className="flex gap-1 flex-wrap">
+                            <button
+                              onClick={() => handleToggleDocs(row)}
+                              className="btn btn-xs btn-ghost text-blue-600"
+                            >
+                              {docsOpenId === row.id ? 'Hide Docs' : 'View Docs'}
+                            </button>
                             {(row.status === 'pending' || row.status === 'rejected') && (
                               <button
                                 onClick={() => handleApprove(row.id)}
@@ -217,6 +255,29 @@ export default function AdminMeasurementAgentsPage() {
                           </div>
                         </td>
                       </tr>
+
+                      {/* Inline docs viewer */}
+                      {docsOpenId === row.id && (
+                        <tr className="bg-blue-50">
+                          <td colSpan={7} className="py-3 px-4">
+                            {docsLoading ? (
+                              <span className="loading loading-spinner loading-sm" />
+                            ) : (
+                              <div className="flex gap-6 flex-wrap text-sm">
+                                {docLinks.id_doc ? (
+                                  <a href={docLinks.id_doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">📄 ID Document</a>
+                                ) : <span className="text-gray-400">No ID document</span>}
+                                {docLinks.selfie ? (
+                                  <a href={docLinks.selfie} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">🤳 Selfie</a>
+                                ) : <span className="text-gray-400">No selfie</span>}
+                                {docLinks.equipment ? (
+                                  <a href={docLinks.equipment} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">📷 Equipment Photo</a>
+                                ) : <span className="text-gray-400">No equipment photo</span>}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
 
                       {/* Inline reject form */}
                       {isRejectOpen && (

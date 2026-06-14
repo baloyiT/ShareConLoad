@@ -5,6 +5,16 @@ import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 import { approveCustomerKyc, rejectCustomerKyc } from '@/actions/adminCustomerActions';
 
+async function getSignedUrl(storedUrl: string | null, bucket: string): Promise<string | null> {
+  if (!storedUrl) return null;
+  const marker = `/object/public/${bucket}/`;
+  const idx = storedUrl.indexOf(marker);
+  if (idx < 0) return null;
+  const path = decodeURIComponent(storedUrl.slice(idx + marker.length));
+  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+  return data?.signedUrl ?? null;
+}
+
 type KycRow = {
   id: string;
   profile_id: string;
@@ -44,6 +54,8 @@ export default function AdminCustomersPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError]     = useState<string | null>(null);
+  const [signedIdDocUrl, setSignedIdDocUrl]       = useState<string | null>(null);
+  const [signedProofUrl, setSignedProofUrl]       = useState<string | null>(null);
 
   async function load() {
     const { data } = await supabase
@@ -60,7 +72,7 @@ export default function AdminCustomersPage() {
     setActionLoading(true);
     setActionError(null);
     const { error } = await approveCustomerKyc(id);
-    if (error) { setActionError(error); } else { setSelected(null); await load(); }
+    if (error) { setActionError(error); } else { setSelected(null); setSignedIdDocUrl(null); setSignedProofUrl(null); await load(); }
     setActionLoading(false);
   }
 
@@ -69,7 +81,7 @@ export default function AdminCustomersPage() {
     setActionLoading(true);
     setActionError(null);
     const { error } = await rejectCustomerKyc(id, rejectReason.trim());
-    if (error) { setActionError(error); } else { setSelected(null); setRejectReason(''); await load(); }
+    if (error) { setActionError(error); } else { setSelected(null); setSignedIdDocUrl(null); setSignedProofUrl(null); setRejectReason(''); await load(); }
     setActionLoading(false);
   }
 
@@ -119,7 +131,19 @@ export default function AdminCustomersPage() {
                       </td>
                       <td>
                         <button
-                          onClick={() => { setSelected(r); setRejectReason(''); setActionError(null); }}
+                          onClick={async () => {
+                            setSelected(r);
+                            setRejectReason('');
+                            setActionError(null);
+                            setSignedIdDocUrl(null);
+                            setSignedProofUrl(null);
+                            const [idUrl, proofUrl] = await Promise.all([
+                              getSignedUrl(r.id_document_url, 'customer-kyc'),
+                              getSignedUrl(r.proof_of_address_url, 'customer-kyc'),
+                            ]);
+                            setSignedIdDocUrl(idUrl);
+                            setSignedProofUrl(proofUrl);
+                          }}
                           className="btn btn-xs btn-ghost text-blue-600"
                         >
                           Review
@@ -136,7 +160,7 @@ export default function AdminCustomersPage() {
 
       {/* Review modal */}
       {selected && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4" onClick={() => setSelected(null)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4" onClick={() => { setSelected(null); setSignedIdDocUrl(null); setSignedProofUrl(null); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-extrabold text-gray-800 mb-4">KYC Review — {selected.full_name}</h2>
 
@@ -160,18 +184,26 @@ export default function AdminCustomersPage() {
             <div className="mb-5 space-y-2">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Documents</p>
               {selected.id_document_url ? (
-                <a href={selected.id_document_url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                  📄 Identity Document
-                </a>
+                signedIdDocUrl ? (
+                  <a href={signedIdDocUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                    📄 Identity Document
+                  </a>
+                ) : (
+                  <p className="text-sm text-gray-400">Loading document link…</p>
+                )
               ) : (
                 <p className="text-sm text-gray-400">No identity document uploaded.</p>
               )}
               {selected.proof_of_address_url && (
-                <a href={selected.proof_of_address_url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                  📄 Proof of Address
-                </a>
+                signedProofUrl ? (
+                  <a href={signedProofUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                    📄 Proof of Address
+                  </a>
+                ) : (
+                  <p className="text-sm text-gray-400">Loading document link…</p>
+                )
               )}
             </div>
 
@@ -229,7 +261,7 @@ export default function AdminCustomersPage() {
               </div>
             )}
 
-            <button onClick={() => setSelected(null)} className="btn btn-ghost w-full mt-3 rounded-xl text-gray-400">Close</button>
+            <button onClick={() => { setSelected(null); setSignedIdDocUrl(null); setSignedProofUrl(null); }} className="btn btn-ghost w-full mt-3 rounded-xl text-gray-400">Close</button>
           </div>
         </div>
       )}
