@@ -107,6 +107,9 @@ serve(async (req: Request) => {
     const commConfig       = commRes.data as CommissionConfig | null;
     const commissionAmount = calcCommission(grossAmount, commConfig);
     const netAmount        = Math.round((grossAmount - commissionAmount) * 100) / 100;
+    const commissionRate   = grossAmount > 0
+      ? Math.round((commissionAmount / grossAmount) * 10000) / 10000
+      : 0;
     const amountKobo       = Math.round(netAmount * 100);
     const transferRef      = `SCL-PAYOUT-${payoutId.slice(0, 8)}-${Date.now()}`.toUpperCase();
 
@@ -140,6 +143,8 @@ serve(async (req: Request) => {
         status:                 'processing',
         net_amount:             netAmount,
         commission_amount:      commissionAmount,
+        commission_rate:        commissionRate,
+        platform_fee:           commissionAmount,
         paystack_transfer_code: transferCode,
       })
       .eq('id', payoutId);

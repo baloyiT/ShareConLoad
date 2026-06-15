@@ -180,10 +180,6 @@ async function createPayoutRecord(supabase: any, opts: {
     .from('containers').select('operator_id').eq('id', booking.container_id).single();
   if (!container) return;
 
-  const { data: profile } = await supabase
-    .from('profiles').select('id').eq('user_id', container.operator_id).single();
-  if (!profile) return;
-
   const commissionAmount = calcCommission(grossAmount, commConfig);
   const netAmount        = Math.round((grossAmount - commissionAmount) * 100) / 100;
   const rate             = effectiveRate(commissionAmount, grossAmount);
@@ -193,7 +189,7 @@ async function createPayoutRecord(supabase: any, opts: {
 
   const { error } = await supabase.from('payouts').upsert({
     booking_id:        bookingId,
-    operator_id:       profile.id,
+    operator_id:       container.operator_id,
     payment_id:        paymentId,
     payout_stage:      PAYOUT_STAGE_MAP[stage] ?? 'deposit_release',
     stage,
