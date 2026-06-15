@@ -21,19 +21,23 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { recipientId, subject, html, text } = await req.json();
-    if (!recipientId || !subject || !html) {
-      return json({ error: 'recipientId, subject, and html are required' }, 400);
+    const { recipientId, to: directTo, subject, html, text } = await req.json();
+    if (!subject || !html || (!recipientId && !directTo)) {
+      return json({ error: 'subject, html, and either recipientId or to are required' }, 400);
     }
 
-    // Resolve email address from user ID using service role
-    const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(recipientId);
-    if (userErr || !userData?.user?.email) {
-      console.error('[send-email] Could not resolve email for', recipientId, userErr?.message);
-      return json({ error: 'Could not resolve recipient email' }, 404);
+    let to: string;
+    if (directTo) {
+      to = directTo;
+    } else {
+      // Resolve email address from user ID using service role
+      const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(recipientId);
+      if (userErr || !userData?.user?.email) {
+        console.error('[send-email] Could not resolve email for', recipientId, userErr?.message);
+        return json({ error: 'Could not resolve recipient email' }, 404);
+      }
+      to = userData.user.email;
     }
-
-    const to = userData.user.email;
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
