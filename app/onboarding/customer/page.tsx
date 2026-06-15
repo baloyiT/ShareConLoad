@@ -1,7 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { supabase } from '@/services/supabaseClient';
 import { saveCustomerKycStep1 } from '@/actions/customerKycActions';
 
 const STEPS = ['Personal Details', 'Documents', 'Review'];
@@ -13,7 +15,14 @@ const ID_TYPES = [
 ];
 
 export default function CustomerKycStep1() {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(saveCustomerKycStep1, null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) router.replace('/auth/login?next=/onboarding/customer');
+    });
+  }, [router]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>

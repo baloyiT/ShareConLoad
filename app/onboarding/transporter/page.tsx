@@ -162,14 +162,10 @@ export default function TransporterOnboardingPage() {
   const [vehiclePhoto3Url, setVehiclePhoto3Url] = useState('');
   const [vehiclePhoto4Url, setVehiclePhoto4Url] = useState('');
 
-  // Auth check on mount
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push('/auth/login');
-      } else {
-        setUserId(data.user.id);
-      }
+      if (!data.user) router.replace('/auth/login?next=/onboarding/transporter');
+      else setUserId(data.user.id);
     });
   }, [router]);
 

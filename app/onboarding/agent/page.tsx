@@ -2,7 +2,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { useActionState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/services/supabaseClient';
 import { saveAgentStep1 } from '@/actions/agentActions';
 
 const COUNTRIES = [
@@ -17,7 +20,14 @@ const CORRIDORS = ['Africa', 'Europe', 'Asia', 'Americas', 'Middle East', 'Globa
 const STEPS = ['Business Details', 'Credentials', 'Documents', 'Bank Details', 'Review'];
 
 export default function AgentOnboardingStep1() {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(saveAgentStep1, null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) router.replace('/auth/login?next=/onboarding/agent');
+    });
+  }, [router]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>

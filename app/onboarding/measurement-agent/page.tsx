@@ -207,14 +207,10 @@ export default function MeasurementAgentOnboardingPage() {
   const [selfieUrl, setSelfieUrl] = useState('');
   const [equipmentPhotoUrl, setEquipmentPhotoUrl] = useState('');
 
-  // Auth check on mount
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push('/auth/login');
-      } else {
-        setUserId(data.user.id);
-      }
+      if (!data.user) router.replace('/auth/login?next=/onboarding/measurement-agent');
+      else setUserId(data.user.id);
     });
   }, [router]);
 

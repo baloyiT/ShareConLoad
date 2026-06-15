@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useActionState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/services/supabaseClient';
 import { createOperatorProfile } from '@/actions/operatorActions';
 
 const COUNTRY_CODES: Record<string, string> = {
@@ -77,7 +79,14 @@ function extractLocalPart(phone: string, codes: string[]): string {
 }
 
 export default function OperatorOnboardingPage() {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(createOperatorProfile, null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) router.replace('/auth/login?next=/onboarding/operator');
+    });
+  }, [router]);
 
   const [country, setCountry] = useState('South Africa');
   const [phone, setPhone] = useState('+27 ');
