@@ -126,26 +126,26 @@ const ACTION_CONFIG: Record<string, { label: string; icon: ReactNode; color: str
   confirmed: {
     label:       'Confirm Booking',
     icon:        <CheckCircle className="w-4 h-4" />,
-    color:       '#3b82f6',
+    color:       '#f97316',
     description: 'Accept this booking and notify the customer.',
   },
   // goods_received is handled by the receipt modal, not here
   loaded: {
     label:       'Mark as Loaded',
     icon:        <PackageCheck className="w-4 h-4" />,
-    color:       '#8b5cf6',
+    color:       '#f97316',
     description: 'Confirm that goods have been loaded into the container.',
   },
   in_transit: {
     label:       'Mark In Transit',
     icon:        <Ship className="w-4 h-4" />,
-    color:       '#06b6d4',
+    color:       '#f97316',
     description: 'The container has departed and is on its way.',
   },
   delivered: {
     label:       'Mark Delivered',
     icon:        <CheckCircle2 className="w-4 h-4" />,
-    color:       '#22c55e',
+    color:       '#f97316',
     description: 'Confirm that goods have arrived at the destination.',
   },
 };
@@ -1301,12 +1301,12 @@ function BookingCard({
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-2">
 
-              {/* Confirm Receipt & CBM (confirmed status only) */}
+              {/* Confirm Receipt (confirmed status only) */}
               {booking.status === 'confirmed' && (
                 <button
                   onClick={() => onConfirmReceipt(booking)}
                   className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: '#0891b2' }}
+                  style={{ backgroundColor: '#f97316' }}
                 >
                   <ClipboardCheck className="w-4 h-4" /> Confirm Receipt
                 </button>
@@ -1328,7 +1328,10 @@ function BookingCard({
                 <button
                   type="button"
                   onClick={onMessage}
-                  className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+                  className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border transition-colors"
+                  style={{ borderColor: '#0f2044', color: '#0f2044' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f0f4ff')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>Messages</span>
@@ -1346,7 +1349,10 @@ function BookingCard({
               {/* Record Milestone */}
               <button
                 onClick={() => onRecordMilestone(booking)}
-                className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border transition-colors"
+                style={{ borderColor: '#0f2044', color: '#0f2044' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f0f4ff')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <MapPin className="w-4 h-4" /> Milestone
               </button>
