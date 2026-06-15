@@ -70,12 +70,31 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 
 const STEPS = ['pending', 'confirmed', 'loaded', 'in_transit', 'delivered'];
 
+const PAYMENT_STAGE_ORDER = ['deposit_20', 'pre_departure_50', 'final_release_30'] as const;
+const PAYMENT_STAGE_SHORT: Record<string, string> = {
+  deposit_20:       '20%',
+  pre_departure_50: '50%',
+  final_release_30: '30%',
+};
+const STAGE_LABELS: Record<string, string> = {
+  deposit_20:       'Deposit (20%)',
+  pre_departure_50: 'Pre-Departure (50%)',
+  final_release_30: 'Final Release (30%)',
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(date: string) {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 function shortId(id: string) { return id.slice(0, 8).toUpperCase(); }
+function daysUntilDeparture(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dep   = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((dep.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -88,11 +107,13 @@ export default function MyBookingsPage() {
   const [statusFilter, setStatusFilter]   = useState<StatusFilter>('all');
   const [userName, setUserName]           = useState('');
   const [userInitials, setUserInitials]   = useState('');
-  const [ratedBookingIds, setRatedBookingIds] = useState<Set<string>>(new Set());
-  const [ratingModal, setRatingModal]         = useState<{ bookingId: string; rateeId: string } | null>(null);
-  const [messageCounts, setMessageCounts]     = useState<Record<string, number>>({});
-  const [unreadNotifs, setUnreadNotifs]       = useState<UnreadNotif[]>([]);
-  const [notifOpen, setNotifOpen]             = useState(false);
+  const [ratedBookingIds, setRatedBookingIds]         = useState<Set<string>>(new Set());
+  const [ratingModal, setRatingModal]                 = useState<{ bookingId: string; rateeId: string } | null>(null);
+  const [messageCounts, setMessageCounts]             = useState<Record<string, number>>({});
+  const [unreadNotifs, setUnreadNotifs]               = useState<UnreadNotif[]>([]);
+  const [notifOpen, setNotifOpen]                     = useState(false);
+  const [paymentStagesByBooking, setPaymentStagesByBooking] = useState<Record<string, Record<string, string>>>({});
+  const [operatorNames, setOperatorNames]             = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function fetchBookings() {
@@ -117,7 +138,8 @@ export default function MyBookingsPage() {
       if (error) {
         setError('Could not load your bookings. Please try again.');
       } else {
-        setBookings(data as unknown as BookingRow[]);
+        const rows = data as unknown as BookingRow[];
+        setBookings(rows);
 
         const { data: myRatings } = await supabase
           .from('booking_ratings')
@@ -125,8 +147,11 @@ export default function MyBookingsPage() {
           .eq('rater_id', user.id);
         setRatedBookingIds(new Set((myRatings ?? []).map((r: { booking_id: string }) => r.booking_id)));
 
-        const bookingIds = (data as unknown as BookingRow[]).map((b) => b.id);
+        const bookingIds  = rows.map((b) => b.id);
+        const operatorIds = [...new Set(rows.map((b) => b.containers?.operator_id).filter(Boolean))] as string[];
+
         if (bookingIds.length > 0) {
+          // Messages
           const { data: msgs } = await supabase
             .from('booking_messages')
             .select('booking_id')
@@ -137,6 +162,29 @@ export default function MyBookingsPage() {
             counts[m.booking_id] = (counts[m.booking_id] ?? 0) + 1;
           });
           setMessageCounts(counts);
+
+          // Payment stage statuses
+          const { data: paymentRows } = await supabase
+            .from('payments')
+            .select('booking_id, stage, status')
+            .in('booking_id', bookingIds);
+          const stageMap: Record<string, Record<string, string>> = {};
+          for (const p of paymentRows ?? []) {
+            if (!stageMap[p.booking_id]) stageMap[p.booking_id] = {};
+            stageMap[p.booking_id][p.stage] = p.status;
+          }
+          setPaymentStagesByBooking(stageMap);
+        }
+
+        // Operator display names
+        if (operatorIds.length > 0) {
+          const { data: profileRows } = await supabase
+            .from('profiles')
+            .select('user_id, full_name')
+            .in('user_id', operatorIds);
+          const nameMap: Record<string, string> = {};
+          for (const p of profileRows ?? []) nameMap[p.user_id] = p.full_name ?? '';
+          setOperatorNames(nameMap);
         }
 
         const { data: notifData } = await supabase
@@ -153,7 +201,14 @@ export default function MyBookingsPage() {
     fetchBookings();
   }, [router]);
 
-  const filtered = statusFilter === 'all' ? bookings : bookings.filter((b) => b.status === statusFilter);
+  const filtered = (statusFilter === 'all'
+    ? bookings
+    : bookings.filter((b) => b.status === statusFilter)
+  ).slice().sort((a, b) => {
+    const da = a.containers?.departure_date ?? '9999-12-31';
+    const db = b.containers?.departure_date ?? '9999-12-31';
+    return da.localeCompare(db);
+  });
 
   async function openFromNotification(notif: UnreadNotif) {
     await markAsRead(notif.id);
@@ -319,7 +374,12 @@ export default function MyBookingsPage() {
                     })}
                   />
                 )}
-                <BookingCard booking={booking} messageCount={messageCounts[booking.id] ?? 0} />
+                <BookingCard
+                  booking={booking}
+                  messageCount={messageCounts[booking.id] ?? 0}
+                  paymentStages={paymentStagesByBooking[booking.id] ?? {}}
+                  operatorName={operatorNames[booking.containers?.operator_id ?? ''] ?? ''}
+                />
               </div>
             ))}
           </div>
@@ -344,84 +404,178 @@ export default function MyBookingsPage() {
 
 // ─── BookingCard ──────────────────────────────────────────────────────────────
 
-function BookingCard({ booking, messageCount }: { booking: BookingRow; messageCount: number }) {
+function BookingCard({
+  booking,
+  messageCount,
+  paymentStages,
+  operatorName,
+}: {
+  booking: BookingRow;
+  messageCount: number;
+  paymentStages: Record<string, string>;
+  operatorName: string;
+}) {
   const cfg = STATUS_CONFIG[booking.status] ?? STATUS_CONFIG.pending;
   const c   = booking.containers;
 
+  const daysLeft = c ? daysUntilDeparture(c.departure_date) : null;
+  const isUrgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7
+    && ['pending', 'confirmed', 'goods_received'].includes(booking.status);
+
+  // Whether any stage is still unpaid (drives "Make Payment" prominence)
+  const hasPendingPayment = Object.values(paymentStages).some((s) => s === 'pending');
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      <div className="h-1 w-full" style={{ backgroundColor: cfg.color }} />
+    <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
+      <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#f97316' : cfg.color }} />
+
       <div className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+
+          {/* Left — route, chips, payment dots */}
           <div className="flex-1 min-w-0">
-            {c ? (
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-lg font-extrabold text-gray-900">{c.origin_city}</span>
-                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#f97316' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-                <span className="text-lg font-extrabold text-gray-900">{c.destination_city}</span>
+
+            {/* Route + urgency badge */}
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                {c ? (
+                  <>
+                    <span className="text-lg font-extrabold text-gray-900">{c.origin_city}</span>
+                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#f97316' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                    <span className="text-lg font-extrabold text-gray-900">{c.destination_city}</span>
+                  </>
+                ) : (
+                  <span className="text-lg font-bold text-gray-400">Route unavailable</span>
+                )}
               </div>
-            ) : (
-              <p className="text-lg font-bold text-gray-400 mb-1">Route unavailable</p>
-            )}
+              {isUrgent && daysLeft !== null && (
+                <span
+                  className="shrink-0 text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap"
+                  style={{ backgroundColor: daysLeft <= 3 ? '#fef2f2' : '#fff7ed', color: daysLeft <= 3 ? '#ef4444' : '#f97316' }}
+                >
+                  {daysLeft === 0 ? '🚨 Departs today' : `⚠️ ${daysLeft}d to departure`}
+                </span>
+              )}
+            </div>
+
             {c && <p className="text-xs text-gray-400 mb-3">{c.origin_country} → {c.destination_country}</p>}
-            <div className="flex flex-wrap gap-2">
+
+            {/* Info chips */}
+            <div className="flex flex-wrap gap-2 mb-3">
               {c && <Chip label={`Departs ${fmt(c.departure_date)}`} />}
               <Chip label={`${booking.total_cbm} CBM`} />
-              <Chip label={`R${booking.total_price.toFixed(2)}`} />
-              <Chip label={`Booked ${fmt(booking.created_at)}`} muted />
+              <Chip label={`${booking.total_price.toFixed(2)}`} />
+              {operatorName && <Chip label={`Operator: ${operatorName}`} muted />}
+              <Chip label={`#${shortId(booking.id)}`} muted />
             </div>
+
+            {/* Payment stage dots */}
+            {Object.keys(paymentStages).length > 0 && (
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs text-gray-400">Payments:</span>
+                <div className="flex items-center gap-1.5">
+                  {PAYMENT_STAGE_ORDER.map((stage) => {
+                    const status = paymentStages[stage];
+                    return (
+                      <span
+                        key={stage}
+                        title={`${STAGE_LABELS[stage]}: ${status ?? 'not yet due'}`}
+                        className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                        style={
+                          status === 'paid'
+                            ? { backgroundColor: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }
+                            : status === 'pending'
+                            ? { backgroundColor: '#fff7ed', color: '#f97316', borderColor: '#fed7aa' }
+                            : { backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }
+                        }
+                      >
+                        {status === 'paid' ? '✓' : '○'} {PAYMENT_STAGE_SHORT[stage]}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col items-stretch gap-2 shrink-0 w-full sm:w-auto sm:items-end">
+          {/* Right — status + actions */}
+          <div className="flex flex-col items-stretch gap-2 shrink-0 w-full sm:w-40">
             <div className="flex items-center justify-between sm:flex-col sm:items-end sm:gap-1">
               <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cfg.dot }} />
                 {cfg.label}
               </span>
-              <span className="text-xs text-gray-400 font-mono">#{shortId(booking.id)}</span>
             </div>
-            <Link href={`/booking/track/${booking.id}`} className="btn btn-sm text-white font-semibold rounded-lg hover:opacity-90 text-xs w-full sm:w-auto justify-center" style={{ backgroundColor: '#0f2044' }}>
-              View Details →
-            </Link>
+
+            {/* Primary: Make Payment — highlighted when a stage is pending */}
+            {!['cancelled', 'delivered'].includes(booking.status) && (
+              <Link
+                href={`/payments/${booking.id}`}
+                className="btn btn-sm font-bold rounded-lg hover:opacity-90 text-xs text-white w-full justify-center"
+                style={{ backgroundColor: hasPendingPayment ? '#f97316' : '#0f2044' }}
+              >
+                {hasPendingPayment ? '💳 Pay Now' : 'Payments'}
+              </Link>
+            )}
+
             <Link
               href={`/booking/track/${booking.id}`}
-              className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors w-full sm:w-auto justify-center"
+              className="btn btn-sm font-semibold rounded-lg hover:opacity-90 text-xs w-full justify-center border border-gray-200 text-gray-700"
             >
-              💬 Messages
+              Track →
+            </Link>
+
+            <Link
+              href={`/booking/track/${booking.id}`}
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors w-full justify-center"
+            >
+              💬
               {messageCount > 0 && (
                 <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white rounded-full" style={{ backgroundColor: '#f97316' }}>
                   {messageCount > 9 ? '9+' : messageCount}
                 </span>
               )}
+              <span className="text-sm">Messages</span>
             </Link>
-            {!['cancelled', 'delivered'].includes(booking.status) && (
-              <Link
-                href={`/payments/${booking.id}`}
-                className="btn btn-sm font-semibold rounded-lg hover:opacity-90 text-xs text-white w-full sm:w-auto justify-center"
-                style={{ backgroundColor: '#f97316' }}
+
+            {/* ⋯ overflow: Raise Dispute + Support */}
+            <div className="dropdown dropdown-end w-full">
+              <button
+                tabIndex={0}
+                className="btn btn-sm btn-ghost rounded-lg text-xs text-gray-400 border border-gray-200 w-full justify-center"
               >
-                Make Payment
-              </Link>
-            )}
-            {['confirmed', 'loaded', 'in_transit', 'delivered'].includes(booking.status) && (
-              <Link
-                href={`/disputes/new?bookingId=${booking.id}`}
-                className="btn btn-sm btn-ghost rounded-lg text-xs text-red-400 hover:bg-red-50 border border-red-100 w-full sm:w-auto justify-center"
+                ⋯ More
+              </button>
+              <ul
+                tabIndex={0}
+                className="dropdown-content z-20 menu p-1.5 shadow-lg bg-white rounded-xl border border-gray-100 w-44 mt-1"
               >
-                Raise Dispute
-              </Link>
-            )}
-            <Link
-              href="/support/new"
-              className="btn btn-sm btn-ghost rounded-lg text-xs text-gray-400 hover:bg-gray-100 border border-gray-200 w-full sm:w-auto justify-center"
-            >
-              Support
-            </Link>
+                {['confirmed', 'loaded', 'in_transit', 'delivered'].includes(booking.status) && (
+                  <li>
+                    <Link
+                      href={`/disputes/new?bookingId=${booking.id}`}
+                      className="flex items-center gap-2 text-sm text-red-500 px-3 py-2 rounded-lg hover:bg-red-50"
+                    >
+                      ⚠️ Raise Dispute
+                    </Link>
+                  </li>
+                )}
+                <li>
+                  <Link
+                    href="/support/new"
+                    className="flex items-center gap-2 text-sm text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-50"
+                  >
+                    🎧 Support
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
+        {/* Status banner + progress bar */}
         <div className="mt-4 pt-4 border-t border-gray-100">
           {STATUS_MESSAGE[booking.status] && (() => {
             const msg = STATUS_MESSAGE[booking.status];
