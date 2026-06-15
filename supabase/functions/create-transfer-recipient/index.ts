@@ -22,7 +22,7 @@ serve(async (req: Request) => {
     );
     const PAYSTACK_SECRET = Deno.env.get('PAYSTACK_SECRET_KEY') ?? '';
 
-    const { operatorProfileId, bankAccountName, bankAccountNumber, bankCode, bankCountry, swiftCode } = await req.json();
+    const { operatorProfileId, bankAccountName, bankAccountNumber, bankCode, bankCountry, swiftCode, bankName } = await req.json();
 
     if (!operatorProfileId || !bankAccountName || !bankCountry) {
       return json({ error: 'operatorProfileId, bankAccountName, and bankCountry are required' }, 400);
@@ -65,6 +65,7 @@ serve(async (req: Request) => {
       .update({
         bank_account_name:       bankAccountName,
         bank_account_number:     bankAccountNumber ?? null,
+        bank_name:               bankName ?? null,
         bank_code:               bankCode ?? null,
         bank_country:            bankCountry,
         bank_swift_code:         swiftCode ?? null,
