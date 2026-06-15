@@ -186,7 +186,11 @@ function LoginContent() {
 
             <p className="text-center text-sm text-gray-500">
               Don&apos;t have an account?{' '}
-              <Link href="/auth/register" className="font-semibold hover:underline" style={{ color: '#f97316' }}>
+              <Link
+                href={nextPath && nextPath !== '/' ? `/auth/register?next=${encodeURIComponent(nextPath)}` : '/auth/register'}
+                className="font-semibold hover:underline"
+                style={{ color: '#f97316' }}
+              >
                 Create one
               </Link>
             </p>

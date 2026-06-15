@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 
 type FormErrors = {
@@ -15,7 +15,17 @@ type FormErrors = {
 };
 
 export default function RegisterPage() {
-  const router = useRouter();
+  return (
+    <Suspense>
+      <RegisterContent />
+    </Suspense>
+  );
+}
+
+function RegisterContent() {
+  const searchParams = useSearchParams();
+  const nextPath     = searchParams.get('next') ?? '';
+  const loginHref    = nextPath ? `/auth/login?next=${encodeURIComponent(nextPath)}` : '/auth/login';
 
   const [fullName, setFullName]     = useState('');
   const [email, setEmail]           = useState('');
@@ -95,7 +105,7 @@ export default function RegisterPage() {
             Click the link in the email to activate your account. Check your spam folder if you don&apos;t see it.
           </p>
           <div className="flex flex-col gap-2">
-            <Link href="/auth/login" className="w-full btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#f97316' }}>
+            <Link href={loginHref} className="w-full btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#f97316' }}>
               Go to Login
             </Link>
             <Link href="/" className="w-full btn btn-ghost rounded-xl text-sm text-gray-500">Back to Home</Link>
@@ -282,7 +292,7 @@ export default function RegisterPage() {
 
             <p className="text-center text-sm text-gray-500">
               Already have an account?{' '}
-              <Link href="/auth/login" className="font-semibold hover:underline" style={{ color: '#f97316' }}>
+              <Link href={loginHref} className="font-semibold hover:underline" style={{ color: '#f97316' }}>
                 Sign in
               </Link>
             </p>
