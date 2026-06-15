@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
+import { notify } from '@/services/notificationService';
 import ComplianceStepper from '@/components/ComplianceStepper';
 
 const AGREEMENT_VERSION = '1.0';
@@ -16,6 +17,8 @@ export default function ComplianceAgreementPage() {
   const router = useRouter();
 
   const [profileId,  setProfileId]  = useState<string | null>(null);
+  const [userId,     setUserId]     = useState<string | null>(null);
+  const [legalName,  setLegalName]  = useState<string>('');
   const [signedAt,   setSignedAt]   = useState<string | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [confirmed,  setConfirmed]  = useState(false);
@@ -26,6 +29,7 @@ export default function ComplianceAgreementPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login?next=/operator/compliance/agreement'); return; }
+      setUserId(user.id);
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -39,11 +43,12 @@ export default function ComplianceAgreementPage() {
 
       const { data: op } = await supabase
         .from('operator_profiles')
-        .select('service_agreement_signed_at')
+        .select('service_agreement_signed_at, legal_name')
         .eq('profile_id', profile.id)
         .single();
 
       setSignedAt(op?.service_agreement_signed_at ?? null);
+      setLegalName(op?.legal_name ?? '');
       setLoading(false);
     }
     load();
@@ -60,10 +65,21 @@ export default function ComplianceAgreementPage() {
       .update({
         service_agreement_signed_at: now,
         service_agreement_version:   AGREEMENT_VERSION,
+        status:                      'pending_verification',
       })
       .eq('profile_id', profileId);
 
-    if (updateErr) { setError(updateErr.message); } else { setSignedAt(now); }
+    if (updateErr) {
+      setError(updateErr.message);
+    } else {
+      setSignedAt(now);
+      if (userId) {
+        await notify('operator.compliance_submitted', {
+          recipientId: userId,
+          legalName,
+        });
+      }
+    }
     setSigning(false);
   }
 

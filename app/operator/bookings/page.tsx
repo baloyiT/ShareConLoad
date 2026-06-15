@@ -298,13 +298,21 @@ export default function OperatorBookingsPage() {
 
     // Notify customer
     if (booking.container) {
-      await notify('booking.status_updated', {
-        bookingId:   booking.id,
-        recipientId: booking.customer_id,
-        route:       `${booking.container.origin_city} → ${booking.container.destination_city}`,
-        oldStatus:   booking.status,
-        newStatus,
-      });
+      if (newStatus === 'cancelled') {
+        await notify('booking.cancelled', {
+          bookingId:   booking.id,
+          recipientId: booking.customer_id,
+          route:       `${booking.container.origin_city} → ${booking.container.destination_city}`,
+        });
+      } else {
+        await notify('booking.status_updated', {
+          bookingId:   booking.id,
+          recipientId: booking.customer_id,
+          route:       `${booking.container.origin_city} → ${booking.container.destination_city}`,
+          oldStatus:   booking.status,
+          newStatus,
+        });
+      }
     }
 
     setPendingAction(null);
@@ -344,6 +352,15 @@ export default function OperatorBookingsPage() {
     if (error) {
       setMilestoneError(error.message);
     } else {
+      // Notify customer on vessel departure
+      if (milestoneType === 'vessel_departed' && milestoneModal.booking.container) {
+        await notify('container.departure_notice', {
+          bookingId:     milestoneModal.booking.id,
+          recipientId:   milestoneModal.booking.customer_id,
+          route:         `${milestoneModal.booking.container.origin_city} → ${milestoneModal.booking.container.destination_city}`,
+          departureDate: milestoneModal.booking.container.departure_date,
+        });
+      }
       setMilestoneModal(null);
       setMilestoneNotes('');
       setMilestoneType(OPERATOR_MILESTONES[0].value);

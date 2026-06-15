@@ -130,12 +130,128 @@ serve(async (req: Request) => {
       metadata:    { stage, reference, booking_id: bookingId, amount: payment?.amount },
     });
 
+    // ── Payment notifications ──────────────────────────────────────────────────
+    const confirmedBookingId = bookingId ?? payment?.booking_id;
+    if (confirmedBookingId && payment) {
+      await firePaymentNotifications(supabase, {
+        bookingId: confirmedBookingId,
+        stage,
+        amount: payment.amount,
+      });
+    }
+
     return json({ success: true, stage, bookingId });
   } catch (err) {
     console.error('[verify-payment]', err);
     return json({ error: (err as Error).message }, 500);
   }
 });
+
+const STAGE_LABELS: Record<string, string> = {
+  deposit_20:       'Deposit (20%)',
+  pre_departure_50: 'Pre-Departure (50%)',
+  final_release_30: 'Final Release (30%)',
+};
+
+const STAGE_ORDER = ['deposit_20', 'pre_departure_50', 'final_release_30'];
+
+// deno-lint-ignore no-explicit-any
+async function firePaymentNotifications(supabase: any, opts: {
+  bookingId: string;
+  stage:     string;
+  amount:    number;
+}): Promise<void> {
+  const { bookingId, stage, amount } = opts;
+
+  const SUPABASE_URL        = Deno.env.get('SUPABASE_URL') ?? '';
+  const SERVICE_ROLE_KEY    = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const SEND_EMAIL_ENDPOINT = `${SUPABASE_URL}/functions/v1/send-email`;
+
+  // Fetch booking customer + container route
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('customer_id, containers(origin_city, destination_city)')
+    .eq('id', bookingId)
+    .single();
+
+  const customerId = booking?.customer_id;
+  if (!customerId) return;
+
+  const container  = booking?.containers as { origin_city: string; destination_city: string } | null;
+  const route      = container ? `${container.origin_city} → ${container.destination_city}` : 'your shipment';
+  const stageLabel = STAGE_LABELS[stage] ?? stage;
+  const amountStr  = `R${amount.toFixed(2)}`;
+
+  // ── payment.confirmed ──────────────────────────────────────────────────────
+  const confirmedTitle = 'Payment Confirmed';
+  const confirmedBody  = `Your ${stageLabel} payment of ${amountStr} for ${route} has been received and confirmed. Thank you.`;
+
+  await supabase.from('notifications').insert({
+    recipient_id: customerId,
+    event:        'payment.confirmed',
+    title:        confirmedTitle,
+    body:         confirmedBody,
+    metadata:     { bookingId, stage, amount },
+  });
+
+  await fetch(SEND_EMAIL_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      Authorization:   `Bearer ${SERVICE_ROLE_KEY}`,
+      apikey:          SERVICE_ROLE_KEY,
+    },
+    body: JSON.stringify({
+      recipientId: customerId,
+      subject:     confirmedTitle,
+      title:       confirmedTitle,
+      body:        confirmedBody,
+    }),
+  }).catch((e: Error) => console.error('[verify-payment] send-email (confirmed):', e.message));
+
+  // ── payment.due — next pending stage ──────────────────────────────────────
+  const currentIdx = STAGE_ORDER.indexOf(stage);
+  if (currentIdx < 0 || currentIdx >= STAGE_ORDER.length - 1) return;
+
+  const nextStage = STAGE_ORDER[currentIdx + 1];
+  const { data: nextPayment } = await supabase
+    .from('payments')
+    .select('id, amount, stage')
+    .eq('booking_id', bookingId)
+    .eq('stage', nextStage)
+    .eq('status', 'pending')
+    .single();
+
+  if (!nextPayment) return;
+
+  const nextLabel  = STAGE_LABELS[nextStage] ?? nextStage;
+  const nextAmount = `R${Number(nextPayment.amount).toFixed(2)}`;
+  const dueTitle   = 'Payment Due';
+  const dueBody    = `Your next payment stage — ${nextLabel} of ${nextAmount} — is now due for ${route}. Please make your payment to avoid delays.`;
+
+  await supabase.from('notifications').insert({
+    recipient_id: customerId,
+    event:        'payment.due',
+    title:        dueTitle,
+    body:         dueBody,
+    metadata:     { bookingId, stage: nextStage, amount: nextPayment.amount },
+  });
+
+  await fetch(SEND_EMAIL_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      Authorization:   `Bearer ${SERVICE_ROLE_KEY}`,
+      apikey:          SERVICE_ROLE_KEY,
+    },
+    body: JSON.stringify({
+      recipientId: customerId,
+      subject:     dueTitle,
+      title:       dueTitle,
+      body:        dueBody,
+    }),
+  }).catch((e: Error) => console.error('[verify-payment] send-email (due):', e.message));
+}
 
 // deno-lint-ignore no-explicit-any
 async function createPayoutRecord(supabase: any, opts: {

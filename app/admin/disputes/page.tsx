@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
+import { notify } from '@/services/notificationService';
 
 type Dispute = {
   id: string;
@@ -14,7 +15,7 @@ type Dispute = {
   status: string;
   resolution_notes: string | null;
   created_at: string;
-  submitted_by_profile: { full_name: string | null } | null;
+  submitted_by_profile: { user_id: string; full_name: string | null } | null;
   booking: { containers: { origin_city: string; destination_city: string } | null } | null;
 };
 
@@ -60,7 +61,7 @@ export default function AdminDisputesPage() {
       .from('disputes')
       .select(`
         id, booking_id, dispute_type, description, status, resolution_notes, created_at,
-        submitted_by_profile:profiles!disputes_submitted_by_fkey(full_name),
+        submitted_by_profile:profiles!disputes_submitted_by_fkey(user_id, full_name),
         booking:bookings(containers(origin_city, destination_city))
       `)
       .order('created_at', { ascending: false });
@@ -102,6 +103,17 @@ export default function AdminDisputesPage() {
         ? { ...d, status: newStatus, resolution_notes: resolutionNotes.trim() || null }
         : d),
     );
+
+    // Notify the customer who submitted the dispute
+    const submitterUserId = selected.submitted_by_profile?.user_id;
+    if (submitterUserId) {
+      await notify('dispute.update', {
+        disputeId:   selected.id,
+        recipientId: submitterUserId,
+        newStatus,
+      });
+    }
+
     setSelected(null);
     setUpdating(false);
   }

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createServerActionClient } from '@/services/supabaseServer';
 import { setActiveSession } from '@/services/session';
+import { buildEmailHtml } from '@/services/emailTemplates';
 
 // ── createOperatorProfile ─────────────────────────────────────────────────────
 // Called from the operator onboarding form via useActionState.
@@ -75,6 +76,28 @@ export async function createOperatorProfile(
     await supabase.from('profiles').delete().eq('id', profile.id);
     return { error: `Failed to save operator details: ${opError.message}` };
   }
+
+  // Fire onboarding notification (DB + email) before redirect
+  const legalName = (formData.get('legal_name') as string) ?? '';
+  const notifTitle = 'Operator Profile Created';
+  const notifBody  = `Your operator profile for "${legalName}" is set up. Complete your compliance documents to start listing containers and accepting bookings.`;
+
+  await supabase.from('notifications').insert({
+    recipient_id: user.id,
+    event:        'operator.onboarding_submitted',
+    title:        notifTitle,
+    body:         notifBody,
+    metadata:     { legalName },
+  });
+
+  await supabase.functions.invoke('send-email', {
+    body: {
+      recipientId: user.id,
+      subject:     notifTitle,
+      html:        buildEmailHtml(notifTitle, notifBody),
+      text:        notifBody,
+    },
+  });
 
   // Must run before redirect() — redirect() throws and terminates execution
   await setActiveSession({ profile_id: profile.id, role_type: 'operator' });

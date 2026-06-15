@@ -6,9 +6,11 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 import { logAudit } from '@/services/auditLogger';
+import { notify } from '@/services/notificationService';
 
 type OperatorRow = {
   id: string;
+  user_id: string;
   created_at: string;
   operator_profile: {
     id: string;
@@ -19,6 +21,9 @@ type OperatorRow = {
     paystack_recipient_code: string | null;
     bank_account_name: string | null;
     bank_account_number: string | null;
+    status: string | null;
+    service_agreement_signed_at: string | null;
+    compliance_rejection_reason: string | null;
   } | null;
 };
 
@@ -27,13 +32,15 @@ function fmt(d: string) {
 }
 
 export default function AdminOperatorsPage() {
-  const [operators,  setOperators]  = useState<OperatorRow[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState<string | null>(null);
-  const [adminId,    setAdminId]    = useState<string | null>(null);
-  const [saving,     setSaving]     = useState<string | null>(null);
-  const [holdModal,  setHoldModal]  = useState<OperatorRow | null>(null);
-  const [holdReason, setHoldReason] = useState('');
+  const [operators,        setOperators]        = useState<OperatorRow[]>([]);
+  const [loading,          setLoading]          = useState(true);
+  const [error,            setError]            = useState<string | null>(null);
+  const [adminId,          setAdminId]          = useState<string | null>(null);
+  const [saving,           setSaving]           = useState<string | null>(null);
+  const [holdModal,        setHoldModal]        = useState<OperatorRow | null>(null);
+  const [holdReason,       setHoldReason]       = useState('');
+  const [rejectModal,      setRejectModal]      = useState<OperatorRow | null>(null);
+  const [rejectReason,     setRejectReason]     = useState('');
 
   useEffect(() => {
     async function init() {
@@ -43,10 +50,11 @@ export default function AdminOperatorsPage() {
       const { data, error: err } = await supabase
         .from('profiles')
         .select(`
-          id, created_at,
+          id, user_id, created_at,
           operator_profile:operator_profiles!profile_id(
             id, legal_name, payout_enabled, payout_hold, payout_hold_reason,
-            paystack_recipient_code, bank_account_name, bank_account_number
+            paystack_recipient_code, bank_account_name, bank_account_number,
+            status, service_agreement_signed_at, compliance_rejection_reason
           )
         `)
         .eq('role_type', 'operator')
@@ -144,6 +152,73 @@ export default function AdminOperatorsPage() {
     setSaving(null);
   }
 
+  async function approveCompliance(op: OperatorRow) {
+    if (!op.operator_profile) return;
+    setSaving(op.id + '_approve');
+
+    const { error: err } = await supabase
+      .from('operator_profiles')
+      .update({ status: 'active', compliance_rejection_reason: null })
+      .eq('id', op.operator_profile.id);
+
+    if (!err) {
+      setOperators((prev) =>
+        prev.map((o) => o.id === op.id
+          ? { ...o, operator_profile: o.operator_profile ? { ...o.operator_profile, status: 'active', compliance_rejection_reason: null } : null }
+          : o),
+      );
+      await logAudit({
+        action:      'operator.compliance_approved',
+        target_type: 'operator_profile',
+        target_id:   op.operator_profile.id,
+        actor_id:    adminId ?? undefined,
+      });
+      await notify('operator.compliance_approved', {
+        recipientId: op.user_id,
+        legalName:   op.operator_profile.legal_name ?? '',
+      });
+    } else {
+      setError(err.message);
+    }
+    setSaving(null);
+  }
+
+  async function applyReject() {
+    if (!rejectModal?.operator_profile) return;
+    setSaving(rejectModal.id + '_reject');
+    const reason = rejectReason.trim() || 'Your submission requires additional information.';
+
+    const { error: err } = await supabase
+      .from('operator_profiles')
+      .update({ status: 'draft', compliance_rejection_reason: reason })
+      .eq('id', rejectModal.operator_profile.id);
+
+    if (!err) {
+      setOperators((prev) =>
+        prev.map((o) => o.id === rejectModal.id
+          ? { ...o, operator_profile: o.operator_profile ? { ...o.operator_profile, status: 'draft', compliance_rejection_reason: reason } : null }
+          : o),
+      );
+      await logAudit({
+        action:      'operator.compliance_rejected',
+        target_type: 'operator_profile',
+        target_id:   rejectModal.operator_profile!.id,
+        actor_id:    adminId ?? undefined,
+        metadata:    { reason },
+      });
+      await notify('operator.compliance_rejected', {
+        recipientId: rejectModal.user_id,
+        legalName:   rejectModal.operator_profile.legal_name ?? '',
+        reason,
+      });
+      setRejectModal(null);
+      setRejectReason('');
+    } else {
+      setError(err.message);
+    }
+    setSaving(null);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
 
@@ -179,7 +254,7 @@ export default function AdminOperatorsPage() {
               <table className="table w-full">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    {['Operator', 'Bank', 'Paystack', 'Payout Enabled', 'Hold', 'Joined', 'Actions'].map((h) => (
+                    {['Operator', 'Compliance', 'Bank', 'Paystack', 'Payout Enabled', 'Hold', 'Joined', 'Actions'].map((h) => (
                       <th key={h} className="py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">{h}</th>
                     ))}
                   </tr>
@@ -196,6 +271,47 @@ export default function AdminOperatorsPage() {
                             </div>
                             <span className="font-medium text-gray-800 text-sm">{p?.legal_name ?? <span className="text-gray-400 italic">No name</span>}</span>
                           </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {(() => {
+                            const status = p?.status ?? 'draft';
+                            const signed = !!p?.service_agreement_signed_at;
+                            if (status === 'active' || status === 'trusted') {
+                              return <span className="badge badge-sm bg-green-50 text-green-600 border-0">Approved</span>;
+                            }
+                            if (status === 'pending_verification' && signed) {
+                              return (
+                                <div className="flex flex-col gap-1">
+                                  <span className="badge badge-sm bg-blue-50 text-blue-600 border-0">Pending Review</span>
+                                  <div className="flex gap-1 mt-0.5">
+                                    <button
+                                      onClick={() => approveCompliance(op)}
+                                      disabled={saving === op.id + '_approve'}
+                                      className="btn btn-xs rounded-lg text-white font-semibold"
+                                      style={{ backgroundColor: '#22c55e' }}
+                                    >
+                                      {saving === op.id + '_approve' ? <span className="loading loading-spinner loading-xs" /> : 'Approve'}
+                                    </button>
+                                    <button
+                                      onClick={() => { setRejectModal(op); setRejectReason(''); }}
+                                      className="btn btn-xs rounded-lg font-semibold border border-red-200 text-red-500 hover:bg-red-50"
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            if (p?.compliance_rejection_reason) {
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="badge badge-sm bg-red-50 text-red-500 border-0">Rejected</span>
+                                  <span className="text-xs text-gray-400 max-w-[140px] truncate">{p.compliance_rejection_reason}</span>
+                                </div>
+                              );
+                            }
+                            return <span className="badge badge-sm bg-gray-100 text-gray-400 border-0">Incomplete</span>;
+                          })()}
                         </td>
                         <td className="py-3.5 px-4 text-sm text-gray-600">
                           {p?.bank_account_name ? (
@@ -267,6 +383,40 @@ export default function AdminOperatorsPage() {
           </div>
         )}
       </div>
+
+      {/* Compliance reject modal */}
+      {rejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="font-extrabold text-gray-800">Reject Compliance</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                The operator will be notified with this reason and asked to resubmit.
+              </p>
+            </div>
+            <div className="px-6 py-4">
+              <label className="text-sm font-semibold text-gray-700">Reason <span className="text-red-500">*</span></label>
+              <textarea
+                className="textarea textarea-bordered w-full h-24 resize-none mt-1.5"
+                placeholder="e.g. Identity document is not legible. Please resubmit a clearer scan."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button onClick={() => setRejectModal(null)} className="btn btn-ghost flex-1 rounded-xl text-gray-500">Cancel</button>
+              <button
+                onClick={applyReject}
+                disabled={!!saving || !rejectReason.trim()}
+                className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90"
+                style={{ backgroundColor: '#ef4444' }}
+              >
+                {saving ? <span className="loading loading-spinner loading-sm" /> : 'Send Rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hold modal */}
       {holdModal && (

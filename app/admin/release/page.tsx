@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 import { logAudit } from '@/services/auditLogger';
+import { notify } from '@/services/notificationService';
 
 type ReleaseAuth = {
   id: string;
@@ -19,6 +20,7 @@ type ReleaseAuth = {
   authorized_at: string | null;
   created_at: string;
   booking: {
+    customer_id: string;
     total_price: number;
     containers: { origin_city: string; destination_city: string } | null;
   } | null;
@@ -61,7 +63,7 @@ export default function AdminReleasePage() {
         .select(`
           id, booking_id, final_payment_confirmed, customs_cleared,
           consignee_verified, operator_confirmed, status, notes, authorized_at, created_at,
-          booking:bookings(total_price, containers(origin_city, destination_city))
+          booking:bookings(customer_id, total_price, containers(origin_city, destination_city))
         `)
         .order('created_at', { ascending: false });
 
@@ -103,6 +105,13 @@ export default function AdminReleasePage() {
           target_id:   record.id,
           actor_id:    adminId ?? undefined,
         });
+        if (record.booking?.customer_id && record.booking.containers) {
+          await notify('cargo.released', {
+            bookingId:   record.booking_id,
+            recipientId: record.booking.customer_id,
+            route:       `${record.booking.containers.origin_city} → ${record.booking.containers.destination_city}`,
+          });
+        }
       }
     } else {
       setError(err.message);

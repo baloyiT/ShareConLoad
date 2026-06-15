@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { buildEmailHtml } from './emailTemplates';
 
 // ─── Event catalogue ──────────────────────────────────────────────────────────
 // Add new event keys here as the platform grows.
@@ -69,6 +70,27 @@ export type NotificationEventMap = {
     bookingId: string;
     recipientId: string;
     bookingRef: string;
+  };
+  'user.welcome': {
+    recipientId: string;
+    fullName: string;
+  };
+  'operator.onboarding_submitted': {
+    recipientId: string;
+    legalName: string;
+  };
+  'operator.compliance_submitted': {
+    recipientId: string;
+    legalName: string;
+  };
+  'operator.compliance_approved': {
+    recipientId: string;
+    legalName: string;
+  };
+  'operator.compliance_rejected': {
+    recipientId: string;
+    legalName: string;
+    reason: string;
   };
 };
 
@@ -177,6 +199,42 @@ function buildMessage(event: NotificationEvent, payload: NotificationEventMap[ty
         body:  `You have a new message on booking ${p.bookingRef}.`,
       };
     }
+    case 'user.welcome': {
+      const p = payload as NotificationEventMap['user.welcome'];
+      const name = p.fullName ? `, ${p.fullName.split(' ')[0]}` : '';
+      return {
+        title: `Welcome to ShareConLoad${name}!`,
+        body:  'Your account is active. Browse available containers and book your first shipment, or set up your operator profile to list container space.',
+      };
+    }
+    case 'operator.onboarding_submitted': {
+      const p = payload as NotificationEventMap['operator.onboarding_submitted'];
+      return {
+        title: 'Operator Profile Created',
+        body:  `Your operator profile for "${p.legalName}" is set up. Complete your compliance documents to start listing containers and accepting bookings.`,
+      };
+    }
+    case 'operator.compliance_submitted': {
+      const p = payload as NotificationEventMap['operator.compliance_submitted'];
+      return {
+        title: 'Compliance Submitted for Review',
+        body:  `Thank you, ${p.legalName}. Your compliance documents have been submitted and are now under review. We will notify you once a decision has been made — this usually takes 1–2 business days.`,
+      };
+    }
+    case 'operator.compliance_approved': {
+      const p = payload as NotificationEventMap['operator.compliance_approved'];
+      return {
+        title: 'Compliance Approved — You Are Live!',
+        body:  `Congratulations, ${p.legalName}! Your operator compliance has been approved. You can now list container space and accept bookings on ShareConLoad.`,
+      };
+    }
+    case 'operator.compliance_rejected': {
+      const p = payload as NotificationEventMap['operator.compliance_rejected'];
+      return {
+        title: 'Compliance Action Required',
+        body:  `Hi ${p.legalName}, your compliance submission requires attention. Reason: ${p.reason}. Please review and resubmit your documents at shareconload.com/operator/compliance.`,
+      };
+    }
     default:
       return { title: 'Notification', body: '' };
   }
@@ -235,53 +293,6 @@ const databaseChannel: NotificationChannel = {
     }
   },
 };
-
-// ─── Email HTML builder ───────────────────────────────────────────────────────
-
-function buildEmailHtml(title: string, body: string): string {
-  const year = new Date().getFullYear();
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Roboto,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px;">
-  <tr><td align="center">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(8,16,58,0.10);">
-      <tr>
-        <td style="background-color:#0f2044;padding:28px 40px;text-align:center;">
-          <span style="font-size:22px;font-weight:800;color:#ffffff;">Share</span><span style="font-size:22px;font-weight:800;color:#f97316;">Con</span><span style="font-size:22px;font-weight:800;color:#ffffff;">Load</span>
-        </td>
-      </tr>
-      <tr><td style="height:4px;background:linear-gradient(90deg,#f97316 0%,#FFB37B 100%);"></td></tr>
-      <tr>
-        <td style="background-color:#ffffff;padding:36px 40px 32px;">
-          <h1 style="margin:0 0 12px;font-size:20px;font-weight:800;color:#0f2044;">${title}</h1>
-          <p style="margin:0 0 28px;font-size:15px;color:#475569;line-height:1.7;">${body}</p>
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td align="center">
-                <a href="https://www.shareconload.com" style="display:inline-block;background-color:#f97316;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:12px 32px;border-radius:10px;">
-                  Go to ShareConLoad
-                </a>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <tr>
-        <td style="background-color:#0f2044;padding:20px 40px;text-align:center;">
-          <p style="margin:0 0 4px;font-size:12px;color:#94a3b8;">
-            Need help? <a href="mailto:support@shareconload.com" style="color:#f97316;text-decoration:none;">support@shareconload.com</a>
-          </p>
-          <p style="margin:0;font-size:11px;color:#475569;">© ${year} ShareConLoad · Global Shared Container Logistics</p>
-        </td>
-      </tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>`;
-}
 
 // ─── Channel: Email (Resend via send-email Edge Function) ─────────────────────
 
