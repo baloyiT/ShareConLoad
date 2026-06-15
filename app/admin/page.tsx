@@ -187,6 +187,7 @@ export default function AdminDashboard() {
                   { href: '/admin/transporters',         label: 'Transporters',        icon: '🚛', desc: 'Manage transporters'                 },
                   { href: '/admin/measurement-jobs',     label: 'Measurement Jobs',    icon: '📏', desc: 'Assign & track measurement jobs'      },
                   { href: '/admin/rate-bands',           label: 'Rate Bands',          icon: '💲', desc: 'Measurement pricing zones'             },
+                  { href: '/admin/pickup-jobs',          label: 'Pickup Jobs',         icon: '🚚', desc: 'Assign & track pickup jobs'             },
                 ].map(({ href, label, icon, desc }) => (
                   <Link
                     key={href}

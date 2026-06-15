@@ -29,6 +29,7 @@ export default function TransporterDashboard() {
   const [transporterProfile, setTransporterProfile] = useState<TransporterProfile | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeJobs, setActiveJobs] = useState(0);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -70,6 +71,16 @@ export default function TransporterDashboard() {
       }
 
       setTransporterProfile(transporterData ?? null);
+
+      if (transporterData) {
+        const { count } = await supabase
+          .from('pickup_jobs')
+          .select('id', { count: 'exact', head: true })
+          .eq('transporter_profile_id', transporterData.id)
+          .not('status', 'in', '(delivered,cancelled)');
+        setActiveJobs(count ?? 0);
+      }
+
       setLoading(false);
     }
 
@@ -185,16 +196,18 @@ export default function TransporterDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="badge badge-outline text-xs font-semibold" style={{ color: '#6b7280', borderColor: '#e5e7eb' }}>
-              Phase 3
-            </span>
-            <span className="text-xs text-gray-400 font-medium">Coming Soon</span>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1">Active Pickup Jobs</p>
+            <p className="text-3xl font-extrabold" style={{ color: '#0f2044' }}>{activeJobs}</p>
           </div>
-          <p className="text-gray-500 text-sm">
-            Pickup &amp; delivery job assignments coming in Phase 3.
-          </p>
+          <Link
+            href="/transporter/jobs"
+            className="btn btn-sm text-white font-bold rounded-xl hover:opacity-90"
+            style={{ backgroundColor: '#f97316' }}
+          >
+            View Jobs
+          </Link>
         </div>
       </div>
     );
