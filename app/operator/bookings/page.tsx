@@ -20,6 +20,8 @@ type ContainerInfo = {
   destination_city: string;
   destination_country: string;
   departure_date: string;
+  price_per_cbm: number;
+  available_capacity_cbm: number;
 };
 
 type OperatorBooking = {
@@ -30,7 +32,19 @@ type OperatorBooking = {
   total_price: number;
   status: string;
   created_at: string;
+  actual_cbm_at_loading: number | null;
+  cbm_reconciliation_status: string | null;
   container: ContainerInfo | null;
+};
+
+type ReceiptModal = {
+  booking: OperatorBooking;
+  step: 'input' | 'excess_choice';
+  actualCbm: string;
+  variance: number;
+  newTotalPrice: number;
+  excessCbm: number;
+  capacityAvailable: boolean;
 };
 
 type PendingAction = {
@@ -61,37 +75,40 @@ const OPERATOR_MILESTONES: { value: string; label: string }[] = [
   { value: 'shipment_completed',label: 'Shipment Completed'},
 ];
 
-type StatusFilter = 'all' | 'pending' | 'confirmed' | 'loaded' | 'in_transit' | 'delivered' | 'cancelled';
+type StatusFilter = 'all' | 'pending' | 'confirmed' | 'goods_received' | 'loaded' | 'in_transit' | 'delivered' | 'cancelled';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending:    { label: 'Pending',    color: '#f97316', bg: '#fff7ed' },
-  confirmed:  { label: 'Confirmed',  color: '#3b82f6', bg: '#eff6ff' },
-  loaded:     { label: 'Loaded',     color: '#8b5cf6', bg: '#f5f3ff' },
-  in_transit: { label: 'In Transit', color: '#06b6d4', bg: '#ecfeff' },
-  delivered:  { label: 'Delivered',  color: '#22c55e', bg: '#f0fdf4' },
-  cancelled:  { label: 'Cancelled',  color: '#6b7280', bg: '#f9fafb' },
+  pending:         { label: 'Pending',        color: '#f97316', bg: '#fff7ed' },
+  confirmed:       { label: 'Confirmed',      color: '#3b82f6', bg: '#eff6ff' },
+  goods_received:  { label: 'Goods Received', color: '#0891b2', bg: '#ecfeff' },
+  loaded:          { label: 'Loaded',         color: '#8b5cf6', bg: '#f5f3ff' },
+  in_transit:      { label: 'In Transit',     color: '#06b6d4', bg: '#ecfeff' },
+  delivered:       { label: 'Delivered',      color: '#22c55e', bg: '#f0fdf4' },
+  cancelled:       { label: 'Cancelled',      color: '#6b7280', bg: '#f9fafb' },
 };
 
 // next valid status for each current status
 const NEXT_STATUS: Record<string, string | null> = {
-  pending:    'confirmed',
-  confirmed:  'loaded',
-  loaded:     'in_transit',
-  in_transit: 'delivered',
-  delivered:  null,
-  cancelled:  null,
+  pending:        'confirmed',
+  confirmed:      'goods_received',  // via receipt modal, not generic action
+  goods_received: 'loaded',
+  loaded:         'in_transit',
+  in_transit:     'delivered',
+  delivered:      null,
+  cancelled:      null,
 };
 
 // what the action button says (keyed by TARGET status)
 const ACTION_CONFIG: Record<string, { label: string; icon: string; color: string; description: string }> = {
-  confirmed:  {
+  confirmed: {
     label:       'Confirm Booking',
     icon:        '✅',
     color:       '#3b82f6',
     description: 'Accept this booking and notify the customer.',
   },
+  // goods_received is handled by the receipt modal, not here
   loaded: {
     label:       'Mark as Loaded',
     icon:        '📦',
@@ -113,13 +130,14 @@ const ACTION_CONFIG: Record<string, { label: string; icon: string; color: string
 };
 
 const STATUS_TABS: { value: StatusFilter; label: string }[] = [
-  { value: 'all',        label: 'All'        },
-  { value: 'pending',    label: 'Pending'    },
-  { value: 'confirmed',  label: 'Confirmed'  },
-  { value: 'loaded',     label: 'Loaded'     },
-  { value: 'in_transit', label: 'In Transit' },
-  { value: 'delivered',  label: 'Delivered'  },
-  { value: 'cancelled',  label: 'Cancelled'  },
+  { value: 'all',            label: 'All'            },
+  { value: 'pending',        label: 'Pending'        },
+  { value: 'confirmed',      label: 'Confirmed'      },
+  { value: 'goods_received', label: 'Goods Received' },
+  { value: 'loaded',         label: 'Loaded'         },
+  { value: 'in_transit',     label: 'In Transit'     },
+  { value: 'delivered',      label: 'Delivered'      },
+  { value: 'cancelled',      label: 'Cancelled'      },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -168,6 +186,11 @@ export default function OperatorBookingsPage() {
   const [recordingMilestone, setRecordingMilestone] = useState(false);
   const [operatorProfileId,  setOperatorProfileId]  = useState<string | null>(null);
 
+  // Receipt / CBM reconciliation modal state
+  const [receiptModal,    setReceiptModal]    = useState<ReceiptModal | null>(null);
+  const [receiptSaving,   setReceiptSaving]   = useState(false);
+  const [receiptError,    setReceiptError]    = useState<string | null>(null);
+
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchBookings = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -188,7 +211,7 @@ export default function OperatorBookingsPage() {
     // Step 1: operator's containers
     const { data: containerRows, error: cErr } = await supabase
       .from('containers')
-      .select('id, origin_city, origin_country, destination_city, destination_country, departure_date')
+      .select('id, origin_city, origin_country, destination_city, destination_country, departure_date, price_per_cbm, available_capacity_cbm')
       .eq('operator_id', user.id);
 
     if (cErr) { setError('Could not load containers.'); setLoading(false); return; }
@@ -202,7 +225,7 @@ export default function OperatorBookingsPage() {
     // Step 2: bookings for those containers
     const { data: bookingRows, error: bErr } = await supabase
       .from('bookings')
-      .select('id, container_id, customer_id, total_cbm, total_price, status, created_at')
+      .select('id, container_id, customer_id, total_cbm, total_price, status, created_at, actual_cbm_at_loading, cbm_reconciliation_status')
       .in('container_id', containerIds)
       .order('created_at', { ascending: false });
 
@@ -326,6 +349,158 @@ export default function OperatorBookingsPage() {
       setMilestoneType(OPERATOR_MILESTONES[0].value);
     }
     setRecordingMilestone(false);
+  }
+
+  // ── CBM Receipt / Reconciliation ──────────────────────────────────────────
+  function openReceiptModal(booking: OperatorBooking) {
+    setReceiptError(null);
+    setReceiptModal({
+      booking,
+      step: 'input',
+      actualCbm: '',
+      variance: 0,
+      newTotalPrice: 0,
+      excessCbm: 0,
+      capacityAvailable: false,
+    });
+  }
+
+  async function handleReceiptSubmit() {
+    if (!receiptModal) return;
+    const { booking } = receiptModal;
+    const c = booking.container;
+    if (!c) { setReceiptError('Container data missing.'); return; }
+
+    const actualCbm = parseFloat(receiptModal.actualCbm);
+    if (isNaN(actualCbm) || actualCbm <= 0) {
+      setReceiptError('Please enter a valid CBM value.');
+      return;
+    }
+
+    const bookedCbm = booking.total_cbm;
+    const variancePct = ((actualCbm - bookedCbm) / bookedCbm) * 100;
+
+    if (Math.abs(variancePct) <= 5) {
+      // Within threshold — confirm receipt, no payment change
+      await finaliseReceipt(booking, actualCbm, variancePct, 'within_threshold', false);
+    } else if (actualCbm < bookedCbm) {
+      // Reduced — auto-accept, recalculate down
+      await finaliseReceipt(booking, actualCbm, variancePct, 'accepted', false);
+    } else {
+      // Excess — check capacity then show accept/decline
+      const excessCbm = actualCbm - bookedCbm;
+      const capacityAvailable = c.available_capacity_cbm >= excessCbm;
+      setReceiptModal((prev) => prev ? {
+        ...prev,
+        step: 'excess_choice',
+        variance: variancePct,
+        newTotalPrice: actualCbm * c.price_per_cbm,
+        excessCbm,
+        capacityAvailable,
+      } : null);
+    }
+  }
+
+  async function finaliseReceipt(
+    booking: OperatorBooking,
+    actualCbm: number,
+    variancePct: number,
+    reconciliationStatus: 'within_threshold' | 'accepted' | 'declined',
+    isDeclined: boolean,
+  ) {
+    setReceiptSaving(true);
+    setReceiptError(null);
+
+    const c = booking.container!;
+    const effectiveCbm = isDeclined ? booking.total_cbm : actualCbm;
+    const newTotalPrice = effectiveCbm * c.price_per_cbm;
+    const cbmVarianceAdj = isDeclined ? 0 : newTotalPrice - booking.total_price;
+
+    // 1. Update booking
+    const { error: bookingErr } = await supabase
+      .from('bookings')
+      .update({
+        status:                    'goods_received',
+        actual_cbm_at_loading:     actualCbm,
+        cbm_variance_pct:          variancePct,
+        cbm_variance_adjustment:   cbmVarianceAdj,
+        cbm_reconciliation_status: reconciliationStatus,
+        goods_received_at:         new Date().toISOString(),
+      })
+      .eq('id', booking.id);
+
+    if (bookingErr) { setReceiptError(bookingErr.message); setReceiptSaving(false); return; }
+
+    // 2. Recalculate Stage 2 and Stage 3 if not within threshold and not declined
+    if (reconciliationStatus !== 'within_threshold' && !isDeclined) {
+      const stage2 = newTotalPrice * 0.50;
+      const stage3 = newTotalPrice * 0.30;
+
+      await supabase
+        .from('payments')
+        .update({ amount: stage2 })
+        .eq('booking_id', booking.id)
+        .eq('stage', 'pre_departure_50')
+        .eq('status', 'pending');
+
+      await supabase
+        .from('payments')
+        .update({ amount: stage3 })
+        .eq('booking_id', booking.id)
+        .eq('stage', 'final_release_30')
+        .eq('status', 'pending');
+    }
+
+    // 3. Adjust container capacity for non-declined reconciliations
+    if (!isDeclined && reconciliationStatus !== 'within_threshold') {
+      const capacityDelta = booking.total_cbm - actualCbm; // positive = freed, negative = consumed more
+      await supabase
+        .from('containers')
+        .update({ available_capacity_cbm: c.available_capacity_cbm + capacityDelta })
+        .eq('id', booking.container_id);
+    }
+
+    // 4. Record milestone
+    await supabase.from('shipment_milestones').insert({
+      booking_id:  booking.id,
+      milestone:   'cargo_received',
+      notes:       isDeclined
+        ? `Goods received. Excess CBM declined — proceeding at booked ${booking.total_cbm} CBM.`
+        : `Goods received. Actual CBM: ${actualCbm}. Variance: ${variancePct.toFixed(1)}%.`,
+      occurred_at: new Date().toISOString(),
+      recorded_by: operatorProfileId,
+    });
+
+    // 5. Notify customer
+    let notifBody = '';
+    if (reconciliationStatus === 'within_threshold') {
+      notifBody = `Your cargo has been received at the warehouse. CBM variance is within threshold — no payment changes.`;
+    } else if (isDeclined) {
+      notifBody = `Your cargo has been received. The actual CBM exceeded your booking. Excess cargo was declined — your booking continues at the original ${booking.total_cbm} CBM.`;
+    } else if (actualCbm < booking.total_cbm) {
+      notifBody = `Your cargo has been received. Actual CBM: ${actualCbm} (booked: ${booking.total_cbm}). Your Stage 2 and Stage 3 payments have been adjusted downward.`;
+    } else {
+      notifBody = `Your cargo has been received. Actual CBM: ${actualCbm} (booked: ${booking.total_cbm}). The extra space has been accepted — your Stage 2 and Stage 3 payments have been adjusted.`;
+    }
+
+    await supabase.from('notifications').insert({
+      user_id:  booking.customer_id,
+      type:     'booking.cbm_reconciled',
+      title:    'Cargo received at warehouse',
+      body:     notifBody,
+      metadata: { booking_id: booking.id, actual_cbm: actualCbm, reconciliation_status: reconciliationStatus },
+    });
+
+    // 6. Update local state
+    setBookings((prev) =>
+      prev.map((b) => b.id === booking.id
+        ? { ...b, status: 'goods_received', actual_cbm_at_loading: actualCbm, cbm_reconciliation_status: reconciliationStatus }
+        : b,
+      ),
+    );
+
+    setReceiptModal(null);
+    setReceiptSaving(false);
   }
 
   // ── Derived ────────────────────────────────────────────────────────────────
@@ -524,6 +699,7 @@ export default function OperatorBookingsPage() {
                 onAction={(b, newStatus) => { setUpdateError(null); setPendingAction({ booking: b, newStatus }); }}
                 onCancel={cancelBooking}
                 onRecordMilestone={(b) => { setMilestoneModal({ booking: b }); setMilestoneType(OPERATOR_MILESTONES[0].value); setMilestoneNotes(''); setMilestoneError(null); }}
+                onConfirmReceipt={openReceiptModal}
                 isRated={ratedBookingIds.has(booking.id)}
                 onRate={() => setRatingModal({ bookingId: booking.id, rateeId: booking.customer_id })}
                 onMessage={() => setMessageBooking(booking)}
@@ -533,6 +709,122 @@ export default function OperatorBookingsPage() {
           </div>
         )}
       </div>
+
+      {/* ── CBM Receipt / Reconciliation Modal ───────────────────────────── */}
+      {receiptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between" style={{ backgroundColor: '#f0f9ff' }}>
+              <div>
+                <h3 className="font-extrabold text-gray-800">Confirm Goods Receipt &amp; CBM</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {receiptModal.booking.container
+                    ? `${receiptModal.booking.container.origin_city} → ${receiptModal.booking.container.destination_city}`
+                    : `Booking #${shortId(receiptModal.booking.id)}`}
+                </p>
+              </div>
+              <button onClick={() => setReceiptModal(null)} className="btn btn-ghost btn-sm btn-circle text-gray-400">✕</button>
+            </div>
+
+            {receiptModal.step === 'input' && (
+              <>
+                <div className="px-6 py-5 space-y-4">
+                  <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-1">
+                    <div className="flex justify-between"><span className="text-gray-500">Booked CBM</span><span className="font-bold">{receiptModal.booking.total_cbm} m³</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Original price</span><span className="font-bold">R{receiptModal.booking.total_price.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Price per CBM</span><span className="font-bold">R{receiptModal.booking.container?.price_per_cbm.toFixed(2)}</span></div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Actual CBM Received</label>
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.01"
+                      className="input input-bordered w-full"
+                      placeholder="e.g. 4.5"
+                      value={receiptModal.actualCbm}
+                      onChange={(e) => setReceiptModal((prev) => prev ? { ...prev, actualCbm: e.target.value } : null)}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Recalculation only applies if variance exceeds ±5%.
+                    </p>
+                  </div>
+                  {receiptError && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{receiptError}</p>}
+                </div>
+                <div className="px-6 pb-6 flex gap-3">
+                  <button onClick={() => setReceiptModal(null)} className="btn btn-ghost flex-1 rounded-xl text-gray-500">Cancel</button>
+                  <button
+                    onClick={handleReceiptSubmit}
+                    disabled={receiptSaving}
+                    className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90"
+                    style={{ backgroundColor: '#0891b2' }}
+                  >
+                    {receiptSaving ? <span className="loading loading-spinner loading-sm" /> : 'Confirm Receipt'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {receiptModal.step === 'excess_choice' && (
+              <>
+                <div className="px-6 py-5 space-y-4">
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm space-y-2">
+                    <p className="font-bold text-amber-800">⚠️ Excess CBM Detected</p>
+                    <div className="flex justify-between text-amber-700"><span>Booked</span><span className="font-bold">{receiptModal.booking.total_cbm} m³</span></div>
+                    <div className="flex justify-between text-amber-700"><span>Actual received</span><span className="font-bold">{receiptModal.actualCbm} m³</span></div>
+                    <div className="flex justify-between text-amber-700"><span>Excess</span><span className="font-bold">+{receiptModal.excessCbm.toFixed(2)} m³ ({receiptModal.variance.toFixed(1)}%)</span></div>
+                  </div>
+
+                  {receiptModal.capacityAvailable ? (
+                    <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-1">
+                      <p className="font-semibold text-gray-700 mb-2">If you accept the extra space:</p>
+                      <div className="flex justify-between"><span className="text-gray-500">New total price</span><span className="font-bold">R{receiptModal.newTotalPrice.toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">New Stage 2 (50%)</span><span className="font-bold">R{(receiptModal.newTotalPrice * 0.50).toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">New Stage 3 (30%)</span><span className="font-bold">R{(receiptModal.newTotalPrice * 0.30).toFixed(2)}</span></div>
+                    </div>
+                  ) : (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm">
+                      <p className="font-bold text-red-700">No space available</p>
+                      <p className="text-red-600 mt-1">The container does not have sufficient remaining capacity to accept the excess. The booking will proceed at the original {receiptModal.booking.total_cbm} CBM.</p>
+                    </div>
+                  )}
+                  {receiptError && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{receiptError}</p>}
+                </div>
+                <div className="px-6 pb-6 flex gap-3">
+                  {receiptModal.capacityAvailable ? (
+                    <>
+                      <button
+                        onClick={() => finaliseReceipt(receiptModal.booking, parseFloat(receiptModal.actualCbm), receiptModal.variance, 'declined', true)}
+                        disabled={receiptSaving}
+                        className="btn flex-1 font-bold rounded-xl border-2 border-gray-300 text-gray-600 disabled:opacity-60"
+                      >
+                        {receiptSaving ? <span className="loading loading-spinner loading-sm" /> : 'Decline Excess'}
+                      </button>
+                      <button
+                        onClick={() => finaliseReceipt(receiptModal.booking, parseFloat(receiptModal.actualCbm), receiptModal.variance, 'accepted', false)}
+                        disabled={receiptSaving}
+                        className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
+                        style={{ backgroundColor: '#0891b2' }}
+                      >
+                        {receiptSaving ? <span className="loading loading-spinner loading-sm" /> : 'Accept & Adjust'}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => finaliseReceipt(receiptModal.booking, parseFloat(receiptModal.actualCbm), receiptModal.variance, 'declined', true)}
+                      disabled={receiptSaving}
+                      className="btn flex-1 text-white font-bold rounded-xl disabled:opacity-60"
+                      style={{ backgroundColor: '#0891b2' }}
+                    >
+                      {receiptSaving ? <span className="loading loading-spinner loading-sm" /> : 'Confirm (Decline Excess)'}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Milestone Modal ───────────────────────────────────────────────── */}
       {milestoneModal && (
@@ -744,6 +1036,7 @@ function BookingCard({
   onAction,
   onCancel,
   onRecordMilestone,
+  onConfirmReceipt,
   isRated,
   onRate,
   onMessage,
@@ -753,13 +1046,15 @@ function BookingCard({
   onAction: (b: OperatorBooking, newStatus: string) => void;
   onCancel: (b: OperatorBooking) => void;
   onRecordMilestone: (b: OperatorBooking) => void;
+  onConfirmReceipt: (b: OperatorBooking) => void;
   isRated: boolean;
   onRate: () => void;
   onMessage: () => void;
   messageCount: number;
 }) {
   const nextStatus = NEXT_STATUS[booking.status];
-  const actionCfg  = nextStatus ? ACTION_CONFIG[nextStatus] : null;
+  // confirmed → goods_received is handled by the receipt modal, not the generic action flow
+  const actionCfg  = nextStatus && nextStatus !== 'goods_received' ? ACTION_CONFIG[nextStatus] : null;
   const cfg        = STATUS_CONFIG[booking.status] ?? STATUS_CONFIG.pending;
   const c          = booking.container;
   const cancellable = !['delivered', 'cancelled'].includes(booking.status);
@@ -806,7 +1101,19 @@ function BookingCard({
 
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2">
-              {actionCfg && nextStatus && (
+              {/* Confirmed → receipt confirmation (CBM reconciliation) */}
+              {booking.status === 'confirmed' && (
+                <button
+                  onClick={() => onConfirmReceipt(booking)}
+                  className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: '#0891b2' }}
+                >
+                  <span>📋</span>
+                  Confirm Receipt &amp; CBM
+                </button>
+              )}
+
+              {actionCfg && nextStatus && nextStatus !== 'goods_received' && (
                 <button
                   onClick={() => onAction(booking, nextStatus)}
                   className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
