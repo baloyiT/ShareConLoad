@@ -156,6 +156,13 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
   { value: 'cancelled',      label: 'Cancelled'      },
 ];
 
+const PAYMENT_STAGE_ORDER = ['deposit_20', 'pre_departure_50', 'final_release_30'] as const;
+const PAYMENT_STAGE_SHORT: Record<string, string> = {
+  deposit_20:       '20%',
+  pre_departure_50: '50%',
+  final_release_30: '30%',
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(date: string) {
@@ -165,6 +172,14 @@ function fmt(date: string) {
 }
 
 function shortId(id: string) { return id.slice(0, 8).toUpperCase(); }
+
+function daysUntilDeparture(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dep   = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((dep.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -203,7 +218,11 @@ export default function OperatorBookingsPage() {
   const [operatorProfileId,  setOperatorProfileId]  = useState<string | null>(null);
 
   // Payout breakdown
-  const [payoutsByBooking, setPayoutsByBooking] = useState<Record<string, PayoutSummary[]>>({});
+  const [payoutsByBooking,      setPayoutsByBooking]      = useState<Record<string, PayoutSummary[]>>({});
+  // Payment stage statuses per booking (stage → status)
+  const [paymentStagesByBooking, setPaymentStagesByBooking] = useState<Record<string, Record<string, string>>>({});
+  // Customer display names
+  const [customerNames,          setCustomerNames]          = useState<Record<string, string>>({});
 
   // Receipt / CBM reconciliation modal state
   const [receiptModal,    setReceiptModal]    = useState<ReceiptModal | null>(null);
@@ -256,9 +275,11 @@ export default function OperatorBookingsPage() {
     }));
     setBookings(mappedBookings);
 
-    // Fetch payout records so operators can see commission deductions
-    const bookingIds = mappedBookings.map((b) => b.id);
+    const bookingIds  = mappedBookings.map((b) => b.id);
+    const customerIds = [...new Set(mappedBookings.map((b) => b.customer_id))];
+
     if (bookingIds.length > 0) {
+      // Payout records (earnings breakdown)
       const { data: payoutRows } = await supabase
         .from('payouts')
         .select('booking_id, stage, gross_amount, commission_rate, commission_amount, net_amount, status')
@@ -269,6 +290,29 @@ export default function OperatorBookingsPage() {
         payoutMap[p.booking_id].push(p as PayoutSummary);
       }
       setPayoutsByBooking(payoutMap);
+
+      // Payment stage statuses (so operator can see which stages are paid)
+      const { data: paymentRows } = await supabase
+        .from('payments')
+        .select('booking_id, stage, status')
+        .in('booking_id', bookingIds);
+      const stageMap: Record<string, Record<string, string>> = {};
+      for (const p of paymentRows ?? []) {
+        if (!stageMap[p.booking_id]) stageMap[p.booking_id] = {};
+        stageMap[p.booking_id][p.stage] = p.status;
+      }
+      setPaymentStagesByBooking(stageMap);
+    }
+
+    // Customer display names
+    if (customerIds.length > 0) {
+      const { data: profileRows } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', customerIds);
+      const nameMap: Record<string, string> = {};
+      for (const p of profileRows ?? []) nameMap[p.user_id] = p.full_name ?? '';
+      setCustomerNames(nameMap);
     }
 
     const { data: myRatings } = await supabase
@@ -554,9 +598,14 @@ export default function OperatorBookingsPage() {
   }
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const filtered = statusFilter === 'all'
+  const filtered = (statusFilter === 'all'
     ? bookings
-    : bookings.filter((b) => b.status === statusFilter);
+    : bookings.filter((b) => b.status === statusFilter)
+  ).slice().sort((a, b) => {
+    const da = a.container?.departure_date ?? '9999-12-31';
+    const db = b.container?.departure_date ?? '9999-12-31';
+    return da.localeCompare(db);
+  });
 
   const pendingCount = bookings.filter((b) => b.status === 'pending').length;
 
@@ -747,6 +796,8 @@ export default function OperatorBookingsPage() {
                 key={booking.id}
                 booking={booking}
                 payouts={payoutsByBooking[booking.id] ?? []}
+                paymentStages={paymentStagesByBooking[booking.id] ?? {}}
+                customerName={customerNames[booking.customer_id] ?? ''}
                 onAction={(b, newStatus) => { setUpdateError(null); setPendingAction({ booking: b, newStatus }); }}
                 onCancel={cancelBooking}
                 onRecordMilestone={(b) => { setMilestoneModal({ booking: b }); setMilestoneType(OPERATOR_MILESTONES[0].value); setMilestoneNotes(''); setMilestoneError(null); }}
@@ -1085,6 +1136,8 @@ export default function OperatorBookingsPage() {
 function BookingCard({
   booking,
   payouts,
+  paymentStages,
+  customerName,
   onAction,
   onCancel,
   onRecordMilestone,
@@ -1096,6 +1149,8 @@ function BookingCard({
 }: {
   booking: OperatorBooking;
   payouts: PayoutSummary[];
+  paymentStages: Record<string, string>;
+  customerName: string;
   onAction: (b: OperatorBooking, newStatus: string) => void;
   onCancel: (b: OperatorBooking) => void;
   onRecordMilestone: (b: OperatorBooking) => void;
@@ -1105,46 +1160,93 @@ function BookingCard({
   onMessage: () => void;
   messageCount: number;
 }) {
-  const nextStatus = NEXT_STATUS[booking.status];
-  // confirmed → goods_received is handled by the receipt modal, not the generic action flow
-  const actionCfg  = nextStatus && nextStatus !== 'goods_received' ? ACTION_CONFIG[nextStatus] : null;
-  const cfg        = STATUS_CONFIG[booking.status] ?? STATUS_CONFIG.pending;
-  const c          = booking.container;
+  const nextStatus  = NEXT_STATUS[booking.status];
+  const actionCfg   = nextStatus && nextStatus !== 'goods_received' ? ACTION_CONFIG[nextStatus] : null;
+  const cfg         = STATUS_CONFIG[booking.status] ?? STATUS_CONFIG.pending;
+  const c           = booking.container;
   const cancellable = !['delivered', 'cancelled'].includes(booking.status);
 
+  // Urgency: flag pending/confirmed bookings departing within 7 days
+  const daysLeft = c ? daysUntilDeparture(c.departure_date) : null;
+  const isUrgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7
+    && ['pending', 'confirmed'].includes(booking.status);
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      <div className="h-1 w-full" style={{ backgroundColor: cfg.color }} />
+    <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
+      {/* Top colour bar — amber when urgent */}
+      <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#f97316' : cfg.color }} />
 
       <div className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
 
           {/* Left */}
           <div className="flex-1 min-w-0">
-            {c ? (
-              <>
-                <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                  <span className="text-lg font-extrabold text-gray-900">{c.origin_city}</span>
-                  <svg className="w-5 h-5 text-orange-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                  <span className="text-lg font-extrabold text-gray-900">{c.destination_city}</span>
-                </div>
-                <p className="text-xs text-gray-400 mb-3">{c.origin_country} → {c.destination_country}</p>
-              </>
-            ) : (
-              <p className="text-gray-400 text-sm mb-3">Route unavailable</p>
-            )}
 
-            <div className="flex flex-wrap gap-2 mb-4">
-              {c && <Chip icon="📅" label={`Departs ${fmt(c.departure_date)}`} />}
-              <Chip icon="📦" label={`${booking.total_cbm} CBM`} />
-              <Chip icon="💵" label={`R${booking.total_price.toFixed(2)}`} />
-              <Chip icon="🕐" label={`Booked ${fmt(booking.created_at)}`} muted />
-              <Chip icon="👤" label={`Ref #${shortId(booking.id)}`} muted />
+            {/* Route + urgency badge */}
+            <div className="flex items-start justify-between gap-2 mb-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                {c ? (
+                  <>
+                    <span className="text-lg font-extrabold text-gray-900">{c.origin_city}</span>
+                    <svg className="w-5 h-5 text-orange-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                    <span className="text-lg font-extrabold text-gray-900">{c.destination_city}</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400 text-sm">Route unavailable</span>
+                )}
+              </div>
+              {isUrgent && daysLeft !== null && (
+                <span
+                  className="shrink-0 text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap"
+                  style={{ backgroundColor: daysLeft <= 3 ? '#fef2f2' : '#fff7ed', color: daysLeft <= 3 ? '#ef4444' : '#f97316' }}
+                >
+                  {daysLeft === 0 ? '🚨 Departs today' : `⚠️ ${daysLeft}d to departure`}
+                </span>
+              )}
             </div>
 
-            {/* Payout breakdown — shown when at least one payment stage has been processed */}
+            {c && <p className="text-xs text-gray-400 mb-3">{c.origin_country} → {c.destination_country}</p>}
+
+            {/* Info chips */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {c && <Chip icon="📅" label={`Departs ${fmt(c.departure_date)}`} />}
+              <Chip icon="📦" label={`${booking.total_cbm} CBM`} />
+              <Chip icon="💵" label={`${booking.total_price.toFixed(2)}`} />
+              {customerName && <Chip icon="👤" label={customerName} />}
+              <Chip icon="🔖" label={`Ref #${shortId(booking.id)}`} muted />
+            </div>
+
+            {/* Payment stage dots */}
+            {Object.keys(paymentStages).length > 0 && (
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xs text-gray-400">Payments:</span>
+                <div className="flex items-center gap-1.5">
+                  {PAYMENT_STAGE_ORDER.map((stage) => {
+                    const status = paymentStages[stage];
+                    return (
+                      <span
+                        key={stage}
+                        title={`${STAGE_LABELS[stage]}: ${status ?? 'not yet due'}`}
+                        className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                        style={
+                          status === 'paid'
+                            ? { backgroundColor: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }
+                            : status === 'pending'
+                            ? { backgroundColor: '#fff7ed', color: '#f97316', borderColor: '#fed7aa' }
+                            : { backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }
+                        }
+                      >
+                        {status === 'paid' ? '✓' : '○'} {PAYMENT_STAGE_SHORT[stage]}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Earnings breakdown */}
             {payouts.length > 0 && (
               <div className="mb-4 rounded-xl border border-gray-100 overflow-hidden">
                 <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{ backgroundColor: '#f8fafc' }}>
@@ -1181,72 +1283,101 @@ function BookingCard({
 
             {/* Rating banner */}
             {booking.status === 'delivered' && !isRated && (
-              <RatingBanner
-                label="Rate this customer"
-                onRate={onRate}
-              />
+              <RatingBanner label="Rate this customer" onRate={onRate} />
             )}
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap gap-2">
-              {/* Confirmed → receipt confirmation (CBM reconciliation) */}
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2">
+
+              {/* Primary: Confirm Receipt & CBM (confirmed status only) */}
               {booking.status === 'confirmed' && (
                 <button
                   onClick={() => onConfirmReceipt(booking)}
                   className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
                   style={{ backgroundColor: '#0891b2' }}
                 >
-                  <span>📋</span>
-                  Confirm Receipt &amp; CBM
+                  📋 Confirm Receipt &amp; CBM
                 </button>
               )}
 
+              {/* Primary status action */}
               {actionCfg && nextStatus && nextStatus !== 'goods_received' && (
                 <button
                   onClick={() => onAction(booking, nextStatus)}
                   className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
                   style={{ backgroundColor: actionCfg.color }}
                 >
-                  <span>{actionCfg.icon}</span>
-                  {actionCfg.label}
+                  {actionCfg.icon} {actionCfg.label}
                 </button>
               )}
 
-              {cancellable && (
+              {/* Messages — kept visible due to badge */}
+              {!['delivered', 'cancelled'].includes(booking.status) && (
                 <button
-                  onClick={() => onCancel(booking)}
-                  className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                  type="button"
+                  onClick={onMessage}
+                  className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
                 >
-                  ❌ Cancel
+                  💬
+                  {messageCount > 0 && (
+                    <span
+                      className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
+                      style={{ backgroundColor: '#f97316' }}
+                    >
+                      {messageCount > 9 ? '9+' : messageCount}
+                    </span>
+                  )}
                 </button>
               )}
 
-              <button
-                onClick={() => onRecordMilestone(booking)}
-                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
-              >
-                📍 Milestone
-              </button>
-
-              <button
-                type="button"
-                onClick={onMessage}
-                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
-              >
-                💬 Messages
-                {messageCount > 0 && (
-                  <span
-                    className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
-                    style={{ backgroundColor: '#f97316' }}
+              {/* ⋯ overflow: Milestone + Cancel */}
+              {(cancellable || true) && (
+                <div className="dropdown dropdown-end">
+                  <button
+                    tabIndex={0}
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors font-bold text-base"
                   >
-                    {messageCount > 9 ? '9+' : messageCount}
-                  </span>
-                )}
-              </button>
+                    ⋯
+                  </button>
+                  <ul
+                    tabIndex={0}
+                    className="dropdown-content z-20 menu p-1.5 shadow-lg bg-white rounded-xl border border-gray-100 w-44 mt-1"
+                  >
+                    <li>
+                      <button
+                        onClick={() => onRecordMilestone(booking)}
+                        className="flex items-center gap-2 text-sm text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
+                      >
+                        📍 Record milestone
+                      </button>
+                    </li>
+                    {!['delivered', 'cancelled'].includes(booking.status) && (
+                      <li>
+                        <button
+                          onClick={() => onMessage()}
+                          className="flex items-center gap-2 text-sm text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
+                        >
+                          💬 Messages {messageCount > 0 && `(${messageCount})`}
+                        </button>
+                      </li>
+                    )}
+                    {cancellable && (
+                      <li>
+                        <button
+                          onClick={() => onCancel(booking)}
+                          className="flex items-center gap-2 text-sm text-red-500 px-3 py-2 rounded-lg hover:bg-red-50"
+                        >
+                          ❌ Cancel booking
+                        </button>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
 
               {booking.status === 'delivered' && (
                 <span className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl text-green-600 bg-green-50">
-                  ✔️ Delivered, no further action needed
+                  ✔️ Delivered
                 </span>
               )}
 
