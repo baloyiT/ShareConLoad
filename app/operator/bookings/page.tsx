@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import {
   Calendar, Package, Banknote, User, Hash,
-  MessageCircle, MoreHorizontal, AlertTriangle, AlertCircle,
+  MessageCircle, AlertTriangle, AlertCircle,
   MapPin, XCircle, ClipboardCheck, CheckCircle, Ship, PackageCheck, CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -1301,14 +1301,14 @@ function BookingCard({
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-2">
 
-              {/* Primary: Confirm Receipt & CBM (confirmed status only) */}
+              {/* Confirm Receipt & CBM (confirmed status only) */}
               {booking.status === 'confirmed' && (
                 <button
                   onClick={() => onConfirmReceipt(booking)}
                   className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
                   style={{ backgroundColor: '#0891b2' }}
                 >
-                  <ClipboardCheck className="w-4 h-4" /> Confirm Receipt &amp; CBM
+                  <ClipboardCheck className="w-4 h-4" /> Confirm Receipt
                 </button>
               )}
 
@@ -1323,7 +1323,7 @@ function BookingCard({
                 </button>
               )}
 
-              {/* Messages — kept visible due to badge */}
+              {/* Messages */}
               {!['delivered', 'cancelled'].includes(booking.status) && (
                 <button
                   type="button"
@@ -1331,6 +1331,7 @@ function BookingCard({
                   className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
                 >
                   <MessageCircle className="w-4 h-4" />
+                  <span>Messages</span>
                   {messageCount > 0 && (
                     <span
                       className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
@@ -1342,49 +1343,22 @@ function BookingCard({
                 </button>
               )}
 
-              {/* ⋯ overflow: Milestone + Cancel */}
-              {(cancellable || true) && (
-                <div className="dropdown dropdown-end">
-                  <button
-                    tabIndex={0}
-                    className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
-                  >
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                  <ul
-                    tabIndex={0}
-                    className="dropdown-content z-20 menu p-1.5 shadow-lg bg-white rounded-xl border border-gray-100 w-44 mt-1"
-                  >
-                    <li>
-                      <button
-                        onClick={() => onRecordMilestone(booking)}
-                        className="flex items-center gap-2 text-sm text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
-                      >
-                        <MapPin className="w-4 h-4" /> Record milestone
-                      </button>
-                    </li>
-                    {!['delivered', 'cancelled'].includes(booking.status) && (
-                      <li>
-                        <button
-                          onClick={() => onMessage()}
-                          className="flex items-center gap-2 text-sm text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
-                        >
-                          <MessageCircle className="w-4 h-4" /> Messages {messageCount > 0 && `(${messageCount})`}
-                        </button>
-                      </li>
-                    )}
-                    {cancellable && (
-                      <li>
-                        <button
-                          onClick={() => onCancel(booking)}
-                          className="flex items-center gap-2 text-sm text-red-500 px-3 py-2 rounded-lg hover:bg-red-50"
-                        >
-                          <XCircle className="w-4 h-4" /> Cancel booking
-                        </button>
-                      </li>
-                    )}
-                  </ul>
-                </div>
+              {/* Record Milestone */}
+              <button
+                onClick={() => onRecordMilestone(booking)}
+                className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <MapPin className="w-4 h-4" /> Milestone
+              </button>
+
+              {/* Cancel */}
+              {cancellable && (
+                <button
+                  onClick={() => onCancel(booking)}
+                  className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <XCircle className="w-4 h-4" /> Cancel
+                </button>
               )}
 
               {booking.status === 'delivered' && (
