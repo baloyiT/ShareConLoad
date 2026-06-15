@@ -474,11 +474,11 @@ function BookingCard({
 
             {/* Info chips */}
             <div className="flex flex-wrap gap-2 mb-3">
-              {c && <Chip icon={<Calendar />} label={`Departs ${fmt(c.departure_date)}`} />}
-              <Chip icon={<Package />} label={`${booking.total_cbm} CBM`} />
-              <Chip icon={<Banknote />} label={`${booking.total_price.toFixed(2)}`} />
-              {operatorName && <Chip icon={<User />} label={`Operator: ${operatorName}`} muted />}
-              <Chip icon={<Hash />} label={`#${shortId(booking.id)}`} muted />
+              {c && <Chip icon={<Calendar className="w-3 h-3" />} label={`Departs ${fmt(c.departure_date)}`} />}
+              <Chip icon={<Package className="w-3 h-3" />} label={`${booking.total_cbm} CBM`} />
+              <Chip icon={<Banknote className="w-3 h-3" />} label={booking.total_price.toFixed(2)} />
+              {operatorName && <Chip icon={<User className="w-3 h-3" />} label={`Operator: ${operatorName}`} muted />}
+              <Chip icon={<Hash className="w-3 h-3" />} label={`#${shortId(booking.id)}`} muted />
             </div>
 
             {/* Payment stage dots */}
@@ -645,8 +645,8 @@ function StatusProgress({ status }: { status: string }) {
 
 function Chip({ icon, label, muted }: { icon?: ReactNode; label: string; muted?: boolean }) {
   return (
-    <span className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium ${muted ? 'text-gray-400 bg-gray-50' : 'text-gray-600 bg-gray-100'}`}>
-      {icon && <span className="[&>svg]:w-3 [&>svg]:h-3 shrink-0">{icon}</span>}
+    <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium ${muted ? 'text-gray-400 bg-gray-50' : 'text-gray-600 bg-gray-100'}`}>
+      {icon}
       {label}
     </span>
   );

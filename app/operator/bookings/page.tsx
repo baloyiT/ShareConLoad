@@ -1220,11 +1220,11 @@ function BookingCard({
 
             {/* Info chips */}
             <div className="flex flex-wrap gap-2 mb-3">
-              {c && <Chip icon={<Calendar />} label={`Departs ${fmt(c.departure_date)}`} />}
-              <Chip icon={<Package />} label={`${booking.total_cbm} CBM`} />
-              <Chip icon={<Banknote />} label={`${booking.total_price.toFixed(2)}`} />
-              {customerName && <Chip icon={<User />} label={customerName} />}
-              <Chip icon={<Hash />} label={`Ref #${shortId(booking.id)}`} muted />
+              {c && <Chip icon={<Calendar className="w-3 h-3" />} label={`Departs ${fmt(c.departure_date)}`} />}
+              <Chip icon={<Package className="w-3 h-3" />} label={`${booking.total_cbm} CBM`} />
+              <Chip icon={<Banknote className="w-3 h-3" />} label={booking.total_price.toFixed(2)} />
+              {customerName && <Chip icon={<User className="w-3 h-3" />} label={customerName} />}
+              <Chip icon={<Hash className="w-3 h-3" />} label={`Ref #${shortId(booking.id)}`} muted />
             </div>
 
             {/* Payment stage dots */}
@@ -1263,14 +1263,15 @@ function BookingCard({
                 </div>
                 <div className="divide-y divide-gray-50">
                   {payouts.map((p, i) => (
-                    <div key={i} className="flex items-center justify-between px-3 py-2 text-xs">
-                      <span className="text-gray-500">{STAGE_LABELS[p.stage] ?? p.stage}</span>
-                      <span className="flex items-center gap-2 font-mono">
-                        <span className="text-gray-400">{p.gross_amount.toFixed(2)}</span>
-                        <span className="text-gray-300">−</span>
-                        <span className="text-gray-400">{(p.commission_rate * 100).toFixed(0)}% fee</span>
-                        <span className="text-gray-300">=</span>
-                        <span className="font-bold" style={{ color: '#16a34a' }}>{p.net_amount.toFixed(2)}</span>
+                    <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-xs">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="text-gray-500 truncate">{STAGE_LABELS[p.stage] ?? p.stage}</span>
+                        <span className="text-gray-400 font-mono">
+                          {p.gross_amount.toFixed(2)} − {(p.commission_rate * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-bold font-mono" style={{ color: '#16a34a' }}>{p.net_amount.toFixed(2)}</span>
                         <span
                           className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
                           style={
@@ -1283,7 +1284,7 @@ function BookingCard({
                         >
                           {p.status}
                         </span>
-                      </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1425,8 +1426,8 @@ function StatusBadge({ status }: { status: string }) {
 
 function Chip({ icon, label, muted }: { icon?: ReactNode; label: string; muted?: boolean }) {
   return (
-    <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg ${muted ? 'text-gray-400 bg-gray-50' : 'text-gray-600 bg-gray-100'}`}>
-      {icon && <span className="[&>svg]:w-3 [&>svg]:h-3 shrink-0">{icon}</span>}
+    <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg ${muted ? 'text-gray-400 bg-gray-50' : 'text-gray-600 bg-gray-100'}`}>
+      {icon}
       {label}
     </span>
   );
