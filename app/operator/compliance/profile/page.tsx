@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
+import ComplianceStepper from '@/components/ComplianceStepper';
 
 type ProfileForm = {
   entity_type:         string;
@@ -87,6 +88,7 @@ export default function ComplianceProfilePage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
+      <ComplianceStepper current={1} />
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Business Profile</h1>
         <p className="text-sm text-gray-400 mt-0.5">Legal entity details for compliance and billing.</p>
@@ -156,7 +158,7 @@ export default function ComplianceProfilePage() {
           className="btn text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60 mt-2"
           style={{ backgroundColor: '#0f2044' }}
         >
-          {saving ? <span className="loading loading-spinner loading-sm" /> : 'Save Profile'}
+          {saving ? <span className="loading loading-spinner loading-sm" /> : 'Save & Continue →'}
         </button>
       </form>
     </div>

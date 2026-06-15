@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
+import ComplianceStepper from '@/components/ComplianceStepper';
 
 const AGREEMENT_VERSION = '1.0';
 
@@ -71,6 +73,7 @@ export default function ComplianceAgreementPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <ComplianceStepper current={5} />
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Service Agreement</h1>
         <p className="text-sm text-gray-400 mt-0.5">Version {AGREEMENT_VERSION}, read carefully before signing.</p>
@@ -116,9 +119,19 @@ export default function ComplianceAgreementPage() {
       </div>
 
       {signedAt ? (
-        <p className="text-sm text-gray-400 text-center">
-          To update your signed agreement, contact <span className="font-mono">support@shareconload.com</span>.
-        </p>
+        <>
+          <p className="text-sm text-gray-400 text-center">
+            To update your signed agreement, contact <span className="font-mono">support@shareconload.com</span>.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <Link href="/operator/compliance" className="btn flex-1 font-bold rounded-xl text-white" style={{ backgroundColor: '#0f2044' }}>
+              View Compliance Status
+            </Link>
+            <Link href="/operator" className="btn flex-1 btn-ghost rounded-xl font-semibold text-gray-600">
+              Go to Dashboard
+            </Link>
+          </div>
+        </>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4">
           <label className="flex items-start gap-3 cursor-pointer">

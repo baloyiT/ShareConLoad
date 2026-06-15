@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
+import ComplianceStepper from '@/components/ComplianceStepper';
 
 type DocStatus = 'under_review' | 'approved' | 'rejected';
 
@@ -168,14 +170,35 @@ export default function ComplianceDocumentsPage() {
     );
   }
 
+  const REQUIRED_TYPES = [
+    'identity',
+    'business_registration',
+    'proof_of_warehouse_address',
+    'tax_clearance',
+    'banking_confirmation',
+  ];
+  const uploadedCount = slots.filter((s) => REQUIRED_TYPES.includes(s.type) && s.record !== null).length;
+
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
+      <ComplianceStepper current={4} />
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Documents</h1>
         <p className="text-sm text-gray-400 mt-0.5">Required documents for KYC and payout eligibility.</p>
       </div>
 
       {pageError && <div className="alert alert-error text-sm mb-4">{pageError}</div>}
+
+      {/* Progress summary */}
+      <div className="mb-4">
+        <p className="text-xs text-gray-400 mb-1.5">{uploadedCount} of 5 required documents uploaded</p>
+        <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${(uploadedCount / 5) * 100}%`, backgroundColor: '#f97316' }}
+          />
+        </div>
+      </div>
 
       <div className="flex flex-col gap-4">
         {slots.map((slot) => {
@@ -260,6 +283,18 @@ export default function ComplianceDocumentsPage() {
           );
         })}
       </div>
+
+      {uploadedCount >= 5 && (
+        <div className="mt-6">
+          <Link
+            href="/operator/compliance/agreement"
+            className="btn w-full text-white font-bold rounded-xl hover:opacity-90"
+            style={{ backgroundColor: '#0f2044' }}
+          >
+            Continue to Agreement →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

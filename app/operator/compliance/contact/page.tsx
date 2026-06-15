@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
+import ComplianceStepper from '@/components/ComplianceStepper';
 
 type ContactForm = {
   contact_person: string;
@@ -12,11 +13,26 @@ type ContactForm = {
 };
 
 const COUNTRIES = [
-  'South Africa', 'Ghana', 'Nigeria', 'Kenya', 'Zimbabwe', 'Zambia', 'Botswana',
-  'Namibia', 'Mozambique', 'Tanzania', 'Uganda', 'Senegal', 'Ivory Coast',
-  'Angola', 'Ethiopia', 'Egypt', 'Morocco', 'United Kingdom', 'United States',
-  'China', 'India', 'Germany', 'France', 'Netherlands', 'Belgium',
-  'United Arab Emirates', 'Singapore', 'Australia',
+  'South Africa', 'Afghanistan', 'Albania', 'Algeria', 'Angola', 'Argentina',
+  'Australia', 'Austria', 'Azerbaijan', 'Bahrain', 'Bangladesh', 'Belarus',
+  'Belgium', 'Benin', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil',
+  'Bulgaria', 'Burkina Faso', 'Cameroon', 'Canada', 'Chad', 'Chile', 'China',
+  'Colombia', 'Congo', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus',
+  'Czech Republic', 'Denmark', 'Dominican Republic', 'Ecuador', 'Egypt',
+  'El Salvador', 'Ethiopia', 'Finland', 'France', 'Gabon', 'Germany', 'Ghana',
+  'Greece', 'Guatemala', 'Guinea', 'Honduras', 'Hungary', 'India', 'Indonesia',
+  'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Ivory Coast', 'Jamaica',
+  'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kuwait', 'Lebanon', 'Libya',
+  'Lithuania', 'Madagascar', 'Malawi', 'Malaysia', 'Mali', 'Mauritania',
+  'Mauritius', 'Mexico', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia',
+  'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'Norway',
+  'Oman', 'Pakistan', 'Panama', 'Paraguay', 'Peru', 'Philippines', 'Poland',
+  'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saudi Arabia',
+  'Senegal', 'Serbia', 'Sierra Leone', 'Singapore', 'Somalia', 'South Korea',
+  'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Sweden', 'Switzerland',
+  'Syria', 'Taiwan', 'Tanzania', 'Thailand', 'Togo', 'Tunisia', 'Turkey',
+  'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States',
+  'Uruguay', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe',
 ].sort((a, b) => {
   if (a === 'South Africa') return -1;
   if (b === 'South Africa') return 1;
@@ -98,6 +114,7 @@ export default function ComplianceContactPage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
+      <ComplianceStepper current={2} />
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Contact Details</h1>
         <p className="text-sm text-gray-400 mt-0.5">Used for operational communication and payout notifications.</p>
@@ -159,7 +176,7 @@ export default function ComplianceContactPage() {
           className="btn text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60 mt-2"
           style={{ backgroundColor: '#0f2044' }}
         >
-          {saving ? <span className="loading loading-spinner loading-sm" /> : 'Save Contact Details'}
+          {saving ? <span className="loading loading-spinner loading-sm" /> : 'Save & Continue →'}
         </button>
       </form>
     </div>
