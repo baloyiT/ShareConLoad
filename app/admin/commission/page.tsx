@@ -22,13 +22,13 @@ type CommissionConfig = {
   updated_at:      string;
 };
 
-// ─── Default tiers (mirrors DB seed) ──────────────────────────────────────────
+// ─── Default tiers (mirrors DB seed) — thresholds in USD ──────────────────────
 
 const DEFAULT_TIERS: Tier[] = [
-  { min: 0,     max: 5000,  rate: 0.12 },
-  { min: 5001,  max: 20000, rate: 0.10 },
-  { min: 20001, max: 50000, rate: 0.08 },
-  { min: 50001, max: null,  rate: 0.06 },
+  { min: 0,    max: 500,  rate: 0.12 },
+  { min: 501,  max: 2000, rate: 0.10 },
+  { min: 2001, max: 5000, rate: 0.08 },
+  { min: 5001, max: null, rate: 0.06 },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ export default function AdminCommissionPage() {
     return `R${c.toFixed(2)} (${pct(tier.rate)}%)`;
   }
 
-  const PREVIEW_AMOUNTS = [2500, 10000, 35000, 75000];
+  const PREVIEW_AMOUNTS = [250, 1000, 3000, 7500];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -208,7 +208,7 @@ export default function AdminCommissionPage() {
 
               {type === 'tiered' && (
                 <p className="text-xs text-gray-400 mt-3">
-                  Commission rate decreases as shipment value increases, operators pay less as their volumes grow.
+                  Commission rate decreases as booking value increases. Thresholds are in USD — all booking currencies are converted to USD before lookup.
                 </p>
               )}
               {type === 'fixed' && (
@@ -257,7 +257,7 @@ export default function AdminCommissionPage() {
                   <table className="table w-full">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50">
-                        {['Min Amount (R)', 'Max Amount (R)', 'Rate (%)', ''].map((h) => (
+                        {['Min Amount ($)', 'Max Amount ($)', 'Rate (%)', ''].map((h) => (
                           <th key={h} className="py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">
                             {h}
                           </th>
@@ -317,8 +317,8 @@ export default function AdminCommissionPage() {
 
                 <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
                   <p className="text-xs text-gray-400">
-                    Leave Max blank for the highest tier (&ldquo;R50 001 and above&rdquo;).
-                    Tiers are matched from top to bottom, ensure ranges are non-overlapping.
+                    Leave Max blank for the highest tier (&ldquo;$5 001 and above&rdquo;). All amounts are in USD.
+                    Tiers are matched from top to bottom — ensure ranges are non-overlapping.
                   </p>
                 </div>
               </div>
@@ -327,10 +327,11 @@ export default function AdminCommissionPage() {
             {/* ── Live Preview ───────────────────────────────────────────── */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="font-bold text-gray-800 mb-4">Preview</h2>
+              <p className="text-xs text-gray-400 mb-3">Sample booking values in USD — rate applied to each payment stage in the booking&apos;s native currency.</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {PREVIEW_AMOUNTS.map((amt) => (
                   <div key={amt} className="rounded-xl border border-gray-100 p-3 text-center">
-                    <p className="text-xs text-gray-400 mb-1">R{amt.toLocaleString()}</p>
+                    <p className="text-xs text-gray-400 mb-1">${amt.toLocaleString()} USD</p>
                     <p className="text-sm font-bold" style={{ color: '#0f2044' }}>
                       {previewCommission(amt)}
                     </p>

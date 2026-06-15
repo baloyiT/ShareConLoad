@@ -101,13 +101,15 @@ https://fkhfbifgvebygafsewot.supabase.co/functions/v1/paystack-webhook
 
 ---
 
-## Step 5 — Verify ZAR Currency is Enabled
+## Step 5 — Verify Required Currencies are Enabled
 
-ShareConLoad processes payments in South African Rand (ZAR). Confirm this is enabled on your live account.
+ShareConLoad is multi-currency. Payments are processed in the container's native currency (ZAR, GHS, USD, NGN, KES, GBP, EUR, XOF, EGP). Confirm the currencies you intend to accept are active on your live Paystack account.
 
 1. In the Paystack dashboard (Live mode), go to **Settings** → **Preferences**
-2. Check that **South Africa (ZAR)** is listed as an active currency
-3. If it is not listed, contact Paystack support at [support@paystack.com](mailto:support@paystack.com) to enable ZAR for your live account
+2. Check that your required currencies (at minimum **ZAR** for South Africa → Ghana routes) are listed as active
+3. If a currency is not listed, contact Paystack support at [support@paystack.com](mailto:support@paystack.com) to enable it for your live account
+
+> Note: Paystack support for non-NGN currencies varies by plan. Confirm your account tier supports multi-currency before going live.
 
 ---
 
@@ -160,7 +162,7 @@ If you need to revert to test mode:
 | 2 | Copy Live Secret Key from Paystack dashboard | [ ] |
 | 3 | Update `PAYSTACK_SECRET_KEY` in Supabase secrets | [ ] |
 | 4 | Register webhook URL on Paystack live dashboard | [ ] |
-| 5 | Confirm ZAR currency is enabled | [ ] |
+| 5 | Confirm required currencies are enabled on live account | [ ] |
 | 6 | Run a live test transaction end-to-end | [ ] |
 | 7 | Verify operator payout recipient codes are live | [ ] |
 

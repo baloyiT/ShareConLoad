@@ -16,24 +16,45 @@ type CommissionConfig = {
   tiers: Tier[];
 };
 
+// Thresholds are in USD — tier is looked up on booking total_price converted to USD.
 const DEFAULT_TIERS: Tier[] = [
-  { min: 0,     max: 5000,  rate: 0.12 },
-  { min: 5001,  max: 20000, rate: 0.10 },
-  { min: 20001, max: 50000, rate: 0.08 },
-  { min: 50001, max: null,  rate: 0.06 },
+  { min: 0,    max: 500,  rate: 0.12 },
+  { min: 501,  max: 2000, rate: 0.10 },
+  { min: 2001, max: 5000, rate: 0.08 },
+  { min: 5001, max: null, rate: 0.06 },
 ];
 
-function calcCommission(gross: number, config: CommissionConfig | null): number {
-  if (config?.commission_type === 'fixed') {
-    return Math.round(gross * (config.fixed_rate ?? 0.05) * 100) / 100;
-  }
+function getCommissionRate(totalUsd: number, config: CommissionConfig | null): number {
+  if (config?.commission_type === 'fixed') return config.fixed_rate ?? 0.05;
   const tiers = config?.tiers?.length ? config.tiers : DEFAULT_TIERS;
-  const tier = tiers.find((t) => gross >= t.min && (t.max === null || gross <= t.max));
-  return Math.round(gross * (tier?.rate ?? 0.06) * 100) / 100;
+  const tier = tiers.find((t) => totalUsd >= t.min && (t.max === null || totalUsd <= t.max));
+  return tier?.rate ?? 0.06;
+}
+
+function calcCommission(stageAmount: number, rate: number): number {
+  return Math.round(stageAmount * rate * 100) / 100;
 }
 
 function effectiveRate(commission: number, gross: number): number {
   return Math.round((commission / gross) * 10000) / 10000;
+}
+
+// deno-lint-ignore no-explicit-any
+async function getBookingTotalUsd(supabase: any, bookingId: string): Promise<number> {
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('total_price, containers(currency_code)')
+    .eq('id', bookingId)
+    .single();
+  if (!booking) return 0;
+  const currencyCode: string = booking.containers?.currency_code ?? 'USD';
+  if (currencyCode === 'USD') return booking.total_price;
+  const { data: fx } = await supabase
+    .from('fx_rates')
+    .select('rate_to_usd')
+    .eq('currency_code', currencyCode)
+    .single();
+  return Math.round(booking.total_price * (fx?.rate_to_usd ?? 1) * 100) / 100;
 }
 
 serve(async (req: Request) => {
@@ -180,7 +201,9 @@ async function createPayoutRecord(supabase: any, opts: {
     .from('containers').select('operator_id').eq('id', booking.container_id).single();
   if (!container) return;
 
-  const commissionAmount = calcCommission(grossAmount, commConfig);
+  const totalUsd         = await getBookingTotalUsd(supabase, bookingId);
+  const commRate         = getCommissionRate(totalUsd, commConfig);
+  const commissionAmount = calcCommission(grossAmount, commRate);
   const netAmount        = Math.round((grossAmount - commissionAmount) * 100) / 100;
   const rate             = effectiveRate(commissionAmount, grossAmount);
   const eligibleAfter    = stage === 'deposit_20'

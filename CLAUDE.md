@@ -180,7 +180,17 @@ A payout may only be triggered when ALL of the following are true:
 - No active dispute on the booking
 - Refund window has expired (48h for Stage 1)
 
-Payout amounts = gross minus 5% platform commission.
+Payout amounts = gross minus platform commission (tiered by booking value).
+
+### Multi-Currency
+
+The platform supports multiple currencies: USD, ZAR, GHS, NGN, KES, GBP, EUR, XOF, EGP.
+
+- `containers.currency_code` — the operator's pricing currency (FK → `fx_rates`)
+- `containers.price_per_cbm_usd` — USD equivalent for cross-currency display and filtering
+- `fx_rates` table — exchange rates to USD, manually updated by admin
+- **USD is the normalising currency** for commission tier lookups: `booking.total_price` is converted to USD via `fx_rates.rate_to_usd` before determining which tier applies
+- Commission tier thresholds in `platform_commission_config.tiers` are always in USD
 
 ---
 
@@ -329,7 +339,7 @@ Do NOT add:
 - Real-time GPS tracking
 - Advanced analytics dashboards
 - AI features
-- Multi-currency support (ZAR only for now)
+- Automated currency conversion or live FX feeds (rates are manually updated by admin)
 - Automated customs duty calculation
 - Warehouse integrations
 - Mobile apps
