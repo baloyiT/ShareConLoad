@@ -131,20 +131,20 @@ export default function OnboardingPage() {
 
             {/* Agent card */}
             <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${agentHeld && isAuthed ? 'opacity-80' : ''}`}>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#f0fdf4' }}>🤝</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#e0f5ff' }}>🤝</div>
               <div>
                 <h2 className="text-lg font-extrabold text-gray-800">I Am a Freight Agent</h2>
                 <p className="text-gray-500 text-sm mt-1">Manage shippers, book space on their behalf, and coordinate cargo</p>
               </div>
               {agentHeld && isAuthed ? (
                 <div className="flex flex-col gap-2 mt-auto">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-green-600">
+                  <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: '#1FABFF' }}>
                     <span>✓</span> You have this role
                   </div>
                   <Link
                     href="/agent"
                     className="btn w-full font-bold rounded-xl hover:opacity-90 text-sm"
-                    style={{ backgroundColor: '#f0fdf4', color: '#16a34a' }}
+                    style={{ backgroundColor: '#e0f5ff', color: '#0f2044' }}
                   >
                     Go to Agent Portal
                   </Link>
@@ -152,8 +152,8 @@ export default function OnboardingPage() {
               ) : (
                 <button
                   onClick={() => router.push('/onboarding/agent')}
-                  className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90"
-                  style={{ backgroundColor: '#16a34a' }}
+                  className="btn w-full font-bold rounded-xl mt-auto hover:opacity-90"
+                  style={{ backgroundColor: '#1FABFF', color: '#0f2044' }}
                 >
                   {isAuthed ? 'Register as Agent' : 'Join as Agent'}
                 </button>
