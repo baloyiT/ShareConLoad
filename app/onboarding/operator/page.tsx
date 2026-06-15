@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -51,29 +51,24 @@ const COUNTRIES = Object.keys(COUNTRY_CODES).sort((a, b) => {
 
 function validatePhone(value: string, countryCode: string): string | null {
   const stripped = value.replace(/[\s\-\(\)]/g, '');
-  if (!stripped || stripped === countryCode) return null; // optional, not filled in
-
+  if (!stripped || stripped === countryCode) return null;
   if (!stripped.startsWith(countryCode)) {
     return `Number must start with ${countryCode} for the selected country.`;
   }
-
   const local = stripped.slice(countryCode.length);
-
   if (!/^\d+$/.test(local)) return 'Phone number must contain digits only.';
-
   if (local.startsWith('0')) {
-    if (local.length !== 10) return 'When starting with 0, the local number must be 10 digits (e.g. 0821234567).';
+    if (local.length !== 10) return 'When starting with 0, the local number must be 10 digits.';
   } else {
-    if (local.length !== 9) return 'Local number must be 9 digits (e.g. 821234567).';
+    if (local.length !== 9) return 'Local number must be 9 digits.';
   }
-
   return null;
 }
 
 function extractLocalPart(phone: string, codes: string[]): string {
   const matched = codes
     .filter((c) => phone.startsWith(c))
-    .sort((a, b) => b.length - a.length)[0]; // longest match wins
+    .sort((a, b) => b.length - a.length)[0];
   if (!matched) return phone.trim();
   return phone.slice(matched.length).trim();
 }
@@ -82,15 +77,21 @@ export default function OperatorOnboardingPage() {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(createOperatorProfile, null);
 
+  const [authChecked, setAuthChecked] = useState(false);
+  const [country, setCountry]         = useState('South Africa');
+  const [phone, setPhone]             = useState('+27 ');
+  const [phoneError, setPhoneError]   = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.replace('/auth/login?next=/onboarding/operator');
+      if (!data.user) {
+        router.replace('/auth/login?next=/onboarding/operator');
+      } else {
+        setAuthChecked(true);
+      }
     });
   }, [router]);
-
-  const [country, setCountry] = useState('South Africa');
-  const [phone, setPhone] = useState('+27 ');
-  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   function handleCountryChange(value: string) {
     setCountry(value);
@@ -98,19 +99,44 @@ export default function OperatorOnboardingPage() {
     if (!newCode) return;
     const localPart = extractLocalPart(phone, Object.values(COUNTRY_CODES));
     setPhone(localPart ? `${newCode} ${localPart}` : `${newCode} `);
+    if (fieldErrors.country) setFieldErrors((p) => ({ ...p, country: '' }));
   }
 
   function handlePhoneChange(value: string) {
     setPhone(value);
     if (phoneError) setPhoneError(validatePhone(value, COUNTRY_CODES[country] ?? ''));
+    if (fieldErrors.phone_number) setFieldErrors((p) => ({ ...p, phone_number: '' }));
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    const err = validatePhone(phone, COUNTRY_CODES[country] ?? '');
-    if (err) {
+    const form   = e.currentTarget;
+    const errors: Record<string, string> = {};
+
+    const legalName = (form.elements.namedItem('legal_name') as HTMLInputElement)?.value?.trim();
+    if (!legalName) errors.legal_name = 'Legal name is required.';
+
+    if (!country.trim() || !COUNTRIES.includes(country)) errors.country = 'Please select a valid country.';
+
+    const phoneErr = validatePhone(phone, COUNTRY_CODES[country] ?? '');
+    if (phoneErr) errors.phone_number = phoneErr;
+
+    if (Object.keys(errors).length > 0) {
       e.preventDefault();
-      setPhoneError(err);
+      setFieldErrors(errors);
+      return;
     }
+
+    setFieldErrors({});
+    setPhoneError(null);
+  }
+
+  // Show spinner while confirming auth
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+        <span className="loading loading-spinner loading-lg text-white" />
+      </div>
+    );
   }
 
   return (
@@ -121,164 +147,185 @@ export default function OperatorOnboardingPage() {
       {/* Nav */}
       <nav className="flex items-center px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
+          <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
           <span className="text-2xl font-extrabold tracking-tight">
-            <span className="text-white">Share</span><span style={{ color: '#f97316' }}>Con</span><span className="text-white">Load</span>
+            <span className="text-white">Share</span>
+            <span style={{ color: '#f97316' }}>Con</span>
+            <span className="text-white">Load</span>
           </span>
         </Link>
       </nav>
 
       {/* Content */}
       <div className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg">
-          <h1 className="text-2xl font-extrabold text-gray-800 mb-1">
-            Set up your operator profile
-          </h1>
-          <p className="text-gray-400 text-sm mb-6">
-            This information helps customers trust your listings.
-          </p>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
 
-          {/* Server action error */}
-          {state?.error && (
-            <div className="alert alert-error text-sm mb-5">
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-              </svg>
-              {state.error}
-            </div>
-          )}
+          {/* Header band */}
+          <div className="px-8 pt-8 pb-6 border-b border-gray-100">
+            <h1 className="text-2xl font-extrabold text-gray-900">
+              Set up your operator profile
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">
+              This information helps customers trust your listings.
+            </p>
+          </div>
 
-          <form action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="px-8 py-6">
+            {/* Server error (real errors only — not auth, since we gate above) */}
+            {state?.error && state.error !== 'You must be logged in.' && (
+              <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
+                <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
+                </svg>
+                {state.error}
+              </div>
+            )}
 
-            {/* Entity type */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Entity Type</label>
-              <select name="entity_type" required className="select select-bordered w-full">
-                <option value="individual">Individual</option>
-                <option value="company">Company</option>
-              </select>
-            </div>
+            <form action={formAction} onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
 
-            {/* Legal name */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Legal Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="legal_name"
-                required
-                placeholder="Your full legal name or company name"
-                className="input input-bordered w-full"
-              />
-            </div>
+              {/* Entity type */}
+              <Field label="Entity Type">
+                <select name="entity_type" className="select select-bordered w-full">
+                  <option value="individual">Individual</option>
+                  <option value="company">Company</option>
+                </select>
+              </Field>
 
-            {/* Registration number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Registration Number{' '}
-                <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                name="registration_number"
-                placeholder="Company registration number"
-                className="input input-bordered w-full"
-              />
-            </div>
+              {/* Legal name */}
+              <Field label="Legal Name" required error={fieldErrors.legal_name}>
+                <input
+                  type="text"
+                  name="legal_name"
+                  placeholder="Your full legal name or company name"
+                  className={`input input-bordered w-full ${fieldErrors.legal_name ? 'input-error' : ''}`}
+                  onChange={() => setFieldErrors((p) => ({ ...p, legal_name: '' }))}
+                />
+              </Field>
 
-            {/* VAT number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                VAT Number{' '}
-                <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                name="vat_number"
-                placeholder="VAT number"
-                className="input input-bordered w-full"
-              />
-            </div>
+              {/* Registration number */}
+              <Field label="Registration Number" hint="optional">
+                <input
+                  type="text"
+                  name="registration_number"
+                  placeholder="Company registration number"
+                  className="input input-bordered w-full"
+                />
+              </Field>
 
-            {/* Country */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Country <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="country"
-                list="country-list"
-                value={country}
-                required
-                placeholder="Type or select a country"
-                className="input input-bordered w-full"
-                onChange={(e) => handleCountryChange(e.target.value)}
-              />
-              <datalist id="country-list">
-                {COUNTRIES.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
-            </div>
+              {/* VAT number */}
+              <Field label="VAT Number" hint="optional">
+                <input
+                  type="text"
+                  name="vat_number"
+                  placeholder="VAT number"
+                  className="input input-bordered w-full"
+                />
+              </Field>
 
-            {/* Contact person */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Person</label>
-              <input
-                type="text"
-                name="contact_person"
-                placeholder="Full name of primary contact"
-                className="input input-bordered w-full"
-              />
-            </div>
+              {/* Country */}
+              <Field label="Country" required error={fieldErrors.country}>
+                <input
+                  type="text"
+                  name="country"
+                  list="country-list"
+                  value={country}
+                  placeholder="Type or select a country"
+                  className={`input input-bordered w-full ${fieldErrors.country ? 'input-error' : ''}`}
+                  onChange={(e) => handleCountryChange(e.target.value)}
+                />
+                <datalist id="country-list">
+                  {COUNTRIES.map((c) => <option key={c} value={c} />)}
+                </datalist>
+              </Field>
 
-            {/* Phone number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number</label>
-              <input
-                type="tel"
-                name="phone_number"
-                value={phone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
-                onBlur={() => setPhoneError(validatePhone(phone, COUNTRY_CODES[country] ?? ''))}
-                placeholder="+27 XX XXX XXXX"
-                className={`input input-bordered w-full ${phoneError ? 'input-error' : ''}`}
-              />
-              {phoneError && (
-                <p className="text-red-500 text-xs mt-1">{phoneError}</p>
-              )}
-              {!phoneError && phone.trim().length > 3 && (
-                <p className="text-green-500 text-xs mt-1 flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Valid phone number
-                </p>
-              )}
-            </div>
+              {/* Contact person */}
+              <Field label="Contact Person">
+                <input
+                  type="text"
+                  name="contact_person"
+                  placeholder="Full name of primary contact"
+                  className="input input-bordered w-full"
+                />
+              </Field>
 
-            <button
-              type="submit"
-              disabled={isPending}
-              className="btn w-full text-white font-bold rounded-xl mt-2 hover:opacity-90 disabled:opacity-60"
-              style={{ backgroundColor: '#f97316' }}
-            >
-              {isPending
-                ? <span className="loading loading-spinner loading-sm" />
-                : 'Complete Setup'}
-            </button>
+              {/* Phone number */}
+              <Field label="Phone Number" error={fieldErrors.phone_number || phoneError || undefined}>
+                <input
+                  type="tel"
+                  name="phone_number"
+                  value={phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  onBlur={() => {
+                    const err = validatePhone(phone, COUNTRY_CODES[country] ?? '');
+                    setPhoneError(err);
+                    if (err) setFieldErrors((p) => ({ ...p, phone_number: err }));
+                  }}
+                  placeholder="+27 XX XXX XXXX"
+                  className={`input input-bordered w-full ${(fieldErrors.phone_number || phoneError) ? 'input-error' : ''}`}
+                />
+                {!phoneError && !fieldErrors.phone_number && phone.trim().length > 3 && (
+                  <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Valid phone number
+                  </p>
+                )}
+              </Field>
 
-          </form>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="btn w-full text-white font-bold rounded-xl mt-1 hover:opacity-90 disabled:opacity-60"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                {isPending
+                  ? <span className="loading loading-spinner loading-sm" />
+                  : 'Complete Setup'}
+              </button>
 
-          <p className="text-center text-sm text-gray-400 mt-4">
-            <Link href="/onboarding" className="hover:underline">
+            </form>
+          </div>
+
+          <div className="px-8 pb-6 text-center">
+            <Link href="/onboarding" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
               ← Back to role selection
             </Link>
-          </p>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Field wrapper ─────────────────────────────────────────────────────────────
+
+function Field({
+  label, hint, required, error, children,
+}: {
+  label: string;
+  hint?: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-semibold text-gray-700">
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {hint && <span className="font-normal text-gray-400 ml-1">({hint})</span>}
+      </label>
+      {children}
+      {error && (
+        <p className="text-red-500 text-xs flex items-center gap-1">
+          <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
