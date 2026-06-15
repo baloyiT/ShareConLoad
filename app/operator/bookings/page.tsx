@@ -1,6 +1,11 @@
 ﻿'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import {
+  Calendar, Package, Banknote, User, Hash,
+  MessageCircle, MoreHorizontal, AlertTriangle, AlertCircle,
+  MapPin, XCircle, ClipboardCheck, CheckCircle, Ship, PackageCheck, CheckCircle2,
+} from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -117,29 +122,29 @@ const NEXT_STATUS: Record<string, string | null> = {
 };
 
 // what the action button says (keyed by TARGET status)
-const ACTION_CONFIG: Record<string, { label: string; icon: string; color: string; description: string }> = {
+const ACTION_CONFIG: Record<string, { label: string; icon: ReactNode; color: string; description: string }> = {
   confirmed: {
     label:       'Confirm Booking',
-    icon:        '✅',
+    icon:        <CheckCircle className="w-4 h-4" />,
     color:       '#3b82f6',
     description: 'Accept this booking and notify the customer.',
   },
   // goods_received is handled by the receipt modal, not here
   loaded: {
     label:       'Mark as Loaded',
-    icon:        '📦',
+    icon:        <PackageCheck className="w-4 h-4" />,
     color:       '#8b5cf6',
     description: 'Confirm that goods have been loaded into the container.',
   },
   in_transit: {
     label:       'Mark In Transit',
-    icon:        '🚢',
+    icon:        <Ship className="w-4 h-4" />,
     color:       '#06b6d4',
     description: 'The container has departed and is on its way.',
   },
   delivered: {
     label:       'Mark Delivered',
-    icon:        '✔️',
+    icon:        <CheckCircle2 className="w-4 h-4" />,
     color:       '#22c55e',
     description: 'Confirm that goods have arrived at the destination.',
   },
@@ -1041,9 +1046,9 @@ export default function OperatorBookingsPage() {
                     : '#f8fafc',
               }}
             >
-              <span className="text-2xl">
+              <span className="[&>svg]:w-6 [&>svg]:h-6">
                 {pendingAction.newStatus === 'cancelled'
-                  ? '❌'
+                  ? <XCircle className="w-6 h-6 text-red-500" />
                   : ACTION_CONFIG[pendingAction.newStatus]?.icon}
               </span>
               <div>
@@ -1202,7 +1207,11 @@ function BookingCard({
                   className="shrink-0 text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap"
                   style={{ backgroundColor: daysLeft <= 3 ? '#fef2f2' : '#fff7ed', color: daysLeft <= 3 ? '#ef4444' : '#f97316' }}
                 >
-                  {daysLeft === 0 ? '🚨 Departs today' : `⚠️ ${daysLeft}d to departure`}
+                  <span className="inline-flex items-center gap-1">
+                    {daysLeft === 0
+                      ? <><AlertCircle className="w-3 h-3" /> Departs today</>
+                      : <><AlertTriangle className="w-3 h-3" /> {daysLeft}d to departure</>}
+                  </span>
                 </span>
               )}
             </div>
@@ -1211,11 +1220,11 @@ function BookingCard({
 
             {/* Info chips */}
             <div className="flex flex-wrap gap-2 mb-3">
-              {c && <Chip icon="📅" label={`Departs ${fmt(c.departure_date)}`} />}
-              <Chip icon="📦" label={`${booking.total_cbm} CBM`} />
-              <Chip icon="💵" label={`${booking.total_price.toFixed(2)}`} />
-              {customerName && <Chip icon="👤" label={customerName} />}
-              <Chip icon="🔖" label={`Ref #${shortId(booking.id)}`} muted />
+              {c && <Chip icon={<Calendar />} label={`Departs ${fmt(c.departure_date)}`} />}
+              <Chip icon={<Package />} label={`${booking.total_cbm} CBM`} />
+              <Chip icon={<Banknote />} label={`${booking.total_price.toFixed(2)}`} />
+              {customerName && <Chip icon={<User />} label={customerName} />}
+              <Chip icon={<Hash />} label={`Ref #${shortId(booking.id)}`} muted />
             </div>
 
             {/* Payment stage dots */}
@@ -1296,7 +1305,7 @@ function BookingCard({
                   className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
                   style={{ backgroundColor: '#0891b2' }}
                 >
-                  📋 Confirm Receipt &amp; CBM
+                  <ClipboardCheck className="w-4 h-4" /> Confirm Receipt &amp; CBM
                 </button>
               )}
 
@@ -1318,7 +1327,7 @@ function BookingCard({
                   onClick={onMessage}
                   className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
                 >
-                  💬
+                  <MessageCircle className="w-4 h-4" />
                   {messageCount > 0 && (
                     <span
                       className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
@@ -1335,9 +1344,9 @@ function BookingCard({
                 <div className="dropdown dropdown-end">
                   <button
                     tabIndex={0}
-                    className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors font-bold text-base"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
                   >
-                    ⋯
+                    <MoreHorizontal className="w-5 h-5" />
                   </button>
                   <ul
                     tabIndex={0}
@@ -1348,7 +1357,7 @@ function BookingCard({
                         onClick={() => onRecordMilestone(booking)}
                         className="flex items-center gap-2 text-sm text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
                       >
-                        📍 Record milestone
+                        <MapPin className="w-4 h-4" /> Record milestone
                       </button>
                     </li>
                     {!['delivered', 'cancelled'].includes(booking.status) && (
@@ -1357,7 +1366,7 @@ function BookingCard({
                           onClick={() => onMessage()}
                           className="flex items-center gap-2 text-sm text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
                         >
-                          💬 Messages {messageCount > 0 && `(${messageCount})`}
+                          <MessageCircle className="w-4 h-4" /> Messages {messageCount > 0 && `(${messageCount})`}
                         </button>
                       </li>
                     )}
@@ -1367,7 +1376,7 @@ function BookingCard({
                           onClick={() => onCancel(booking)}
                           className="flex items-center gap-2 text-sm text-red-500 px-3 py-2 rounded-lg hover:bg-red-50"
                         >
-                          ❌ Cancel booking
+                          <XCircle className="w-4 h-4" /> Cancel booking
                         </button>
                       </li>
                     )}
@@ -1377,7 +1386,7 @@ function BookingCard({
 
               {booking.status === 'delivered' && (
                 <span className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl text-green-600 bg-green-50">
-                  ✔️ Delivered
+                  <CheckCircle2 className="w-4 h-4" /> Delivered
                 </span>
               )}
 
@@ -1414,10 +1423,10 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function Chip({ icon, label, muted }: { icon: string; label: string; muted?: boolean }) {
+function Chip({ icon, label, muted }: { icon?: ReactNode; label: string; muted?: boolean }) {
   return (
     <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg ${muted ? 'text-gray-400 bg-gray-50' : 'text-gray-600 bg-gray-100'}`}>
-      <span>{icon}</span>
+      {icon && <span className="[&>svg]:w-3 [&>svg]:h-3 shrink-0">{icon}</span>}
       {label}
     </span>
   );

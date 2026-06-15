@@ -1,6 +1,12 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import {
+  Calendar, Package, Banknote, User, Hash,
+  CreditCard, MessageCircle, MoreHorizontal,
+  AlertTriangle, AlertCircle, Headphones,
+  Clock, CheckCircle, Ship, CheckCircle2, XCircle,
+} from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -50,13 +56,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   cancelled:  { label: 'Cancelled',  color: '#6b7280', bg: '#f9fafb', dot: '#9ca3af' },
 };
 
-const STATUS_MESSAGE: Record<string, { icon: string; text: string; color: string; bg: string; border: string }> = {
-  pending:    { icon: '⏳', text: 'Awaiting operator confirmation, your space is reserved but not yet accepted.', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  confirmed:  { icon: '✅', text: 'Booking confirmed by operator. Proceed with your payment schedule.', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  loaded:     { icon: '📦', text: 'Your cargo has been loaded into the container.', color: '#5b21b6', bg: '#f5f3ff', border: '#ddd6fe' },
-  in_transit: { icon: '🚢', text: 'Your container is on its way to the destination.', color: '#0e7490', bg: '#ecfeff', border: '#a5f3fc' },
-  delivered:  { icon: '🎉', text: 'Your cargo has arrived. Ensure all final payments are complete for release.', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
-  cancelled:  { icon: '❌', text: 'This booking was cancelled. Contact support if you need assistance.', color: '#374151', bg: '#f9fafb', border: '#e5e7eb' },
+const STATUS_MESSAGE: Record<string, { icon: ReactNode; text: string; color: string; bg: string; border: string }> = {
+  pending:    { icon: <Clock className="w-4 h-4 shrink-0" />,         text: 'Awaiting operator confirmation, your space is reserved but not yet accepted.', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  confirmed:  { icon: <CheckCircle className="w-4 h-4 shrink-0" />,   text: 'Booking confirmed by operator. Proceed with your payment schedule.', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  loaded:     { icon: <Package className="w-4 h-4 shrink-0" />,       text: 'Your cargo has been loaded into the container.', color: '#5b21b6', bg: '#f5f3ff', border: '#ddd6fe' },
+  in_transit: { icon: <Ship className="w-4 h-4 shrink-0" />,          text: 'Your container is on its way to the destination.', color: '#0e7490', bg: '#ecfeff', border: '#a5f3fc' },
+  delivered:  { icon: <CheckCircle2 className="w-4 h-4 shrink-0" />,  text: 'Your cargo has arrived. Ensure all final payments are complete for release.', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  cancelled:  { icon: <XCircle className="w-4 h-4 shrink-0" />,       text: 'This booking was cancelled. Contact support if you need assistance.', color: '#374151', bg: '#f9fafb', border: '#e5e7eb' },
 };
 
 const STATUS_TABS: { value: StatusFilter; label: string }[] = [
@@ -455,7 +461,11 @@ function BookingCard({
                   className="shrink-0 text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap"
                   style={{ backgroundColor: daysLeft <= 3 ? '#fef2f2' : '#fff7ed', color: daysLeft <= 3 ? '#ef4444' : '#f97316' }}
                 >
-                  {daysLeft === 0 ? '🚨 Departs today' : `⚠️ ${daysLeft}d to departure`}
+                  <span className="inline-flex items-center gap-1">
+                    {daysLeft === 0
+                      ? <><AlertCircle className="w-3 h-3" /> Departs today</>
+                      : <><AlertTriangle className="w-3 h-3" /> {daysLeft}d to departure</>}
+                  </span>
                 </span>
               )}
             </div>
@@ -464,11 +474,11 @@ function BookingCard({
 
             {/* Info chips */}
             <div className="flex flex-wrap gap-2 mb-3">
-              {c && <Chip label={`Departs ${fmt(c.departure_date)}`} />}
-              <Chip label={`${booking.total_cbm} CBM`} />
-              <Chip label={`${booking.total_price.toFixed(2)}`} />
-              {operatorName && <Chip label={`Operator: ${operatorName}`} muted />}
-              <Chip label={`#${shortId(booking.id)}`} muted />
+              {c && <Chip icon={<Calendar />} label={`Departs ${fmt(c.departure_date)}`} />}
+              <Chip icon={<Package />} label={`${booking.total_cbm} CBM`} />
+              <Chip icon={<Banknote />} label={`${booking.total_price.toFixed(2)}`} />
+              {operatorName && <Chip icon={<User />} label={`Operator: ${operatorName}`} muted />}
+              <Chip icon={<Hash />} label={`#${shortId(booking.id)}`} muted />
             </div>
 
             {/* Payment stage dots */}
@@ -516,7 +526,9 @@ function BookingCard({
                 className="btn btn-sm font-bold rounded-lg hover:opacity-90 text-xs text-white w-full justify-center"
                 style={{ backgroundColor: hasPendingPayment ? '#f97316' : '#0f2044' }}
               >
-                {hasPendingPayment ? '💳 Pay Now' : 'Payments'}
+                {hasPendingPayment
+                  ? <><CreditCard className="w-3.5 h-3.5" /> Pay Now</>
+                  : 'Payments'}
               </Link>
             )}
 
@@ -531,7 +543,7 @@ function BookingCard({
               href={`/booking/track/${booking.id}`}
               className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors w-full justify-center"
             >
-              💬
+              <MessageCircle className="w-4 h-4" />
               {messageCount > 0 && (
                 <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white rounded-full" style={{ backgroundColor: '#f97316' }}>
                   {messageCount > 9 ? '9+' : messageCount}
@@ -544,9 +556,9 @@ function BookingCard({
             <div className="dropdown dropdown-end w-full">
               <button
                 tabIndex={0}
-                className="btn btn-sm btn-ghost rounded-lg text-xs text-gray-400 border border-gray-200 w-full justify-center"
+                className="btn btn-sm btn-ghost rounded-lg text-xs text-gray-400 border border-gray-200 w-full justify-center gap-1"
               >
-                ⋯ More
+                <MoreHorizontal className="w-4 h-4" /> More
               </button>
               <ul
                 tabIndex={0}
@@ -558,7 +570,7 @@ function BookingCard({
                       href={`/disputes/new?bookingId=${booking.id}`}
                       className="flex items-center gap-2 text-sm text-red-500 px-3 py-2 rounded-lg hover:bg-red-50"
                     >
-                      ⚠️ Raise Dispute
+                      <AlertTriangle className="w-4 h-4" /> Raise Dispute
                     </Link>
                   </li>
                 )}
@@ -567,7 +579,7 @@ function BookingCard({
                     href="/support/new"
                     className="flex items-center gap-2 text-sm text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-50"
                   >
-                    🎧 Support
+                    <Headphones className="w-4 h-4" /> Support
                   </Link>
                 </li>
               </ul>
@@ -584,7 +596,7 @@ function BookingCard({
                 className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-medium mb-4"
                 style={{ backgroundColor: msg.bg, color: msg.color, border: `1px solid ${msg.border}` }}
               >
-                <span className="text-sm shrink-0">{msg.icon}</span>
+                {msg.icon}
                 <span>{msg.text}</span>
               </div>
             );
@@ -631,9 +643,10 @@ function StatusProgress({ status }: { status: string }) {
 
 // ─── Chip ─────────────────────────────────────────────────────────────────────
 
-function Chip({ label, muted }: { label: string; muted?: boolean }) {
+function Chip({ icon, label, muted }: { icon?: ReactNode; label: string; muted?: boolean }) {
   return (
     <span className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium ${muted ? 'text-gray-400 bg-gray-50' : 'text-gray-600 bg-gray-100'}`}>
+      {icon && <span className="[&>svg]:w-3 [&>svg]:h-3 shrink-0">{icon}</span>}
       {label}
     </span>
   );
