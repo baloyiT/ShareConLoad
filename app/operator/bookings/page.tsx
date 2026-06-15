@@ -18,6 +18,13 @@ import MessageThread from '@/components/MessageThread';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type CommissionTier = { min: number; max: number | null; rate: number };
+type CommissionConfig = {
+  commission_type: 'fixed' | 'tiered';
+  fixed_rate: number | null;
+  tiers: CommissionTier[];
+};
+
 type ContainerInfo = {
   id: string;
   origin_city: string;
@@ -27,6 +34,7 @@ type ContainerInfo = {
   departure_date: string;
   price_per_cbm: number;
   available_capacity_cbm: number;
+  currency_code: string;
 };
 
 type OperatorBooking = {
@@ -170,6 +178,14 @@ const PAYMENT_STAGE_SHORT: Record<string, string> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function getCommissionRate(totalPriceUsd: number, config: CommissionConfig): number {
+  if (config.commission_type === 'fixed') return config.fixed_rate ?? 0;
+  const tier = (config.tiers ?? []).find(
+    (t) => totalPriceUsd >= t.min && (t.max === null || totalPriceUsd <= t.max),
+  );
+  return tier?.rate ?? (config.tiers?.[config.tiers.length - 1]?.rate ?? 0);
+}
+
 function fmt(date: string) {
   return new Date(date).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -228,6 +244,9 @@ export default function OperatorBookingsPage() {
   const [paymentStagesByBooking, setPaymentStagesByBooking] = useState<Record<string, Record<string, string>>>({});
   // Customer display names
   const [customerNames,          setCustomerNames]          = useState<Record<string, string>>({});
+  // Commission config + FX rates for estimated earnings
+  const [commConfig, setCommConfig] = useState<CommissionConfig | null>(null);
+  const [fxRates,    setFxRates]    = useState<Record<string, number>>({});
 
   // Receipt / CBM reconciliation modal state
   const [receiptModal,    setReceiptModal]    = useState<ReceiptModal | null>(null);
@@ -251,10 +270,22 @@ export default function OperatorBookingsPage() {
     const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single();
     if (profile) setOperatorProfileId(profile.id);
 
+    // Commission config + FX rates (fetched once, used for estimated earnings on each card)
+    const [{ data: commData }, { data: fxData }] = await Promise.all([
+      supabase.from('platform_commission_config').select('commission_type, fixed_rate, tiers').maybeSingle(),
+      supabase.from('fx_rates').select('currency_code, rate_to_usd'),
+    ]);
+    if (commData) setCommConfig(commData as CommissionConfig);
+    if (fxData) {
+      const map: Record<string, number> = {};
+      for (const r of fxData) map[r.currency_code] = Number(r.rate_to_usd);
+      setFxRates(map);
+    }
+
     // Step 1: operator's containers
     const { data: containerRows, error: cErr } = await supabase
       .from('containers')
-      .select('id, origin_city, origin_country, destination_city, destination_country, departure_date, price_per_cbm, available_capacity_cbm')
+      .select('id, origin_city, origin_country, destination_city, destination_country, departure_date, price_per_cbm, available_capacity_cbm, currency_code')
       .eq('operator_id', user.id);
 
     if (cErr) { setError('Could not load containers.'); setLoading(false); return; }
@@ -803,6 +834,8 @@ export default function OperatorBookingsPage() {
                 payouts={payoutsByBooking[booking.id] ?? []}
                 paymentStages={paymentStagesByBooking[booking.id] ?? {}}
                 customerName={customerNames[booking.customer_id] ?? ''}
+                commConfig={commConfig}
+                fxRates={fxRates}
                 onAction={(b, newStatus) => { setUpdateError(null); setPendingAction({ booking: b, newStatus }); }}
                 onCancel={cancelBooking}
                 onRecordMilestone={(b) => { setMilestoneModal({ booking: b }); setMilestoneType(OPERATOR_MILESTONES[0].value); setMilestoneNotes(''); setMilestoneError(null); }}
@@ -1143,6 +1176,8 @@ function BookingCard({
   payouts,
   paymentStages,
   customerName,
+  commConfig,
+  fxRates,
   onAction,
   onCancel,
   onRecordMilestone,
@@ -1156,6 +1191,8 @@ function BookingCard({
   payouts: PayoutSummary[];
   paymentStages: Record<string, string>;
   customerName: string;
+  commConfig: CommissionConfig | null;
+  fxRates: Record<string, number>;
   onAction: (b: OperatorBooking, newStatus: string) => void;
   onCancel: (b: OperatorBooking) => void;
   onRecordMilestone: (b: OperatorBooking) => void;
@@ -1175,6 +1212,14 @@ function BookingCard({
   const daysLeft = c ? daysUntilDeparture(c.departure_date) : null;
   const isUrgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7
     && ['pending', 'confirmed'].includes(booking.status);
+
+  // Estimated earnings (only show when no real payouts yet)
+  const currencyCode   = c?.currency_code ?? 'USD';
+  const rateToUsd      = fxRates[currencyCode] ?? 1;
+  const totalPriceUsd  = booking.total_price * rateToUsd;
+  const commRate       = commConfig ? getCommissionRate(totalPriceUsd, commConfig) : null;
+  const estNet         = commRate !== null ? booking.total_price * (1 - commRate) : null;
+  const showEstEarnings = payouts.length === 0 && estNet !== null;
 
   return (
     <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
@@ -1228,6 +1273,17 @@ function BookingCard({
               {customerName && <Chip icon={<User className="w-3 h-3" />} label={customerName} />}
               <Chip icon={<Hash className="w-3 h-3" />} label={`Ref #${shortId(booking.id)}`} muted />
             </div>
+
+            {/* Estimated earnings (before any payouts exist) */}
+            {showEstEarnings && (
+              <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl" style={{ backgroundColor: '#f0fdf4' }}>
+                <span className="text-xs text-gray-500">Est. earnings after {(commRate! * 100).toFixed(0)}% fee:</span>
+                <span className="text-sm font-extrabold" style={{ color: '#16a34a' }}>
+                  {currencyCode} {estNet!.toFixed(2)}
+                </span>
+                <span className="text-xs text-gray-400">of {currencyCode} {booking.total_price.toFixed(2)}</span>
+              </div>
+            )}
 
             {/* Payment stage dots */}
             {Object.keys(paymentStages).length > 0 && (

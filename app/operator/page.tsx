@@ -120,7 +120,7 @@ export default function OperatorDashboard() {
       const { data: commData } = await supabase
         .from('platform_commission_config')
         .select('commission_type, fixed_rate, tiers')
-        .single();
+        .maybeSingle();
       setCommConfig((commData as CommissionConfig) ?? null);
 
       // Unread message notifications
