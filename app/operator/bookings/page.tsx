@@ -1177,9 +1177,11 @@ function BookingCard({
     && ['pending', 'confirmed'].includes(booking.status);
 
   return (
-    <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
-      {/* Top colour bar — amber when urgent */}
-      <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#f97316' : cfg.color }} />
+    <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
+      {/* Top colour bar — clipped separately so dropdowns inside aren't hidden */}
+      <div className="rounded-t-2xl overflow-hidden">
+        <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#f97316' : cfg.color }} />
+      </div>
 
       <div className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">

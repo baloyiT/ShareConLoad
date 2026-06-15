@@ -432,8 +432,10 @@ function BookingCard({
   const hasPendingPayment = Object.values(paymentStages).some((s) => s === 'pending');
 
   return (
-    <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
-      <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#f97316' : cfg.color }} />
+    <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
+      <div className="rounded-t-2xl overflow-hidden">
+        <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#f97316' : cfg.color }} />
+      </div>
 
       <div className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
