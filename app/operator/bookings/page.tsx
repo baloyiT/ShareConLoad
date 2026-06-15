@@ -64,6 +64,22 @@ type UnreadNotif = {
   metadata: Record<string, string>;
 };
 
+type PayoutSummary = {
+  booking_id: string;
+  stage: string;
+  gross_amount: number;
+  commission_rate: number;
+  commission_amount: number;
+  net_amount: number;
+  status: string;
+};
+
+const STAGE_LABELS: Record<string, string> = {
+  deposit_20:       'Deposit (20%)',
+  pre_departure_50: 'Pre-Departure (50%)',
+  final_release_30: 'Final Release (30%)',
+};
+
 const OPERATOR_MILESTONES: { value: string; label: string }[] = [
   { value: 'cargo_received',    label: 'Cargo Received'    },
   { value: 'container_loaded',  label: 'Container Loaded'  },
@@ -186,6 +202,9 @@ export default function OperatorBookingsPage() {
   const [recordingMilestone, setRecordingMilestone] = useState(false);
   const [operatorProfileId,  setOperatorProfileId]  = useState<string | null>(null);
 
+  // Payout breakdown
+  const [payoutsByBooking, setPayoutsByBooking] = useState<Record<string, PayoutSummary[]>>({});
+
   // Receipt / CBM reconciliation modal state
   const [receiptModal,    setReceiptModal]    = useState<ReceiptModal | null>(null);
   const [receiptSaving,   setReceiptSaving]   = useState(false);
@@ -231,12 +250,26 @@ export default function OperatorBookingsPage() {
 
     if (bErr) { setError('Could not load bookings.'); setLoading(false); return; }
 
-    setBookings(
-      (bookingRows ?? []).map((b) => ({
-        ...b,
-        container: containerMap[b.container_id] ?? null,
-      })),
-    );
+    const mappedBookings = (bookingRows ?? []).map((b) => ({
+      ...b,
+      container: containerMap[b.container_id] ?? null,
+    }));
+    setBookings(mappedBookings);
+
+    // Fetch payout records so operators can see commission deductions
+    const bookingIds = mappedBookings.map((b) => b.id);
+    if (bookingIds.length > 0) {
+      const { data: payoutRows } = await supabase
+        .from('payouts')
+        .select('booking_id, stage, gross_amount, commission_rate, commission_amount, net_amount, status')
+        .in('booking_id', bookingIds);
+      const payoutMap: Record<string, PayoutSummary[]> = {};
+      for (const p of payoutRows ?? []) {
+        if (!payoutMap[p.booking_id]) payoutMap[p.booking_id] = [];
+        payoutMap[p.booking_id].push(p as PayoutSummary);
+      }
+      setPayoutsByBooking(payoutMap);
+    }
 
     const { data: myRatings } = await supabase
       .from('booking_ratings')
@@ -713,6 +746,7 @@ export default function OperatorBookingsPage() {
               <BookingCard
                 key={booking.id}
                 booking={booking}
+                payouts={payoutsByBooking[booking.id] ?? []}
                 onAction={(b, newStatus) => { setUpdateError(null); setPendingAction({ booking: b, newStatus }); }}
                 onCancel={cancelBooking}
                 onRecordMilestone={(b) => { setMilestoneModal({ booking: b }); setMilestoneType(OPERATOR_MILESTONES[0].value); setMilestoneNotes(''); setMilestoneError(null); }}
@@ -1050,6 +1084,7 @@ export default function OperatorBookingsPage() {
 
 function BookingCard({
   booking,
+  payouts,
   onAction,
   onCancel,
   onRecordMilestone,
@@ -1060,6 +1095,7 @@ function BookingCard({
   messageCount,
 }: {
   booking: OperatorBooking;
+  payouts: PayoutSummary[];
   onAction: (b: OperatorBooking, newStatus: string) => void;
   onCancel: (b: OperatorBooking) => void;
   onRecordMilestone: (b: OperatorBooking) => void;
@@ -1107,6 +1143,41 @@ function BookingCard({
               <Chip icon="🕐" label={`Booked ${fmt(booking.created_at)}`} muted />
               <Chip icon="👤" label={`Ref #${shortId(booking.id)}`} muted />
             </div>
+
+            {/* Payout breakdown — shown when at least one payment stage has been processed */}
+            {payouts.length > 0 && (
+              <div className="mb-4 rounded-xl border border-gray-100 overflow-hidden">
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{ backgroundColor: '#f8fafc' }}>
+                  Earnings Breakdown
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {payouts.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between px-3 py-2 text-xs">
+                      <span className="text-gray-500">{STAGE_LABELS[p.stage] ?? p.stage}</span>
+                      <span className="flex items-center gap-2 font-mono">
+                        <span className="text-gray-400">{p.gross_amount.toFixed(2)}</span>
+                        <span className="text-gray-300">−</span>
+                        <span className="text-gray-400">{(p.commission_rate * 100).toFixed(0)}% fee</span>
+                        <span className="text-gray-300">=</span>
+                        <span className="font-bold" style={{ color: '#16a34a' }}>{p.net_amount.toFixed(2)}</span>
+                        <span
+                          className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                          style={
+                            p.status === 'completed'
+                              ? { backgroundColor: '#f0fdf4', color: '#16a34a' }
+                              : p.status === 'processing'
+                              ? { backgroundColor: '#eff6ff', color: '#3b82f6' }
+                              : { backgroundColor: '#f9fafb', color: '#9ca3af' }
+                          }
+                        >
+                          {p.status}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Rating banner */}
             {booking.status === 'delivered' && !isRated && (

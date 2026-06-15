@@ -29,6 +29,13 @@ type Container = {
 
 type StatusFilter = 'all' | 'open' | 'closed' | 'in_transit' | 'delivered';
 
+type Tier = { min: number; max: number | null; rate: number };
+type CommissionConfig = {
+  commission_type: 'fixed' | 'tiered';
+  fixed_rate: number | null;
+  tiers: Tier[];
+};
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_TABS: { value: StatusFilter; label: string }[] = [
@@ -74,6 +81,7 @@ export default function OperatorDashboard() {
   const [noticeError,    setNoticeError]    = useState<string | null>(null);
   const [noticeSent,     setNoticeSent]     = useState<string | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [commConfig,     setCommConfig]     = useState<CommissionConfig | null>(null);
 
   useEffect(() => {
     async function fetchContainers() {
@@ -109,6 +117,12 @@ export default function OperatorDashboard() {
           setPendingCount(count ?? 0);
         }
       }
+      const { data: commData } = await supabase
+        .from('platform_commission_config')
+        .select('commission_type, fixed_rate, tiers')
+        .single();
+      setCommConfig((commData as CommissionConfig) ?? null);
+
       // Unread message notifications
       const { count: msgCount } = await supabase
         .from('notifications')
@@ -263,6 +277,56 @@ export default function OperatorDashboard() {
                 <span className="text-gray-300 text-lg">→</span>
               </Link>
             )}
+          </div>
+        )}
+
+        {/* Platform Fees card */}
+        {!loading && commConfig && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0" style={{ backgroundColor: '#f0f4ff' }}>💼</div>
+              <div>
+                <p className="font-bold text-gray-800 text-sm">Platform Fees</p>
+                <p className="text-xs text-gray-400">Deducted from your payout on each payment stage</p>
+              </div>
+            </div>
+
+            {commConfig.commission_type === 'fixed' ? (
+              <div className="flex items-center justify-between py-2.5 px-3 rounded-xl" style={{ backgroundColor: '#f8fafc' }}>
+                <span className="text-sm text-gray-600">Flat rate on all payouts</span>
+                <span className="text-lg font-extrabold" style={{ color: '#0f2044' }}>
+                  {(((commConfig.fixed_rate ?? 0) * 100)).toFixed(0)}%
+                </span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left pb-2 font-semibold text-gray-400 uppercase tracking-wider">Booking Value (USD)</th>
+                      <th className="text-right pb-2 font-semibold text-gray-400 uppercase tracking-wider">Platform Fee</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {(commConfig.tiers ?? []).map((tier, i) => (
+                      <tr key={i}>
+                        <td className="py-2 text-gray-600">
+                          ${tier.min.toLocaleString()}
+                          {tier.max !== null ? ` – $${tier.max.toLocaleString()}` : '+'}
+                        </td>
+                        <td className="py-2 text-right font-bold" style={{ color: '#0f2044' }}>
+                          {(tier.rate * 100).toFixed(0)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-400 mt-3">
+              Rate is based on your total booking value (converted to USD). Applied to each payment stage in your container&apos;s native currency.
+            </p>
           </div>
         )}
 
