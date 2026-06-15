@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirm your email — ShareConLoad</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Roboto,Arial,sans-serif;">
+
+  <!-- Preheader (hidden preview text) -->
+  <span style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    One quick step — confirm your email to activate your ShareConLoad account.
+  </span>
+
+  <!-- Wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px;">
+    <tr>
+      <td align="center">
+
+        <!-- Card -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(8,16,58,0.10);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0f2044;padding:36px 40px 28px;text-align:center;">
+              <!-- Logo wordmark -->
+              <div style="margin-bottom:24px;">
+                <span style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">Share</span><span style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#f97316;">Con</span><span style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">Load</span>
+              </div>
+              <!-- Icon -->
+              <div style="width:64px;height:64px;border-radius:50%;background-color:rgba(31,171,255,0.15);margin:0 auto;display:flex;align-items:center;justify-content:center;">
+                <img src="https://img.icons8.com/ios-filled/50/1FABFF/secured-letter.png" width="32" height="32" alt="" style="display:block;margin:16px auto;" />
+              </div>
+            </td>
+          </tr>
+
+          <!-- Orange accent bar -->
+          <tr>
+            <td style="height:4px;background:linear-gradient(90deg,#f97316 0%,#FFB37B 100%);"></td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#ffffff;padding:40px 40px 32px;">
+
+              <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#0f2044;text-align:center;">
+                Confirm your email address
+              </h1>
+              <p style="margin:0 0 24px;font-size:15px;color:#64748b;text-align:center;line-height:1.6;">
+                Thanks for signing up! Click the button below to verify your email and activate your account.
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 32px;">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;background-color:#f97316;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;padding:14px 40px;border-radius:10px;letter-spacing:0.2px;">
+                      Confirm my email
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Divider -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+                <tr>
+                  <td style="border-top:1px solid #e2e8f0;"></td>
+                </tr>
+              </table>
+
+              <!-- Fallback link -->
+              <p style="margin:0 0 6px;font-size:13px;color:#94a3b8;text-align:center;">
+                Button not working? Copy and paste this link into your browser:
+              </p>
+              <p style="margin:0;font-size:12px;color:#1FABFF;text-align:center;word-break:break-all;">
+                <a href="{{ .ConfirmationURL }}" style="color:#1FABFF;text-decoration:underline;">
+                  {{ .ConfirmationURL }}
+                </a>
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Info strip -->
+          <tr>
+            <td style="background-color:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;line-height:1.7;">
+                This link expires in <strong style="color:#64748b;">24 hours</strong>. If you did not create an account, you can safely ignore this email — no account will be created.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#0f2044;padding:24px 40px;text-align:center;">
+              <p style="margin:0 0 6px;font-size:12px;color:#94a3b8;">
+                Need help? Email us at
+                <a href="mailto:support@shareconload.com" style="color:#f97316;text-decoration:none;">support@shareconload.com</a>
+              </p>
+              <p style="margin:0;font-size:11px;color:#475569;">
+                © 2026 ShareConLoad · Global Shared Container Logistics
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+  <!-- /Wrapper -->
+
+</body>
+</html>
