@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
-import { formatCountdown } from '@/components/PayoutOverrideModal';
+import PayoutOverrideModal, { formatCountdown } from '@/components/PayoutOverrideModal';
 
 type OperatorProfile = {
   legal_name:              string | null;
@@ -75,10 +75,28 @@ export default function AdminPayoutsPage() {
   const [triggering,   setTriggering]   = useState<string | null>(null);
   const [triggerError, setTriggerError] = useState<Record<string, string>>({});
   const [now, setNow] = useState(Date.now());
+  const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
+  const [overrideTarget, setOverrideTarget] = useState<{ payoutId: string; msRemaining: number } | null>(null);
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    async function fetchAdminProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile) setAdminProfileId(profile.id);
+    }
+    fetchAdminProfile();
   }, []);
 
   useEffect(() => {
@@ -148,6 +166,43 @@ export default function AdminPayoutsPage() {
       )
     );
     setTriggering(null);
+  }
+
+  async function handleOverrideConfirm(reason: string) {
+    if (!overrideTarget) return;
+    setOverrideSubmitting(true);
+    setOverrideError(null);
+
+    const { data, error: fnErr } = await supabase.functions.invoke('trigger-payout', {
+      body: {
+        payoutId:       overrideTarget.payoutId,
+        override:       true,
+        overrideReason: reason,
+        adminProfileId,
+      },
+    });
+
+    if (fnErr || !data?.success) {
+      setOverrideError(data?.error ?? fnErr?.message ?? 'Override trigger failed.');
+      setOverrideSubmitting(false);
+      return;
+    }
+
+    setPayouts((prev) =>
+      prev.map((p) =>
+        p.id === overrideTarget.payoutId
+          ? {
+              ...p,
+              status: 'processing',
+              paystack_transfer_code: data.transferCode ?? p.paystack_transfer_code,
+              net_amount: data.netAmount ?? p.net_amount,
+              metadata: { ...p.metadata, overridden: true, override_reason: reason },
+            }
+          : p
+      )
+    );
+    setOverrideSubmitting(false);
+    setOverrideTarget(null);
   }
 
   const filtered = statusFilter === 'all' ? payouts : payouts.filter((p) => p.status === statusFilter);
@@ -286,6 +341,14 @@ export default function AdminPayoutsPage() {
                             style={{ backgroundColor: STATUS_COLOURS[p.status] ?? '#6b7280' }}>
                             {p.status}
                           </span>
+                          {p.metadata?.overridden && (
+                            <span
+                              className="badge badge-sm badge-outline ml-1"
+                              title={p.metadata.override_reason ?? undefined}
+                            >
+                              ⚡ Overridden
+                            </span>
+                          )}
                           {p.failure_reason && (
                             <p className="text-xs text-red-400 mt-1 max-w-[140px] truncate">{p.failure_reason}</p>
                           )}
@@ -300,7 +363,7 @@ export default function AdminPayoutsPage() {
                               <button
                                 onClick={() => handleTrigger(p.id)}
                                 disabled={!!blockReason || isTriggering}
-                                title={blockReason ?? undefined}
+                                title={blockReason?.message ?? undefined}
                                 className="btn btn-sm text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-40 whitespace-nowrap"
                                 style={{ backgroundColor: '#0f2044' }}
                               >
@@ -309,7 +372,16 @@ export default function AdminPayoutsPage() {
                                   : 'Trigger →'}
                               </button>
                               {blockReason && (
-                                <p className="text-xs text-amber-600 mt-1 max-w-[120px]">{blockReason}</p>
+                                <p className="text-xs text-amber-600 mt-1 max-w-[120px]">{blockReason.message}</p>
+                              )}
+                              {blockReason?.type === 'refund_window' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setOverrideTarget({ payoutId: p.id, msRemaining: blockReason.msRemaining })}
+                                  className="text-xs text-orange-600 underline mt-1 block"
+                                >
+                                  Force trigger
+                                </button>
                               )}
                               {triggerError[p.id] && (
                                 <p className="text-xs text-red-500 mt-1 max-w-[120px]">{triggerError[p.id]}</p>
@@ -326,6 +398,16 @@ export default function AdminPayoutsPage() {
           </div>
         )}
       </div>
+
+      {overrideTarget && (
+        <PayoutOverrideModal
+          msRemaining={overrideTarget.msRemaining}
+          onCancel={() => { setOverrideTarget(null); setOverrideError(null); }}
+          onConfirm={handleOverrideConfirm}
+          submitting={overrideSubmitting}
+          error={overrideError}
+        />
+      )}
     </div>
   );
 }
