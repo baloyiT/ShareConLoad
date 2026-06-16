@@ -109,11 +109,13 @@ serve(async (req: Request) => {
 
     const { data: opProfile, error: opErr } = await supabase
       .from('operator_profiles')
-      .select('paystack_recipient_code, payout_enabled, payout_hold')
+      .select('paystack_recipient_code, payout_enabled, payout_hold, status')
       .eq('profile_id', profileRow.id)
       .single();
 
     if (opErr || !opProfile) return json({ error: 'Operator profile not found' }, 404);
+    if (!['active', 'trusted'].includes(opProfile.status))
+                                             return json({ error: 'Operator compliance is not approved' }, 400);
     if (!opProfile.payout_enabled)          return json({ error: 'Payouts are not enabled for this operator' }, 400);
     if (opProfile.payout_hold)              return json({ error: 'Operator payout is on hold' }, 400);
     if (!opProfile.paystack_recipient_code) return json({ error: 'Operator has no registered bank account' }, 400);
