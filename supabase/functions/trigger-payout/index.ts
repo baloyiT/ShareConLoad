@@ -62,8 +62,11 @@ serve(async (req: Request) => {
     );
     const PAYSTACK_SECRET = Deno.env.get('PAYSTACK_SECRET_KEY') ?? '';
 
-    const { payoutId } = await req.json();
+    const { payoutId, override, overrideReason, adminProfileId } = await req.json();
     if (!payoutId) return json({ error: 'payoutId is required' }, 400);
+    if (override && !overrideReason?.trim()) {
+      return json({ error: 'Override reason is required' }, 400);
+    }
 
     // ── Load payout + commission config in parallel ────────────────────────────
     const [payoutRes, commRes] = await Promise.all([
@@ -82,12 +85,15 @@ serve(async (req: Request) => {
     if (payoutRes.error || !payout) return json({ error: 'Payout record not found' }, 404);
     if (payout.status !== 'pending') return json({ error: `Payout is already ${payout.status}` }, 400);
 
-    // ── 48h refund window check ────────────────────────────────────────────────
+    // ── 48h refund window check (admin override skippable) ─────────────────────
+    let msRemainingAtOverride = 0;
     if (payout.eligible_after && new Date(payout.eligible_after) > new Date()) {
-      const hoursLeft = Math.ceil(
-        (new Date(payout.eligible_after).getTime() - Date.now()) / (1000 * 60 * 60)
-      );
-      return json({ error: `Still in refund window — eligible in ${hoursLeft}h` }, 400);
+      const msRemaining = new Date(payout.eligible_after).getTime() - Date.now();
+      if (!override) {
+        const hoursLeft = Math.ceil(msRemaining / (1000 * 60 * 60));
+        return json({ error: `Still in refund window — eligible in ${hoursLeft}h` }, 400);
+      }
+      msRemainingAtOverride = msRemaining;
     }
 
     // ── Load operator profile ──────────────────────────────────────────────────
@@ -169,6 +175,14 @@ serve(async (req: Request) => {
         commission_rate:        commissionRate,
         platform_fee:           commissionAmount,
         paystack_transfer_code: transferCode,
+        ...(override ? {
+          metadata: {
+            overridden:      true,
+            override_reason: overrideReason.trim(),
+            overridden_by:   adminProfileId ?? null,
+            overridden_at:   new Date().toISOString(),
+          },
+        } : {}),
       })
       .eq('id', payoutId);
 
@@ -185,6 +199,20 @@ serve(async (req: Request) => {
         reference:     transferRef,
       },
     });
+
+    if (override) {
+      await supabase.from('audit_logs').insert({
+        action:      'payout.eligibility_overridden',
+        target_type: 'payout',
+        target_id:   payoutId,
+        actor_id:    adminProfileId ?? null,
+        metadata:    {
+          reason:         overrideReason.trim(),
+          ms_remaining:   msRemainingAtOverride,
+          eligible_after: payout.eligible_after,
+        },
+      });
+    }
 
     return json({ success: true, transferCode, netAmount });
   } catch (err) {
