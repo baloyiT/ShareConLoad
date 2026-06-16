@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
+import { Check } from 'lucide-react';
 
 const STEPS = ['Personal Details', 'Documents', 'Review'];
 
@@ -71,10 +73,13 @@ export default function CustomerKycDocuments() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
       <nav className="flex items-center px-6 py-4">
-        <Link href="/onboarding/customer" className="text-2xl font-extrabold tracking-tight">
-          <span className="text-white">Share</span><span style={{ color: '#f97316' }}>Con</span><span className="text-white">Load</span>
+        <Link href="/onboarding/customer" className="flex items-center gap-2.5">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
+          <span className="text-2xl font-extrabold tracking-tight">
+            <span className="text-white">Share</span><span style={{ color: '#ff6a00' }}>Con</span><span className="text-white">Load</span>
+          </span>
         </Link>
       </nav>
 
@@ -84,9 +89,9 @@ export default function CustomerKycDocuments() {
             <div key={label} className="flex items-center gap-2">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold`}
-                style={i === 1 ? { backgroundColor: '#f97316', color: '#fff' } : i < 1 ? { backgroundColor: 'rgba(255,255,255,0.6)', color: '#374151' } : { backgroundColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)' }}
+                style={i === 1 ? { backgroundColor: '#ff6a00', color: '#fff' } : i < 1 ? { backgroundColor: 'rgba(255,255,255,0.6)', color: '#374151' } : { backgroundColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)' }}
               >
-                {i < 1 ? '✓' : i + 1}
+                {i < 1 ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : i + 1}
               </div>
               {i < STEPS.length - 1 && <div className="w-8 h-0.5 bg-white/20" />}
             </div>
@@ -118,7 +123,7 @@ export default function CustomerKycDocuments() {
                   className="file-input file-input-bordered w-full text-sm"
                 />
                 {files[key] && (
-                  <p className="text-xs text-green-600 mt-1">✓ {files[key]!.name}</p>
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><Check className="w-3 h-3" strokeWidth={3} /> {files[key]!.name}</p>
                 )}
               </div>
             ))}
@@ -129,7 +134,7 @@ export default function CustomerKycDocuments() {
                 type="submit"
                 disabled={uploading}
                 className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 {uploading ? <span className="loading loading-spinner loading-sm" /> : 'Submit for Review →'}
               </button>

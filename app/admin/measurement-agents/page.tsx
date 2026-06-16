@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 import { approveMeasurementAgent, rejectMeasurementAgent } from '@/actions/adminMeasurementAgentActions';
+import { Camera, FileText, ScanFace } from 'lucide-react';
 
 type MeasurementAgentRow = {
   id: string;
@@ -38,7 +39,7 @@ async function getSignedUrl(storedUrl: string | null, bucket: string): Promise<s
 type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected' | 'suspended';
 
 const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
-  pending:   { bg: '#fff7ed', color: '#f97316', label: 'Pending'   },
+  pending:   { bg: '#fff7ed', color: '#ff6a00', label: 'Pending'   },
   approved:  { bg: '#f0fdf4', color: '#16a34a', label: 'Approved'  },
   rejected:  { bg: '#fef2f2', color: '#ef4444', label: 'Rejected'  },
   suspended: { bg: '#f3f4f6', color: '#6b7280', label: 'Suspended' },
@@ -175,7 +176,7 @@ export default function AdminMeasurementAgentsPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400">No measurement agents found.</div>
@@ -265,13 +266,13 @@ export default function AdminMeasurementAgentsPage() {
                             ) : (
                               <div className="flex gap-6 flex-wrap text-sm">
                                 {docLinks.id_doc ? (
-                                  <a href={docLinks.id_doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">📄 ID Document</a>
+                                  <a href={docLinks.id_doc} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:underline"><FileText className="w-4 h-4" /> ID Document</a>
                                 ) : <span className="text-gray-400">No ID document</span>}
                                 {docLinks.selfie ? (
-                                  <a href={docLinks.selfie} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">🤳 Selfie</a>
+                                  <a href={docLinks.selfie} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:underline"><ScanFace className="w-4 h-4" /> Selfie</a>
                                 ) : <span className="text-gray-400">No selfie</span>}
                                 {docLinks.equipment ? (
-                                  <a href={docLinks.equipment} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">📷 Equipment Photo</a>
+                                  <a href={docLinks.equipment} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:underline"><Camera className="w-4 h-4" /> Equipment Photo</a>
                                 ) : <span className="text-gray-400">No equipment photo</span>}
                               </div>
                             )}

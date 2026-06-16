@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { useActionState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import { createMeasurementAgentProfile } from '@/actions/measurementAgentActions';
 
+import { AlertCircle, Check } from 'lucide-react';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -157,9 +159,7 @@ function UploadSlot({ label, inputName, userId, onUploaded }: UploadSlotProps) {
 
         {status === 'done' && (
           <span className="text-green-600 text-sm font-medium flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-            </svg>
+            <Check className="w-4 h-4" strokeWidth={2.5} />
             Uploaded
           </span>
         )}
@@ -284,14 +284,15 @@ export default function MeasurementAgentOnboardingPage() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}
     >
       {/* Nav */}
       <nav className="flex items-center px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
           <span className="text-2xl font-extrabold tracking-tight">
             <span className="text-white">Share</span>
-            <span style={{ color: '#f97316' }}>Con</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
             <span className="text-white">Load</span>
           </span>
         </Link>
@@ -320,10 +321,7 @@ export default function MeasurementAgentOnboardingPage() {
           {/* Server action error */}
           {state?.error && (
             <div className="alert alert-error text-sm mb-5">
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-              </svg>
+              <AlertCircle className="w-4 h-4 shrink-0" />
               {state.error}
             </div>
           )}
@@ -362,7 +360,7 @@ export default function MeasurementAgentOnboardingPage() {
               <button
                 type="button"
                 className="btn w-full text-white font-bold rounded-xl mt-2"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
                 disabled={!step1Valid()}
                 onClick={handleNext}
               >
@@ -417,7 +415,7 @@ export default function MeasurementAgentOnboardingPage() {
                 <button
                   type="button"
                   className="btn flex-1 text-white font-bold"
-                  style={{ backgroundColor: '#f97316' }}
+                  style={{ backgroundColor: '#ff6a00' }}
                   disabled={!step2Valid()}
                   onClick={handleNext}
                 >
@@ -486,19 +484,14 @@ export default function MeasurementAgentOnboardingPage() {
               {/* Quiz result */}
               {quizSubmitted && quizScore >= PASS_SCORE && (
                 <div className="alert alert-success text-sm">
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check className="w-4 h-4 shrink-0" strokeWidth={2.5} />
                   Quiz passed! Score: {quizScore}/5
                 </div>
               )}
 
               {quizSubmitted && quizScore < PASS_SCORE && (
                 <div className="alert alert-error text-sm">
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-                  </svg>
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   You need at least 4/5 to pass. Please review and try again. (Score: {quizScore}/5)
                 </div>
               )}
@@ -516,7 +509,7 @@ export default function MeasurementAgentOnboardingPage() {
                   <button
                     type="button"
                     className="btn flex-1 text-white font-bold"
-                    style={{ backgroundColor: '#f97316' }}
+                    style={{ backgroundColor: '#ff6a00' }}
                     disabled={Object.keys(answers).length < QUIZ_QUESTIONS.length}
                     onClick={handleSubmitQuiz}
                   >
@@ -538,7 +531,7 @@ export default function MeasurementAgentOnboardingPage() {
                   <button
                     type="button"
                     className="btn flex-1 text-white font-bold"
-                    style={{ backgroundColor: '#f97316' }}
+                    style={{ backgroundColor: '#ff6a00' }}
                     onClick={handleNext}
                   >
                     Next
@@ -602,7 +595,7 @@ export default function MeasurementAgentOnboardingPage() {
                   type="submit"
                   disabled={isPending || !step4Valid()}
                   className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
-                  style={{ backgroundColor: '#f97316' }}
+                  style={{ backgroundColor: '#ff6a00' }}
                 >
                   {isPending ? (
                     <span className="loading loading-spinner loading-sm" />

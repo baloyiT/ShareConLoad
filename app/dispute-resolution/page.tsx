@@ -1,6 +1,7 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import Image from 'next/image';
 
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 export const metadata = {
   title: 'Dispute Resolution, ShareConLoad',
   description: 'How disputes are raised, reviewed, and resolved on ShareConLoad.',
@@ -117,24 +118,22 @@ export default function DisputeResolutionPage() {
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
           <span className="text-lg font-extrabold tracking-tight">
-            <span style={{ color: '#0f2044' }}>Share</span>
-            <span style={{ color: '#f97316' }}>Con</span>
-            <span style={{ color: '#0f2044' }}>Load</span>
+            <span style={{ color: '#0b103a' }}>Share</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
+            <span style={{ color: '#0b103a' }}>Load</span>
           </span>
         </Link>
         <div className="flex-1" />
         <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to Home
         </Link>
       </nav>
 
       {/* Hero */}
-      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#f97316' }}>Customer Protection</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#ff6a00' }}>Customer Protection</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">Dispute Resolution</h1>
           <p className="text-gray-400 text-sm">
             If something goes wrong with your shipment, our dispute process protects your payment and ensures a fair investigation.
@@ -182,7 +181,7 @@ export default function DisputeResolutionPage() {
                   {/* Step circle */}
                   <div
                     className="relative z-10 flex items-center justify-center w-10 h-10 rounded-full shrink-0 text-sm font-extrabold text-white shadow-sm"
-                    style={{ backgroundColor: '#0f2044' }}
+                    style={{ backgroundColor: '#0b103a' }}
                   >
                     {num}
                   </div>
@@ -193,7 +192,7 @@ export default function DisputeResolutionPage() {
                     {badge && (
                       <span
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                        style={{ backgroundColor: '#fff7ed', color: '#f97316' }}
+                        style={{ backgroundColor: '#fff7ed', color: '#ff6a00' }}
                       >
                         {badge}
                       </span>
@@ -215,15 +214,7 @@ export default function DisputeResolutionPage() {
           <div className="space-y-3">
             {OUTCOMES.map(({ title, desc }) => (
               <div key={title} className="flex items-start gap-4 rounded-xl border border-gray-100 px-5 py-4">
-                <svg
-                  className="w-4 h-4 mt-0.5 shrink-0"
-                  style={{ color: '#0f2044' }}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronRight className="w-4 h-4 mt-0.5 shrink-0" style={{ color: '#0b103a' }} />
                 <div>
                   <p className="text-sm font-bold text-gray-800 mb-0.5">{title}</p>
                   <p className="text-xs text-gray-500">{desc}</p>
@@ -244,7 +235,7 @@ export default function DisputeResolutionPage() {
             <Link
               href="/auth/login"
               className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors hover:opacity-90"
-              style={{ backgroundColor: '#0f2044' }}
+              style={{ backgroundColor: '#0b103a' }}
             >
               Log in to raise a dispute
             </Link>
@@ -267,9 +258,7 @@ export default function DisputeResolutionPage() {
               <p className="font-semibold text-gray-800">Cancellation &amp; Refund Policy</p>
               <p className="text-xs text-gray-400 mt-0.5">Full refund eligibility rules</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
           <Link
             href="/payment-flow"
@@ -279,9 +268,7 @@ export default function DisputeResolutionPage() {
               <p className="font-semibold text-gray-800">How Payments Work</p>
               <p className="text-xs text-gray-400 mt-0.5">End-to-end money flow and payout holds</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
         </div>
 

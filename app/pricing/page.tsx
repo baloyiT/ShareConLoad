@@ -1,6 +1,7 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import Image from 'next/image';
 
+import { ArrowLeft, Check, ChevronRight } from 'lucide-react';
 export const metadata = { title: 'Pricing, ShareConLoad' };
 
 export default function PricingPage() {
@@ -12,24 +13,22 @@ export default function PricingPage() {
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
           <span className="text-lg font-extrabold tracking-tight">
-            <span style={{ color: '#0f2044' }}>Share</span>
-            <span style={{ color: '#f97316' }}>Con</span>
-            <span style={{ color: '#0f2044' }}>Load</span>
+            <span style={{ color: '#0b103a' }}>Share</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
+            <span style={{ color: '#0b103a' }}>Load</span>
           </span>
         </Link>
         <div className="flex-1" />
         <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to Home
         </Link>
       </nav>
 
       {/* Hero */}
-      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#f97316' }}>Pricing</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#ff6a00' }}>Pricing</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">Simple, Transparent Pricing</h1>
           <p className="text-gray-400 text-sm">
             No hidden fees. Pay only for the space you use. Operators earn more as volumes grow.
@@ -44,7 +43,7 @@ export default function PricingPage() {
           <div className="flex items-center gap-3 mb-6">
             <span
               className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"
-              style={{ backgroundColor: '#fff7ed', color: '#f97316' }}
+              style={{ backgroundColor: '#fff7ed', color: '#ff6a00' }}
             >
               For Shippers
             </span>
@@ -74,19 +73,19 @@ export default function PricingPage() {
                 pct: '20%',
                 label: 'Deposit, paid at booking',
                 detail: 'Secures your space immediately. Refundable within 48 hours of booking confirmation. Non-refundable after that window.',
-                color: '#f97316',
+                color: '#ff6a00',
               },
               {
                 pct: '50%',
                 label: 'Pre-Departure, due 7 days before sailing',
                 detail: 'Required before the container departs the origin port. Booking may be cancelled if not paid in time.',
-                color: '#0f2044',
+                color: '#0b103a',
               },
               {
                 pct: '30%',
                 label: 'Final Release, paid at destination',
                 detail: 'Due before cargo is released to you at the destination. Cargo is held until this stage is cleared.',
-                color: '#0f2044',
+                color: '#0b103a',
               },
             ].map(({ pct, label, detail, color }) => (
               <div key={pct} className="flex gap-4 items-start rounded-xl border border-gray-100 px-5 py-4">
@@ -125,7 +124,7 @@ export default function PricingPage() {
           <div className="flex items-center gap-3 mb-6">
             <span
               className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"
-              style={{ backgroundColor: '#eef2ff', color: '#0f2044' }}
+              style={{ backgroundColor: '#eef2ff', color: '#0b103a' }}
             >
               For Operators
             </span>
@@ -147,7 +146,7 @@ export default function PricingPage() {
               <div key={stage} className="flex gap-4 items-start rounded-xl border border-gray-100 px-5 py-4">
                 <div className="shrink-0 text-center">
                   <p className="text-xs text-gray-400 font-semibold">{stage}</p>
-                  <p className="text-lg font-extrabold" style={{ color: '#0f2044' }}>{pct}</p>
+                  <p className="text-lg font-extrabold" style={{ color: '#0b103a' }}>{pct}</p>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">{trigger}</p>
               </div>
@@ -178,9 +177,7 @@ export default function PricingPage() {
               'No charge for shipment tracking',
             ].map((item) => (
               <div key={item} className="flex items-start gap-2">
-                <svg className="w-4 h-4 mt-0.5 shrink-0 text-green-500" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-4 h-4 mt-0.5 shrink-0 text-green-500" strokeWidth={2.5} />
                 <span>{item}</span>
               </div>
             ))}
@@ -197,9 +194,7 @@ export default function PricingPage() {
               <p className="font-semibold text-gray-800">Payment Flow</p>
               <p className="text-xs text-gray-400 mt-0.5">End-to-end explanation of how Paystack processes payments</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
           <Link
             href="/cancellation"
@@ -209,9 +204,7 @@ export default function PricingPage() {
               <p className="font-semibold text-gray-800">Cancellation &amp; Refund Policy</p>
               <p className="text-xs text-gray-400 mt-0.5">Deposit windows, refund eligibility, and operator non-performance rules</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
           <Link
             href="/terms"
@@ -221,9 +214,7 @@ export default function PricingPage() {
               <p className="font-semibold text-gray-800">Terms &amp; Conditions</p>
               <p className="text-xs text-gray-400 mt-0.5">Full payment terms, booking conditions, and platform rules</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
         </div>
 

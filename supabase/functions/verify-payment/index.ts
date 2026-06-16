@@ -289,14 +289,20 @@ async function createPayoutRecord(supabase: any, opts: {
     .select('container_id')
     .eq('id', bookingId)
     .single();
-  if (!booking) return;
+  if (!booking) {
+    await logPayoutFailure(supabase, opts, 'booking not found');
+    return;
+  }
 
   const { data: container } = await supabase
     .from('containers')
     .select('operator_id')
     .eq('id', booking.container_id)
     .single();
-  if (!container) return;
+  if (!container) {
+    await logPayoutFailure(supabase, opts, 'container not found');
+    return;
+  }
 
   const totalUsd         = await getBookingTotalUsd(supabase, bookingId);
   const commRate         = getCommissionRate(totalUsd, commConfig);
@@ -324,7 +330,22 @@ async function createPayoutRecord(supabase: any, opts: {
 
   if (error) {
     console.error('[verify-payment] payout creation failed:', error.message);
+    await logPayoutFailure(supabase, opts, error.message);
   }
+}
+
+// deno-lint-ignore no-explicit-any
+async function logPayoutFailure(supabase: any, opts: {
+  bookingId: string;
+  paymentId: string;
+  stage: string;
+}, reason: string): Promise<void> {
+  await supabase.from('audit_logs').insert({
+    action:      'payout.creation_failed',
+    target_type: 'payment',
+    target_id:   opts.paymentId,
+    metadata:    { booking_id: opts.bookingId, stage: opts.stage, reason },
+  });
 }
 
 function json(data: unknown, status = 200) {

@@ -3,9 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import { switchToCustomer } from '@/actions/operatorActions';
+import { Check, Handshake, Package, Ruler, Ship, Truck } from 'lucide-react';
 
 type HeldRole = 'operator' | 'agent' | 'measurement_agent' | 'transporter';
 
@@ -45,12 +47,13 @@ export default function OnboardingPage() {
   const transporterHeld = heldRoles.includes('transporter');
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
       <nav className="flex items-center px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
           <span className="text-2xl font-extrabold tracking-tight">
             <span className="text-white">Share</span>
-            <span style={{ color: '#f97316' }}>Con</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
             <span className="text-white">Load</span>
           </span>
         </Link>
@@ -71,7 +74,7 @@ export default function OnboardingPage() {
 
             {/* Operator card */}
             <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${operatorHeld && isAuthed ? 'opacity-80' : ''}`}>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#fff7ed' }}>🚢</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#fff7ed' }}><Ship className="w-6 h-6" style={{ color: '#ff6a00' }} /></div>
               <div>
                 <h2 className="text-lg font-extrabold text-gray-800">I Have Container Space</h2>
                 <p className="text-gray-500 text-sm mt-1">List available container space and earn from unused capacity</p>
@@ -79,12 +82,12 @@ export default function OnboardingPage() {
               {operatorHeld && isAuthed ? (
                 <div className="flex flex-col gap-2 mt-auto">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-green-600">
-                    <span>✓</span> You have this role
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} /> You have this role
                   </div>
                   <Link
                     href="/operator"
                     className="btn w-full font-bold rounded-xl hover:opacity-90 text-sm"
-                    style={{ backgroundColor: '#e8eef8', color: '#0f2044' }}
+                    style={{ backgroundColor: '#e8eef8', color: '#0b103a' }}
                   >
                     Go to Operator Portal
                   </Link>
@@ -93,7 +96,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={() => router.push('/onboarding/operator')}
                   className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90"
-                  style={{ backgroundColor: '#0f2044' }}
+                  style={{ backgroundColor: '#0b103a' }}
                 >
                   {isAuthed ? 'Register as Operator' : 'Join as Space Provider'}
                 </button>
@@ -102,7 +105,7 @@ export default function OnboardingPage() {
 
             {/* Shipper card */}
             <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#fff7ed' }}>📦</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#fff7ed' }}><Package className="w-6 h-6" style={{ color: '#ff6a00' }} /></div>
               <div>
                 <h2 className="text-lg font-extrabold text-gray-800">I Need Container Space</h2>
                 <p className="text-gray-500 text-sm mt-1">Book container space for your cargo quickly and securely</p>
@@ -110,19 +113,19 @@ export default function OnboardingPage() {
               {isAuthed ? (
                 <div className="flex flex-col gap-2 mt-auto">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-green-600">
-                    <span>✓</span> You have this role
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} /> You have this role
                   </div>
                   <Link
                     href="/bookings"
                     className="btn w-full font-bold rounded-xl hover:opacity-90 text-sm"
-                    style={{ backgroundColor: '#fff7ed', color: '#f97316' }}
+                    style={{ backgroundColor: '#fff7ed', color: '#ff6a00' }}
                   >
                     Go to My Bookings
                   </Link>
                 </div>
               ) : (
                 <form action={switchToCustomer}>
-                  <button type="submit" className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90" style={{ backgroundColor: '#f97316' }}>
+                  <button type="submit" className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90" style={{ backgroundColor: '#ff6a00' }}>
                     Continue
                   </button>
                 </form>
@@ -131,7 +134,7 @@ export default function OnboardingPage() {
 
             {/* Agent card */}
             <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${agentHeld && isAuthed ? 'opacity-80' : ''}`}>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#e0f5ff' }}>🤝</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#e0f5ff' }}><Handshake className="w-6 h-6" style={{ color: '#1FABFF' }} /></div>
               <div>
                 <h2 className="text-lg font-extrabold text-gray-800">I Am a Freight Agent</h2>
                 <p className="text-gray-500 text-sm mt-1">Manage shippers, book space on their behalf, and coordinate cargo</p>
@@ -139,12 +142,12 @@ export default function OnboardingPage() {
               {agentHeld && isAuthed ? (
                 <div className="flex flex-col gap-2 mt-auto">
                   <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: '#1FABFF' }}>
-                    <span>✓</span> You have this role
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} /> You have this role
                   </div>
                   <Link
                     href="/agent"
                     className="btn w-full font-bold rounded-xl hover:opacity-90 text-sm"
-                    style={{ backgroundColor: '#e0f5ff', color: '#0f2044' }}
+                    style={{ backgroundColor: '#e0f5ff', color: '#0b103a' }}
                   >
                     Go to Agent Portal
                   </Link>
@@ -153,7 +156,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={() => router.push('/onboarding/agent')}
                   className="btn w-full font-bold rounded-xl mt-auto hover:opacity-90"
-                  style={{ backgroundColor: '#1FABFF', color: '#0f2044' }}
+                  style={{ backgroundColor: '#1FABFF', color: '#0b103a' }}
                 >
                   {isAuthed ? 'Register as Agent' : 'Join as Agent'}
                 </button>
@@ -163,7 +166,7 @@ export default function OnboardingPage() {
 
             {/* Measurement Agent card */}
             <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${measurementAgentHeld && isAuthed ? 'opacity-80' : ''}`}>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#eff6ff' }}>📐</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#eff6ff' }}><Ruler className="w-6 h-6" style={{ color: '#1d4ed8' }} /></div>
               <div>
                 <h2 className="text-lg font-extrabold text-gray-800">Measurement Agent</h2>
                 <p className="text-gray-500 text-sm mt-1">Measure and verify cargo dimensions for shipments. Join as a certified measurement professional.</p>
@@ -171,7 +174,7 @@ export default function OnboardingPage() {
               {measurementAgentHeld && isAuthed ? (
                 <div className="flex flex-col gap-2 mt-auto">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-green-600">
-                    <span>✓</span> You have this role
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} /> You have this role
                   </div>
                   <Link
                     href="/measurement-agent"
@@ -194,7 +197,7 @@ export default function OnboardingPage() {
 
             {/* Transporter card */}
             <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${transporterHeld && isAuthed ? 'opacity-80' : ''}`}>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#fefce8' }}>🚚</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#fefce8' }}><Truck className="w-6 h-6" style={{ color: '#854d0e' }} /></div>
               <div>
                 <h2 className="text-lg font-extrabold text-gray-800">Transporter</h2>
                 <p className="text-gray-500 text-sm mt-1">Provide pickup and delivery services for cargo. Register your vehicle and start earning.</p>
@@ -202,7 +205,7 @@ export default function OnboardingPage() {
               {transporterHeld && isAuthed ? (
                 <div className="flex flex-col gap-2 mt-auto">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-green-600">
-                    <span>✓</span> You have this role
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} /> You have this role
                   </div>
                   <Link
                     href="/transporter"

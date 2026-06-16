@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { searchLocations, type Location } from '@/services/locations';
 
+import { Info, MapPin, Smile, X } from 'lucide-react';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function HighlightMatch({ text, query }: { text: string; query: string }) {
@@ -23,12 +24,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
 
 function PinIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
+    <MapPin className={className} />
   );
 }
 
@@ -179,8 +175,9 @@ export default function LocationAutocomplete({
   const inputBorder   = error
     ? 'input-error'
     : selected
-      ? 'border-green-400 focus:border-green-500'
+      ? 'border-2'
       : '';
+  const inputBorderStyle = !error && selected ? { borderColor: '#1fa8ff' } : undefined;
 
   return (
     <div ref={containerRef} className="relative">
@@ -221,12 +218,13 @@ export default function LocationAutocomplete({
           aria-autocomplete="list"
           aria-haspopup="listbox"
           className={`input input-bordered w-full text-sm pl-9 pr-8 ${inputBorder}`}
+          style={inputBorderStyle}
         />
 
         {/* Right slot: spinner → clear × */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
           {loading ? (
-            <span className="loading loading-spinner loading-xs pointer-events-none" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-xs pointer-events-none" style={{ color: '#ff6a00' }} />
           ) : query ? (
             <button
               type="button"
@@ -235,9 +233,7 @@ export default function LocationAutocomplete({
               className="text-gray-300 hover:text-gray-500 transition-colors"
               aria-label="Clear"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-3.5 h-3.5" strokeWidth={2.5} />
             </button>
           ) : null}
         </div>
@@ -246,9 +242,7 @@ export default function LocationAutocomplete({
       {/* Validation error (form mode) */}
       {error && (
         <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
-          <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10A8 8 0 112 10a8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
+          <Info className="w-3 h-3 shrink-0" />
           {error}
         </p>
       )}
@@ -292,10 +286,7 @@ export default function LocationAutocomplete({
       {/* No results */}
       {showNoResults && (
         <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl px-4 py-3 text-sm text-gray-400 flex items-center gap-2">
-          <svg className="w-4 h-4 shrink-0 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Smile className="w-4 h-4 shrink-0 text-gray-300" />
           No results for &ldquo;<span className="font-medium text-gray-600">{query}</span>&rdquo;
         </div>
       )}

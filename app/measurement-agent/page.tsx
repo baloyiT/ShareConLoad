@@ -95,7 +95,7 @@ export default function MeasurementAgentDashboard() {
     if (loading) {
       return (
         <div className="flex justify-center py-24">
-          <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+          <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
         </div>
       );
     }
@@ -113,7 +113,7 @@ export default function MeasurementAgentDashboard() {
             <Link
               href="/onboarding/measurement-agent"
               className="btn btn-sm mt-3 text-white font-bold rounded-xl hover:opacity-90"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Start Onboarding
             </Link>
@@ -168,7 +168,7 @@ export default function MeasurementAgentDashboard() {
     return (
       <div className="flex flex-col gap-6 max-w-4xl">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h1 className="text-2xl font-extrabold mb-1" style={{ color: '#0f2044' }}>
+          <h1 className="text-2xl font-extrabold mb-1" style={{ color: '#0b103a' }}>
             Measurement Agent Portal
           </h1>
           <p className="text-gray-500 text-sm">
@@ -179,25 +179,25 @@ export default function MeasurementAgentDashboard() {
         <div className="stats stats-vertical sm:stats-horizontal bg-white shadow-sm border border-gray-100 rounded-2xl w-full">
           <div className="stat">
             <div className="stat-title text-xs text-gray-400">Jobs Completed</div>
-            <div className="stat-value text-2xl font-extrabold" style={{ color: '#0f2044' }}>
+            <div className="stat-value text-2xl font-extrabold" style={{ color: '#0b103a' }}>
               {agentProfile.total_jobs_completed}
             </div>
           </div>
           <div className="stat">
             <div className="stat-title text-xs text-gray-400">Active Jobs</div>
-            <div className="stat-value text-2xl font-extrabold" style={{ color: '#f97316' }}>
+            <div className="stat-value text-2xl font-extrabold" style={{ color: '#ff6a00' }}>
               {jobCounts.assigned + jobCounts.in_progress}
             </div>
           </div>
           <div className="stat">
             <div className="stat-title text-xs text-gray-400">Average Rating</div>
-            <div className="stat-value text-2xl font-extrabold" style={{ color: '#0f2044' }}>
+            <div className="stat-value text-2xl font-extrabold" style={{ color: '#0b103a' }}>
               {agentProfile.average_rating != null ? agentProfile.average_rating.toFixed(1) : 'N/A'}
             </div>
           </div>
           <div className="stat">
             <div className="stat-title text-xs text-gray-400">Awaiting Start</div>
-            <div className="stat-value text-2xl font-extrabold" style={{ color: '#0f2044' }}>
+            <div className="stat-value text-2xl font-extrabold" style={{ color: '#0b103a' }}>
               {jobCounts.assigned}
             </div>
           </div>
@@ -213,7 +213,7 @@ export default function MeasurementAgentDashboard() {
           </div>
           <div className="flex items-center gap-3">
             {(jobCounts.assigned + jobCounts.in_progress) > 0 && (
-              <span className="badge text-white font-bold text-xs px-3 py-2" style={{ backgroundColor: '#f97316' }}>
+              <span className="badge text-white font-bold text-xs px-3 py-2" style={{ backgroundColor: '#ff6a00' }}>
                 {jobCounts.assigned + jobCounts.in_progress} active
               </span>
             )}
@@ -232,9 +232,9 @@ export default function MeasurementAgentDashboard() {
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/logo1.png" alt="ShareConLoad" width={36} height={36} className="h-8 w-auto" />
             <span className="text-lg font-extrabold tracking-tight hidden sm:block">
-              <span style={{ color: '#0f2044' }}>Share</span>
-              <span style={{ color: '#f97316' }}>Con</span>
-              <span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span>
+              <span style={{ color: '#ff6a00' }}>Con</span>
+              <span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <div className="flex items-center gap-2">

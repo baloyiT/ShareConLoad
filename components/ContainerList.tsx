@@ -1,5 +1,6 @@
 import ContainerCard, { Container } from './ContainerCard';
 
+import { Briefcase } from 'lucide-react';
 type ContainerListProps = {
   containers: Container[];
 };
@@ -12,10 +13,7 @@ export default function ContainerList({ containers }: ContainerListProps) {
           className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
           style={{ backgroundColor: '#fff7ed' }}
         >
-          <svg className="w-8 h-8" style={{ color: '#f97316' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
-          </svg>
+          <Briefcase className="w-8 h-8" style={{ color: '#ff6a00' }} strokeWidth={1.5} />
         </div>
         <h3 className="text-lg font-bold text-gray-800 mb-1">No containers available</h3>
         <p className="text-sm text-gray-400 max-w-xs leading-relaxed">

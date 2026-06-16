@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
+import { X } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -161,9 +162,9 @@ export default function AdminCommissionPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span>
-              <span style={{ color: '#f97316' }}>Con</span>
-              <span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span>
+              <span style={{ color: '#ff6a00' }}>Con</span>
+              <span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-800">← Admin</Link>
@@ -184,7 +185,7 @@ export default function AdminCommissionPage() {
 
         {loading ? (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : (
           <>
@@ -198,7 +199,7 @@ export default function AdminCommissionPage() {
                     onClick={() => setType(t)}
                     className="flex-1 py-3 rounded-xl border-2 text-sm font-bold transition-all"
                     style={type === t
-                      ? { backgroundColor: '#0f2044', color: '#fff', borderColor: '#0f2044' }
+                      ? { backgroundColor: '#0b103a', color: '#fff', borderColor: '#0b103a' }
                       : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }}
                   >
                     {t === 'tiered' ? 'Tiered (by value)' : 'Fixed rate'}
@@ -247,7 +248,7 @@ export default function AdminCommissionPage() {
                   <button
                     onClick={addTier}
                     className="btn btn-sm font-bold rounded-lg text-white"
-                    style={{ backgroundColor: '#f97316' }}
+                    style={{ backgroundColor: '#ff6a00' }}
                   >
                     + Add Tier
                   </button>
@@ -306,7 +307,7 @@ export default function AdminCommissionPage() {
                               className="btn btn-ghost btn-sm text-red-400 hover:text-red-600"
                               title="Remove tier"
                             >
-                              ✕
+                              <X className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
@@ -332,7 +333,7 @@ export default function AdminCommissionPage() {
                 {PREVIEW_AMOUNTS.map((amt) => (
                   <div key={amt} className="rounded-xl border border-gray-100 p-3 text-center">
                     <p className="text-xs text-gray-400 mb-1">${amt.toLocaleString()} USD</p>
-                    <p className="text-sm font-bold" style={{ color: '#0f2044' }}>
+                    <p className="text-sm font-bold" style={{ color: '#0b103a' }}>
                       {previewCommission(amt)}
                     </p>
                   </div>
@@ -346,7 +347,7 @@ export default function AdminCommissionPage() {
                 onClick={handleSave}
                 disabled={saving}
                 className="btn font-bold text-white px-8 rounded-xl hover:opacity-90"
-                style={{ backgroundColor: '#0f2044' }}
+                style={{ backgroundColor: '#0b103a' }}
               >
                 {saving ? <span className="loading loading-spinner loading-sm" /> : 'Save Changes'}
               </button>

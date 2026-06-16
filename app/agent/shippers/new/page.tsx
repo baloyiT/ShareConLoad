@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useActionState } from 'react';
 import { addManagedShipper } from '@/actions/agentActions';
 
+import { ArrowLeft } from 'lucide-react';
 const COUNTRIES = [
   'South Africa', 'Angola', 'Botswana', 'Cameroon', 'Congo', 'Egypt',
   'Ethiopia', 'Ghana', 'India', 'Kenya', 'Malaysia', 'Mozambique',
@@ -26,15 +27,13 @@ export default function AddShipperPage() {
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/logo1.png" alt="ShareConLoad" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span>
-              <span style={{ color: '#f97316' }}>Con</span>
-              <span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span>
+              <span style={{ color: '#ff6a00' }}>Con</span>
+              <span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/agent/shippers" className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+            <ArrowLeft className="w-3.5 h-3.5" />
             Back to Shippers
           </Link>
         </div>

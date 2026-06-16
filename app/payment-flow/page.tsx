@@ -1,6 +1,7 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import Image from 'next/image';
 
+import { ArrowLeft, Check, ChevronRight } from 'lucide-react';
 export const metadata = {
   title: 'Payment Flow, ShareConLoad',
   description: 'How payments flow between customers, ShareConLoad, and operators, staged payments processed securely via Paystack.',
@@ -15,24 +16,22 @@ export default function PaymentFlowPage() {
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
           <span className="text-lg font-extrabold tracking-tight">
-            <span style={{ color: '#0f2044' }}>Share</span>
-            <span style={{ color: '#f97316' }}>Con</span>
-            <span style={{ color: '#0f2044' }}>Load</span>
+            <span style={{ color: '#0b103a' }}>Share</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
+            <span style={{ color: '#0b103a' }}>Load</span>
           </span>
         </Link>
         <div className="flex-1" />
         <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to Home
         </Link>
       </nav>
 
       {/* Hero */}
-      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#f97316' }}>Transparency</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#ff6a00' }}>Transparency</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">How Payments Work</h1>
           <p className="text-gray-400 text-sm">
             End-to-end explanation of how money flows between customers, ShareConLoad, and operators, all processed securely via Paystack.
@@ -55,9 +54,7 @@ export default function PaymentFlowPage() {
               'Operator payouts only after full KYC approval',
             ].map((item) => (
               <div key={item} className="flex items-start gap-3">
-                <svg className="w-5 h-5 mt-0.5 shrink-0 text-green-500" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-5 h-5 mt-0.5 shrink-0 text-green-500" strokeWidth={2.5} />
                 <span className="text-sm text-gray-700">{item}</span>
               </div>
             ))}
@@ -77,19 +74,19 @@ export default function PaymentFlowPage() {
                 pct: '20%',
                 label: 'Deposit',
                 detail: 'Paid at booking to secure the space. Refundable within 48 hours of booking confirmation. Non-refundable after that window.',
-                color: '#f97316',
+                color: '#ff6a00',
               },
               {
                 pct: '50%',
                 label: 'Pre-Departure',
                 detail: 'Due 7 days before the container departs the origin port. Required for the container to sail.',
-                color: '#0f2044',
+                color: '#0b103a',
               },
               {
                 pct: '30%',
                 label: 'Final Release',
                 detail: 'Due at the destination before cargo is released to the consignee. Cargo is held until this stage clears.',
-                color: '#0f2044',
+                color: '#0b103a',
               },
             ].map(({ pct, label, detail, color }) => (
               <div key={pct} className="flex gap-4 items-start rounded-xl border border-gray-100 px-5 py-4">
@@ -128,7 +125,7 @@ export default function PaymentFlowPage() {
                 {
                   step: 1,
                   actor: 'Customer',
-                  actorColor: '#f97316',
+                  actorColor: '#ff6a00',
                   actorBg: '#fff7ed',
                   action: 'Initiates payment',
                   detail:
@@ -137,7 +134,7 @@ export default function PaymentFlowPage() {
                 {
                   step: 2,
                   actor: 'Paystack',
-                  actorColor: '#0f2044',
+                  actorColor: '#0b103a',
                   actorBg: '#eef2ff',
                   action: 'Processes the transaction',
                   detail:
@@ -146,7 +143,7 @@ export default function PaymentFlowPage() {
                 {
                   step: 3,
                   actor: 'ShareConLoad',
-                  actorColor: '#0f2044',
+                  actorColor: '#0b103a',
                   actorBg: '#eef2ff',
                   action: 'Verifies & records',
                   detail:
@@ -155,7 +152,7 @@ export default function PaymentFlowPage() {
                 {
                   step: 4,
                   actor: 'ShareConLoad',
-                  actorColor: '#0f2044',
+                  actorColor: '#0b103a',
                   actorBg: '#eef2ff',
                   action: 'Releases payout to operator',
                   detail:
@@ -164,7 +161,7 @@ export default function PaymentFlowPage() {
                 {
                   step: 5,
                   actor: 'Operator',
-                  actorColor: '#f97316',
+                  actorColor: '#ff6a00',
                   actorBg: '#fff7ed',
                   action: 'Receives net payout',
                   detail:
@@ -213,9 +210,7 @@ export default function PaymentFlowPage() {
               'No payout_hold flag active on the operator profile',
             ].map((item) => (
               <div key={item} className="flex items-start gap-3">
-                <svg className="w-5 h-5 mt-0.5 shrink-0 text-green-500" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-5 h-5 mt-0.5 shrink-0 text-green-500" strokeWidth={2.5} />
                 <span className="text-sm text-gray-700">{item}</span>
               </div>
             ))}
@@ -243,9 +238,7 @@ export default function PaymentFlowPage() {
               <p className="font-semibold text-gray-800">Pricing &amp; Commission</p>
               <p className="text-xs text-gray-400 mt-0.5">Tiered operator commission rates and payment stage breakdown</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
           <Link
             href="/cancellation"
@@ -255,9 +248,7 @@ export default function PaymentFlowPage() {
               <p className="font-semibold text-gray-800">Cancellation &amp; Refund Policy</p>
               <p className="text-xs text-gray-400 mt-0.5">Deposit windows, refund eligibility, and operator rules</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
           <Link
             href="/operator-verification"
@@ -267,9 +258,7 @@ export default function PaymentFlowPage() {
               <p className="font-semibold text-gray-800">Operator Verification (KYC)</p>
               <p className="text-xs text-gray-400 mt-0.5">Documents and checks required for logistics providers</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
         </div>
 

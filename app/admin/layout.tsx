@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!authorized) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }

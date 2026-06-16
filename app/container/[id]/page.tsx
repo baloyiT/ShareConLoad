@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import { Container } from '@/components/ContainerCard';
 
+import { ArrowRight, Check, Package } from 'lucide-react';
 function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-GB', {
     weekday: 'short',
@@ -53,7 +54,7 @@ export default function ContainerDetailsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -62,12 +63,12 @@ export default function ContainerDetailsPage() {
   if (notFound || !container) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 text-center px-4">
-        <div className="text-6xl">📦</div>
+        <Package className="w-16 h-16 text-gray-300" />
         <h1 className="text-2xl font-bold text-gray-800">Container not found</h1>
         <p className="text-gray-400 text-sm max-w-xs">
           This container may no longer be available or the link is invalid.
         </p>
-        <button onClick={() => router.back()} className="btn btn-sm mt-2" style={{ backgroundColor: '#0f2044', color: '#fff' }}>
+        <button onClick={() => router.back()} className="btn btn-sm mt-2" style={{ backgroundColor: '#0b103a', color: '#fff' }}>
           ← Back
         </button>
       </div>
@@ -89,7 +90,7 @@ export default function ContainerDetailsPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <button
@@ -102,7 +103,7 @@ export default function ContainerDetailsPage() {
       </nav>
 
       {/* Hero band */}
-      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -115,9 +116,7 @@ export default function ContainerDetailsPage() {
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white flex items-center gap-3 flex-wrap">
               {container.origin_city}
-              <svg className="w-7 h-7 text-orange-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+              <ArrowRight className="w-7 h-7 text-orange-400 shrink-0" />
               {container.destination_city}
             </h1>
             <p className="text-gray-400 mt-1">
@@ -129,7 +128,7 @@ export default function ContainerDetailsPage() {
             <button
               onClick={() => router.push(`/booking/${container.id}`)}
               className="btn text-white font-bold px-8 py-3 rounded-xl text-base shadow-lg hover:opacity-90 transition-opacity shrink-0"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Book Space →
             </button>
@@ -163,9 +162,7 @@ export default function ContainerDetailsPage() {
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-orange-400" />
                     <div className="w-16 h-0.5 bg-gray-300" />
-                    <svg className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
+                    <ArrowRight className="w-4 h-4 text-orange-400" />
                   </div>
                 </div>
               </div>
@@ -206,13 +203,13 @@ export default function ContainerDetailsPage() {
             </div>
             <progress
               className="progress w-full h-3 rounded-full"
-              style={{ accentColor: '#f97316' }}
+              style={{ accentColor: '#ff6a00' }}
               value={capacityPct}
               max={100}
             />
             <div className="flex justify-between mt-3 text-sm">
               <span className="text-gray-400">Used: {capacityUsed.toFixed(1)} CBM</span>
-              <span className="font-semibold" style={{ color: '#f97316' }}>
+              <span className="font-semibold" style={{ color: '#ff6a00' }}>
                 Available: {container.available_capacity_cbm} CBM
               </span>
             </div>
@@ -228,7 +225,7 @@ export default function ContainerDetailsPage() {
             </h2>
 
             <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-5xl font-extrabold" style={{ color: '#f97316' }}>
+              <span className="text-5xl font-extrabold" style={{ color: '#ff6a00' }}>
                 R{container.price_per_cbm}
               </span>
               <span className="text-gray-400 text-sm">/ CBM</span>
@@ -249,9 +246,7 @@ export default function ContainerDetailsPage() {
                 .filter(Boolean)
                 .map((line) => (
                   <div key={line} className="flex items-center gap-2">
-                    <svg className="w-4 h-4 shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="w-4 h-4 shrink-0 text-green-500" />
                     <span>{line}</span>
                   </div>
                 ))}
@@ -261,7 +256,7 @@ export default function ContainerDetailsPage() {
               <button
                 onClick={() => router.push(`/booking/${container.id}`)}
                 className="w-full btn text-white font-bold py-3 rounded-xl text-base hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 Book Space
               </button>
@@ -281,7 +276,7 @@ export default function ContainerDetailsPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0"
-                style={{ backgroundColor: '#0f2044' }}
+                style={{ backgroundColor: '#0b103a' }}
               >
                 {container.operator_name.charAt(0).toUpperCase()}
               </div>

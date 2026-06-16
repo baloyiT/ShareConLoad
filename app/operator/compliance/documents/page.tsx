@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -165,7 +165,7 @@ export default function ComplianceDocumentsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -195,7 +195,7 @@ export default function ComplianceDocumentsPage() {
         <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${(uploadedCount / 5) * 100}%`, backgroundColor: '#f97316' }}
+            style={{ width: `${(uploadedCount / 5) * 100}%`, backgroundColor: '#ff6a00' }}
           />
         </div>
       </div>
@@ -256,7 +256,7 @@ export default function ComplianceDocumentsPage() {
                   />
                   {slot.uploading ? (
                     <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <span className="loading loading-spinner loading-xs" style={{ color: '#f97316' }} />
+                      <span className="loading loading-spinner loading-xs" style={{ color: '#ff6a00' }} />
                       Uploading…
                     </div>
                   ) : (
@@ -265,7 +265,7 @@ export default function ComplianceDocumentsPage() {
                       className="btn btn-sm rounded-xl text-xs font-semibold"
                       style={slot.record
                         ? { backgroundColor: '#f3f4f6', color: '#374151' }
-                        : { backgroundColor: '#0f2044', color: '#ffffff' }}
+                        : { backgroundColor: '#0b103a', color: '#ffffff' }}
                     >
                       {slot.record ? 'Replace file' : 'Upload document'}
                     </button>
@@ -289,7 +289,7 @@ export default function ComplianceDocumentsPage() {
           <Link
             href="/operator/compliance/agreement"
             className="btn w-full text-white font-bold rounded-xl hover:opacity-90"
-            style={{ backgroundColor: '#0f2044' }}
+            style={{ backgroundColor: '#0b103a' }}
           >
             Continue to Agreement →
           </Link>

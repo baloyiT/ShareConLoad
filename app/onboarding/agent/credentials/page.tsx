@@ -2,8 +2,10 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useActionState } from 'react';
 import { saveAgentStep2 } from '@/actions/agentActions';
+import { Check } from 'lucide-react';
 
 const STEPS = ['Business Details', 'Credentials', 'Documents', 'Bank Details', 'Review'];
 
@@ -11,10 +13,13 @@ export default function AgentOnboardingStep2() {
   const [state, formAction, isPending] = useActionState(saveAgentStep2, null);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
       <nav className="flex items-center px-6 py-4">
-        <Link href="/onboarding/agent" className="text-2xl font-extrabold tracking-tight">
-          <span className="text-white">Share</span><span style={{ color: '#f97316' }}>Con</span><span className="text-white">Load</span>
+        <Link href="/onboarding/agent" className="flex items-center gap-2.5">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
+          <span className="text-2xl font-extrabold tracking-tight">
+            <span className="text-white">Share</span><span style={{ color: '#ff6a00' }}>Con</span><span className="text-white">Load</span>
+          </span>
         </Link>
       </nav>
 
@@ -23,7 +28,7 @@ export default function AgentOnboardingStep2() {
           {STEPS.map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i === 1 ? 'bg-green-500 text-white' : i < 1 ? 'bg-white/60 text-gray-700' : 'bg-white/20 text-white/60'}`}>
-                {i < 1 ? '✓' : i + 1}
+                {i < 1 ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : i + 1}
               </div>
               {i < STEPS.length - 1 && <div className="w-8 h-0.5 bg-white/20" />}
             </div>

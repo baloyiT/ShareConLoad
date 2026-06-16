@@ -172,7 +172,7 @@ export default function MeasurementServicePage() {
               type="submit"
               disabled={bandLoading}
               className="btn w-full text-white font-bold rounded-xl disabled:opacity-60"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               {bandLoading ? <span className="loading loading-spinner loading-sm" /> : 'Check Availability & Price'}
             </button>
@@ -189,7 +189,7 @@ export default function MeasurementServicePage() {
                 <div className="flex justify-between"><span className="text-gray-500">Service Zone</span><span className="text-gray-800 font-medium">{rateBand.zone_name}</span></div>
                 <div className="flex justify-between text-base font-bold mt-2 pt-2 border-t">
                   <span>Service Fee</span>
-                  <span style={{ color: '#f97316' }}>{fmtMoney(rateBand.base_fee)}</span>
+                  <span style={{ color: '#ff6a00' }}>{fmtMoney(rateBand.base_fee)}</span>
                 </div>
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function MeasurementServicePage() {
                 className="btn btn-ghost flex-1 rounded-xl">Back</button>
               <button onClick={handleProceedToPayment} disabled={submitting}
                 className="btn flex-1 text-white font-bold rounded-xl disabled:opacity-60"
-                style={{ backgroundColor: '#f97316' }}>
+                style={{ backgroundColor: '#ff6a00' }}>
                 {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Pay & Confirm'}
               </button>
             </div>
@@ -211,7 +211,7 @@ export default function MeasurementServicePage() {
 
         {step === 'paying' && (
           <div className="text-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
             <p className="text-sm text-gray-500 mt-4">Redirecting to payment…</p>
           </div>
         )}

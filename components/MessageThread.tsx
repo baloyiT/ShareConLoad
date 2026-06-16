@@ -144,15 +144,17 @@ export default function MessageThread({
               >
                 <div
                   className={`max-w-[75%] px-3 py-2 text-sm ${
-                    isOwn ? 'bg-blue-500 text-white' : 'bg-white border text-gray-800'
+                    isOwn ? 'text-white' : 'bg-white border text-gray-800'
                   }`}
                   style={{
                     borderRadius: isOwn ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    backgroundColor: isOwn ? '#1fa8ff' : undefined,
                   }}
                 >
                   <p className="leading-snug">{msg.content}</p>
                   <p
-                    className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-400'}`}
+                    className={`text-xs mt-1 ${isOwn ? '' : 'text-gray-400'}`}
+                    style={isOwn ? { color: 'rgba(255,255,255,0.75)' } : undefined}
                   >
                     {fmt(msg.created_at)}
                   </p>
@@ -189,7 +191,8 @@ export default function MessageThread({
             <button
               onClick={handleSend}
               disabled={sending || !draft.trim() || filterWarn}
-              className="btn bg-blue-500 text-white border-0 hover:bg-blue-600 disabled:opacity-50"
+              className="btn text-white border-0 hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: '#1fa8ff' }}
             >
               {sending ? (
                 <span className="loading loading-spinner loading-sm" />

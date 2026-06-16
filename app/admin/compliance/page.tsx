@@ -45,7 +45,7 @@ const FLAG_COLOURS: Record<string, string> = {
   prohibited_cargo:   '#ef4444',
   sanctions_risk:     '#7c3aed',
   suspicious_payment: '#f59e0b',
-  customs_risk:       '#f97316',
+  customs_risk:       '#ff6a00',
   fraud_risk:         '#dc2626',
   unverified_identity:'#6b7280',
 };
@@ -161,7 +161,7 @@ export default function AdminCompliancePage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-800">← Admin</Link>
@@ -192,7 +192,7 @@ export default function AdminCompliancePage() {
               onClick={() => setActiveTab(tab)}
               className="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors"
               style={activeTab === tab
-                ? { backgroundColor: '#f97316', color: '#ffffff' }
+                ? { backgroundColor: '#ff6a00', color: '#ffffff' }
                 : { backgroundColor: 'rgba(255,255,255,0.1)', color: '#d1d5db' }}
             >
               {tab === 'flags' ? 'Compliance Flags' : 'KYC Documents'}
@@ -209,7 +209,7 @@ export default function AdminCompliancePage() {
             {error && <div className="alert alert-error text-sm mb-4">{error}</div>}
             {loading ? (
               <div className="flex justify-center py-24">
-                <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+                <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
               </div>
             ) : filtered.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20">
@@ -262,7 +262,7 @@ export default function AdminCompliancePage() {
             {docsError && <div className="alert alert-error text-sm mb-4">{docsError}</div>}
             {docsLoading ? (
               <div className="flex justify-center py-24">
-                <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+                <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
               </div>
             ) : docs.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20">
@@ -299,7 +299,7 @@ export default function AdminCompliancePage() {
                               <button
                                 onClick={() => viewDoc(doc.file_url)}
                                 className="text-xs font-semibold mt-1 inline-flex items-center gap-1"
-                                style={{ color: '#f97316' }}
+                                style={{ color: '#ff6a00' }}
                               >
                                 View document →
                               </button>

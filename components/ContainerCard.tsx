@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import StarDisplay from '@/components/StarDisplay';
 
+import { ArrowRight } from 'lucide-react';
 export type Container = {
   id: string;
   origin_city: string;
@@ -56,7 +57,7 @@ export default function ContainerCard({ container }: ContainerCardProps) {
             )}
           </div>
           <div className="text-right">
-            <span className="text-2xl font-bold" style={{ color: '#f97316' }}>
+            <span className="text-2xl font-bold" style={{ color: '#ff6a00' }}>
               {container.currency_code ?? 'ZAR'} {container.price_per_cbm.toLocaleString()}
             </span>
             <span className="text-xs text-gray-400 block">/CBM</span>
@@ -70,9 +71,7 @@ export default function ContainerCard({ container }: ContainerCardProps) {
         <div className="mt-1">
           <div className="flex items-center gap-2 flex-wrap text-lg font-bold text-gray-800">
             <span>{container.origin_city}</span>
-            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+            <ArrowRight className="w-4 h-4 text-gray-400 shrink-0" />
             <span>{container.destination_city}</span>
           </div>
           <p className="text-sm text-gray-400 mt-0.5">
@@ -107,7 +106,7 @@ export default function ContainerCard({ container }: ContainerCardProps) {
               className="h-full rounded-full transition-all"
               style={{
                 width: `${((container.total_capacity_cbm - container.available_capacity_cbm) / container.total_capacity_cbm) * 100}%`,
-                backgroundColor: container.available_capacity_cbm / container.total_capacity_cbm < 0.2 ? '#ef4444' : '#f97316',
+                backgroundColor: container.available_capacity_cbm / container.total_capacity_cbm < 0.2 ? '#ef4444' : '#ff6a00',
               }}
             />
           </div>
@@ -130,7 +129,7 @@ export default function ContainerCard({ container }: ContainerCardProps) {
           <Link
             href={`/container/${container.id}`}
             className="text-sm font-semibold hover:underline"
-            style={{ color: '#f97316' }}
+            style={{ color: '#ff6a00' }}
           >
             View Details →
           </Link>

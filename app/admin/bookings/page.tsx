@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 import MessageThread from '@/components/MessageThread';
+import { MessageCircle, X } from 'lucide-react';
 
 type AdminBooking = {
   id: string;
@@ -220,7 +221,7 @@ export default function AdminBookingsPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-800">← Admin</Link>
@@ -243,7 +244,7 @@ export default function AdminBookingsPage() {
                 onClick={() => setStatusFilter(s)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors"
                 style={active
-                  ? { backgroundColor: '#0f2044', color: '#fff', borderColor: '#0f2044' }
+                  ? { backgroundColor: '#0b103a', color: '#fff', borderColor: '#0b103a' }
                   : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }}
               >
                 {s === 'all' ? 'All' : s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -260,7 +261,7 @@ export default function AdminBookingsPage() {
 
         {loading ? (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20">
@@ -289,7 +290,7 @@ export default function AdminBookingsPage() {
                       </td>
                       <td className="py-3.5 px-4 text-sm text-gray-700">{b.total_cbm} CBM</td>
                       <td className="py-3.5 px-4">
-                        <span className="font-semibold text-sm" style={{ color: '#f97316' }}>{ZAR(b.total_price)}</span>
+                        <span className="font-semibold text-sm" style={{ color: '#ff6a00' }}>{ZAR(b.total_price)}</span>
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="badge badge-sm text-white font-semibold capitalize"
@@ -318,7 +319,7 @@ export default function AdminBookingsPage() {
                             className="btn btn-xs btn-ghost"
                             onClick={() => setMessageBookingId(b.id)}
                           >
-                            💬 Messages
+                            <MessageCircle className="w-3.5 h-3.5" /> Messages
                           </button>
                           <Link
                             href={`/booking/track/${b.id}`}
@@ -345,7 +346,7 @@ export default function AdminBookingsPage() {
               <h3 className="font-bold text-base">
                 Messages, {messageBookingId.slice(0, 8).toUpperCase()}
               </h3>
-              <button type="button" className="btn btn-ghost btn-xs" onClick={() => setMessageBookingId(null)}>✕</button>
+              <button type="button" className="btn btn-ghost btn-xs" onClick={() => setMessageBookingId(null)}><X className="w-3.5 h-3.5" /></button>
             </div>
             <MessageThread
               bookingId={messageBookingId}
@@ -374,7 +375,7 @@ export default function AdminBookingsPage() {
                 </h3>
                 <p className="font-mono text-xs text-gray-400">{selected.id.slice(0, 8).toUpperCase()}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="btn btn-ghost btn-sm btn-circle text-gray-400">✕</button>
+              <button onClick={() => setSelected(null)} className="btn btn-ghost btn-sm btn-circle text-gray-400"><X className="w-4 h-4" /></button>
             </div>
 
             {/* Tabs */}
@@ -385,7 +386,7 @@ export default function AdminBookingsPage() {
                   onClick={() => switchTab(tab)}
                   className="flex-1 py-3 text-sm font-semibold capitalize transition-colors"
                   style={modalTab === tab
-                    ? { color: '#0f2044', borderBottom: '2px solid #0f2044' }
+                    ? { color: '#0b103a', borderBottom: '2px solid #0b103a' }
                     : { color: '#9ca3af' }}
                 >
                   {tab}
@@ -432,7 +433,7 @@ export default function AdminBookingsPage() {
                     onClick={applyStatusChange}
                     disabled={updating}
                     className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90"
-                    style={{ backgroundColor: '#0f2044' }}
+                    style={{ backgroundColor: '#0b103a' }}
                   >
                     {updating ? <span className="loading loading-spinner loading-sm" /> : 'Apply'}
                   </button>
@@ -445,7 +446,7 @@ export default function AdminBookingsPage() {
               <div className="px-6 py-4 flex flex-col gap-3">
                 {loadingPayments ? (
                   <div className="flex justify-center py-8">
-                    <span className="loading loading-spinner loading-md" style={{ color: '#f97316' }} />
+                    <span className="loading loading-spinner loading-md" style={{ color: '#ff6a00' }} />
                   </div>
                 ) : payments.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-8">No payment records found.</p>
@@ -457,7 +458,7 @@ export default function AdminBookingsPage() {
                           <p className="text-sm font-semibold text-gray-800">
                             {STAGE_LABELS[pmt.stage] ?? pmt.stage}
                           </p>
-                          <p className="text-lg font-extrabold mt-0.5" style={{ color: '#f97316' }}>
+                          <p className="text-lg font-extrabold mt-0.5" style={{ color: '#ff6a00' }}>
                             {ZAR(pmt.amount)}
                           </p>
                         </div>

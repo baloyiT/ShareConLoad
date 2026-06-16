@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 
+import { Check, Clock, Info } from 'lucide-react';
 // Full country list — sorted with SA first
 const ALL_COUNTRIES = [
   'South Africa', 'Afghanistan', 'Albania', 'Algeria', 'Angola', 'Argentina',
@@ -172,7 +173,7 @@ export default function OperatorBankPage() {
   if (loadingProfile) {
     return (
       <div className="flex items-center justify-center py-24">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -200,13 +201,9 @@ export default function OperatorBankPage() {
               style={{ backgroundColor: successManual ? '#fef3c7' : '#f0fdf4' }}
             >
               {successManual ? (
-                <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <Clock className="w-8 h-8 text-amber-500" />
               ) : (
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-8 h-8 text-green-500" strokeWidth={2.5} />
               )}
             </div>
             <h2 className="text-xl font-extrabold text-gray-800 mb-1">
@@ -225,7 +222,7 @@ export default function OperatorBankPage() {
               <Link
                 href="/operator/compliance/agreement"
                 className="btn text-white font-bold rounded-xl hover:opacity-90"
-                style={{ backgroundColor: '#0f2044' }}
+                style={{ backgroundColor: '#0b103a' }}
               >
                 Next, Service Agreement →
               </Link>
@@ -268,9 +265,7 @@ export default function OperatorBankPage() {
             {bankCountry && (
               isManual ? (
                 <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800">
-                  <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <Info className="w-4 h-4 mt-0.5 shrink-0" />
                   <span>
                     Automated payouts are not yet available for <strong>{bankCountry}</strong>.
                     Save your details and our team will arrange international wire transfers to your account.
@@ -278,9 +273,7 @@ export default function OperatorBankPage() {
                 </div>
               ) : (
                 <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
-                  <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <Info className="w-4 h-4 mt-0.5 shrink-0" />
                   <span>
                     Automated payouts via Paystack are available for <strong>{bankCountry}</strong>.
                     Ensure your account holder name matches your bank records exactly.
@@ -298,7 +291,7 @@ export default function OperatorBankPage() {
                   </label>
                   {loadingBanks ? (
                     <div className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-400">
-                      <span className="loading loading-spinner loading-xs" style={{ color: '#f97316' }} />
+                      <span className="loading loading-spinner loading-xs" style={{ color: '#ff6a00' }} />
                       Loading banks…
                     </div>
                   ) : bankListError ? (
@@ -409,7 +402,7 @@ export default function OperatorBankPage() {
               type="submit"
               disabled={submitting || loadingBanks || !bankCountry}
               className="btn text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
-              style={{ backgroundColor: '#0f2044' }}
+              style={{ backgroundColor: '#0b103a' }}
             >
               {submitting
                 ? <span className="loading loading-spinner loading-sm" />

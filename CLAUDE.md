@@ -23,6 +23,10 @@ This is NOT a generic app.
 It is a structured logistics system with strict data and workflow rules.
 
 ---
+## Brand Guideline
+
+Always use the brand guideline @"C:\Users\lab\Documents\Development\ShareConLoad\website\ShareConLoad\MyAsset\Brand Guideline.png" when designing the frontend
+
 
 ## TECH STACK (FIXED)
 

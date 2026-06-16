@@ -1,14 +1,13 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 import { notify } from '@/services/notificationService';
-import RoleSwitcher from '@/components/RoleSwitcher';
 
+import { AlertTriangle, ArrowRight, Briefcase, Check, Megaphone, MessageCircle, Package } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Container = {
@@ -74,8 +73,6 @@ export default function OperatorDashboard() {
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [userName, setUserName]         = useState('');
-  const [userInitials, setUserInitials] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
   const [sendingNotice,  setSendingNotice]  = useState<string | null>(null);
   const [noticeError,    setNoticeError]    = useState<string | null>(null);
@@ -87,14 +84,6 @@ export default function OperatorDashboard() {
     async function fetchContainers() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/auth/login?next=/operator'); return; }
-
-      const fullName = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? '';
-      setUserName(fullName);
-      setUserInitials(
-        fullName.includes(' ')
-          ? fullName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
-          : fullName[0]?.toUpperCase() ?? '',
-      );
 
       const { data, error } = await supabase
         .from('containers')
@@ -182,41 +171,15 @@ export default function OperatorDashboard() {
   return (
     <div className="bg-[#f8fafc]">
 
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-14">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo1.png" alt="ShareConLoad" width={36} height={36} className="h-8 w-auto" />
-            <span className="text-lg font-extrabold tracking-tight hidden sm:block">
-              <span style={{ color: '#0f2044' }}>Share</span>
-              <span style={{ color: '#f97316' }}>Con</span>
-              <span style={{ color: '#0f2044' }}>Load</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <RoleSwitcher currentRole="operator" />
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push('/auth/login');
-              }}
-              className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </nav>
-
       <PageHero
         showMap
-        label="Operator Portal"
         title="My Containers"
         description="Manage your listed container space."
         rightSlot={
           <Link
             href="/operator/create"
             className="btn text-white font-bold rounded-xl hover:opacity-90 self-start sm:self-auto"
-            style={{ backgroundColor: '#f97316' }}
+            style={{ backgroundColor: '#ff6a00' }}
           >
             + Create Container
           </Link>
@@ -231,7 +194,7 @@ export default function OperatorDashboard() {
           return (
             <div className="relative max-w-6xl mx-auto w-full mt-4">
               <div className="flex items-start gap-3 bg-amber-500/20 border border-amber-400/30 rounded-xl px-4 py-3">
-                <span className="text-2xl shrink-0">⚠️</span>
+                <AlertTriangle className="w-6 h-6 shrink-0 text-amber-100" />
                 <div className="flex-1">
                   <p className="text-white font-bold text-sm">
                     {urgent.length} container{urgent.length !== 1 ? 's' : ''} departing within 10 days, notice not yet sent
@@ -259,7 +222,7 @@ export default function OperatorDashboard() {
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: '#fff7ed' }}>⏳</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-400 font-medium">Awaiting confirmation</p>
-                  <p className="text-xl font-extrabold" style={{ color: '#f97316' }}>{pendingCount}</p>
+                  <p className="text-xl font-extrabold" style={{ color: '#ff6a00' }}>{pendingCount}</p>
                 </div>
                 <span className="text-gray-300 text-lg">→</span>
               </Link>
@@ -269,7 +232,7 @@ export default function OperatorDashboard() {
                 href="/operator/bookings"
                 className="flex items-center gap-4 bg-white rounded-2xl border border-blue-100 shadow-sm px-5 py-4 hover:shadow-md transition-shadow"
               >
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: '#eff6ff' }}>💬</div>
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#eff6ff' }}><MessageCircle className="w-5 h-5 text-blue-500" /></div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-400 font-medium">Unread messages</p>
                   <p className="text-xl font-extrabold text-blue-600">{unreadMessages}</p>
@@ -284,17 +247,17 @@ export default function OperatorDashboard() {
         {!loading && commConfig && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0" style={{ backgroundColor: '#f0f4ff' }}>💼</div>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#f0f4ff' }}><Briefcase className="w-4 h-4" style={{ color: '#0b103a' }} /></div>
               <div>
                 <p className="font-bold text-gray-800 text-sm">Platform Fees</p>
-                <p className="text-xs text-gray-400">Deducted from your payout on each payment stage</p>
+                <p className="text-xs text-gray-400">Applied once to your booking total, split proportionally across the 3 payment stages — not charged per stage</p>
               </div>
             </div>
 
             {commConfig.commission_type === 'fixed' ? (
               <div className="flex items-center justify-between py-2.5 px-3 rounded-xl" style={{ backgroundColor: '#f8fafc' }}>
                 <span className="text-sm text-gray-600">Flat rate on all payouts</span>
-                <span className="text-lg font-extrabold" style={{ color: '#0f2044' }}>
+                <span className="text-lg font-extrabold" style={{ color: '#0b103a' }}>
                   {(((commConfig.fixed_rate ?? 0) * 100)).toFixed(0)}%
                 </span>
               </div>
@@ -314,7 +277,7 @@ export default function OperatorDashboard() {
                           ${tier.min.toLocaleString()}
                           {tier.max !== null ? ` – $${tier.max.toLocaleString()}` : '+'}
                         </td>
-                        <td className="py-2 text-right font-bold" style={{ color: '#0f2044' }}>
+                        <td className="py-2 text-right font-bold" style={{ color: '#0b103a' }}>
                           {(tier.rate * 100).toFixed(0)}%
                         </td>
                       </tr>
@@ -342,7 +305,7 @@ export default function OperatorDashboard() {
                   onClick={() => setStatusFilter(tab.value)}
                   className="flex items-center gap-1.5 btn btn-sm rounded-xl border transition-all"
                   style={active
-                    ? { backgroundColor: '#0f2044', borderColor: '#0f2044', color: '#fff' }
+                    ? { backgroundColor: '#0b103a', borderColor: '#0b103a', color: '#fff' }
                     : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }}
                 >
                   {tab.label}
@@ -364,22 +327,22 @@ export default function OperatorDashboard() {
           <div className="alert alert-error text-sm">{noticeError}</div>
         )}
         {noticeSent && (
-          <div className="alert text-sm font-semibold" style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
-            ✓ Departure notice sent, customers have been notified.
+          <div className="alert text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+            <Check className="w-4 h-4" strokeWidth={3} /> Departure notice sent, customers have been notified.
           </div>
         )}
 
         {/* Loading / Error */}
-        {loading && <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} /></div>}
+        {loading && <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} /></div>}
         {error   && <div className="alert alert-error text-sm max-w-lg">{error}</div>}
 
         {/* Empty state */}
         {!loading && !error && containers.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4" style={{ backgroundColor: '#fff7ed' }}>📦</div>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: '#fff7ed' }}><Package className="w-7 h-7" style={{ color: '#ff6a00' }} /></div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">No containers yet</h3>
             <p className="text-gray-400 text-sm max-w-xs mb-6">Create your first container listing to start accepting bookings.</p>
-            <Link href="/operator/create" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#f97316' }}>
+            <Link href="/operator/create" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#ff6a00' }}>
               + Create Container
             </Link>
           </div>
@@ -389,7 +352,7 @@ export default function OperatorDashboard() {
         {!loading && !error && containers.length > 0 && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-gray-100">
             <p className="text-gray-400 text-sm">No containers with status &quot;{statusFilter}&quot;.</p>
-            <button onClick={() => setStatusFilter('all')} className="mt-3 text-sm font-semibold hover:underline" style={{ color: '#f97316' }}>Clear filter</button>
+            <button onClick={() => setStatusFilter('all')} className="mt-3 text-sm font-semibold hover:underline" style={{ color: '#ff6a00' }}>Clear filter</button>
           </div>
         )}
 
@@ -418,9 +381,7 @@ export default function OperatorDashboard() {
                         <td className="py-4 px-6">
                           <p className="font-semibold text-gray-800 text-sm flex items-center gap-1.5">
                             {c.origin_city}
-                            <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
+                            <ArrowRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                             {c.destination_city}
                           </p>
                           <p className="text-xs text-gray-400 mt-0.5">{c.origin_country} → {c.destination_country}</p>
@@ -431,12 +392,12 @@ export default function OperatorDashboard() {
                         </td>
                         <td className="py-4 px-4">
                           <p className="text-xs text-gray-500 mb-1">{c.available_capacity_cbm} / {c.total_capacity_cbm} CBM free</p>
-                          <progress className="progress w-28 h-1.5" style={{ accentColor: pctFull > 80 ? '#f97316' : '#0f2044' }} value={pctFull} max={100} />
+                          <progress className="progress w-28 h-1.5" style={{ accentColor: pctFull > 80 ? '#ff6a00' : '#0b103a' }} value={pctFull} max={100} />
                         </td>
-                        <td className="py-4 px-4 font-semibold text-sm" style={{ color: '#f97316' }}>R{c.price_per_cbm}</td>
+                        <td className="py-4 px-4 font-semibold text-sm" style={{ color: '#ff6a00' }}>R{c.price_per_cbm}</td>
                         <td className="py-4 px-4">
                           {c.departure_notice_sent_at ? (
-                            <span className="text-xs font-semibold text-green-600 flex items-center gap-1">✓ Sent</span>
+                            <span className="text-xs font-semibold text-green-600 flex items-center gap-1"><Check className="w-3 h-3" strokeWidth={3} /> Sent</span>
                           ) : (() => {
                             const d = daysUntil(c.departure_date);
                             const urgent = d >= 0 && d <= 7;
@@ -445,11 +406,11 @@ export default function OperatorDashboard() {
                                 onClick={() => sendDepartureNotice(c)}
                                 disabled={sendingNotice === c.id || c.status === 'delivered' || c.status === 'closed'}
                                 className="btn btn-xs rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-50"
-                                style={{ backgroundColor: urgent ? '#ef4444' : '#f97316' }}
+                                style={{ backgroundColor: urgent ? '#ef4444' : '#ff6a00' }}
                               >
                                 {sendingNotice === c.id
                                   ? <span className="loading loading-spinner loading-xs" />
-                                  : urgent ? `⚠️ T-${d}d` : '7-Day Notice'}
+                                  : urgent ? <><AlertTriangle className="w-3 h-3" /> T-{d}d</> : '7-Day Notice'}
                               </button>
                             );
                           })()}
@@ -475,9 +436,7 @@ export default function OperatorDashboard() {
                       <div>
                         <p className="font-bold text-gray-800 text-sm flex items-center gap-1.5">
                           {c.origin_city}
-                          <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                          </svg>
+                          <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
                           {c.destination_city}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">{c.origin_country} → {c.destination_country}</p>
@@ -491,12 +450,12 @@ export default function OperatorDashboard() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Price / CBM</p>
-                        <p className="font-bold" style={{ color: '#f97316' }}>R{c.price_per_cbm}</p>
+                        <p className="font-bold" style={{ color: '#ff6a00' }}>R{c.price_per_cbm}</p>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 mb-1">{c.available_capacity_cbm} / {c.total_capacity_cbm} CBM available</p>
-                      <progress className="progress w-full h-1.5" style={{ accentColor: pctFull > 80 ? '#f97316' : '#0f2044' }} value={pctFull} max={100} />
+                      <progress className="progress w-full h-1.5" style={{ accentColor: pctFull > 80 ? '#ff6a00' : '#0b103a' }} value={pctFull} max={100} />
                     </div>
                     {!c.departure_notice_sent_at ? (() => {
                       const d = daysUntil(c.departure_date);
@@ -506,17 +465,17 @@ export default function OperatorDashboard() {
                           onClick={() => sendDepartureNotice(c)}
                           disabled={sendingNotice === c.id}
                           className="btn btn-sm rounded-xl text-white font-semibold hover:opacity-90 disabled:opacity-50 w-full"
-                          style={{ backgroundColor: urgent ? '#ef4444' : '#f97316' }}
+                          style={{ backgroundColor: urgent ? '#ef4444' : '#ff6a00' }}
                         >
                           {sendingNotice === c.id
                             ? <span className="loading loading-spinner loading-sm" />
                             : urgent
-                              ? `⚠️ Urgent, Send Notice (T-${d}d)`
-                              : '📢 Send 7-Day Departure Notice'}
+                              ? <span className="inline-flex items-center justify-center gap-1.5"><AlertTriangle className="w-4 h-4" /> Urgent, Send Notice (T-{d}d)</span>
+                              : <span className="inline-flex items-center justify-center gap-1.5"><Megaphone className="w-4 h-4" /> Send 7-Day Departure Notice</span>}
                         </button>
                       );
                     })() : (
-                      <p className="text-xs text-green-600 font-semibold text-center">✓ Departure notice sent</p>
+                      <p className="text-xs text-green-600 font-semibold text-center flex items-center justify-center gap-1.5"><Check className="w-3.5 h-3.5" strokeWidth={3} /> Departure notice sent</p>
                     )}
                     <Link href={`/container/${c.id}`} className="btn btn-sm btn-ghost rounded-xl text-sm font-semibold border border-gray-200 mt-1">
                       View Details →

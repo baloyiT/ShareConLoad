@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -7,6 +7,7 @@ import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 import { logAudit } from '@/services/auditLogger';
 import { notify } from '@/services/notificationService';
+import { Check } from 'lucide-react';
 
 type ReleaseAuth = {
   id: string;
@@ -143,7 +144,7 @@ export default function AdminReleasePage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-800">← Admin</Link>
@@ -157,7 +158,7 @@ export default function AdminReleasePage() {
 
         {loading ? (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : records.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20">
@@ -246,7 +247,7 @@ export default function AdminReleasePage() {
                           >
                             {isSaving
                               ? <span className="loading loading-spinner loading-xs" />
-                              : isChecked ? '✓ Confirmed' : 'Confirm'}
+                              : isChecked ? <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5" strokeWidth={3} /> Confirmed</span> : 'Confirm'}
                           </button>
                         </div>
                       );
@@ -255,7 +256,7 @@ export default function AdminReleasePage() {
 
                   {conditionsMet && r.status !== 'released' && (
                     <div className="mx-6 mb-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-sm text-green-700 font-semibold">
-                      <span>✓</span> All conditions met, cargo authorized for release
+                      <Check className="w-4 h-4" strokeWidth={3} /> All conditions met, cargo authorized for release
                       {r.authorized_at && <span className="font-normal text-green-500 ml-1">({fmt(r.authorized_at)})</span>}
                     </div>
                   )}

@@ -77,7 +77,7 @@ export default function TransporterJobsPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-16 text-gray-400">No pickup jobs assigned yet.</div>
@@ -97,7 +97,7 @@ export default function TransporterJobsPage() {
                     <p className="text-xs text-gray-400 mt-0.5">{fmt(job.created_at)}</p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <span className="text-sm font-bold" style={{ color: '#f97316' }}>{fmtMoney(job.quoted_fee)}</span>
+                    <span className="text-sm font-bold" style={{ color: '#ff6a00' }}>{fmtMoney(job.quoted_fee)}</span>
                     <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
                       style={{ backgroundColor: badge.bg, color: badge.color }}>
                       {badge.label}

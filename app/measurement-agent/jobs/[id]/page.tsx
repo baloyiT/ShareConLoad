@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
+import { Camera, CheckCircle2 } from 'lucide-react';
 
 type Job = {
   id: string;
@@ -74,7 +75,7 @@ function UploadSlot({
         <img src={preview} alt={label} className="w-full h-full object-cover" />
       ) : (
         <>
-          <span className="text-2xl">📷</span>
+          <Camera className="w-6 h-6 text-gray-400" />
           <span className="text-[10px] text-gray-500 mt-1 text-center px-1">{label}</span>
         </>
       )}
@@ -287,7 +288,7 @@ export default function AgentJobDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -306,7 +307,7 @@ export default function AgentJobDetailPage() {
             <button
               onClick={handleStartJob}
               className="btn text-white font-bold px-8 rounded-xl"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Start Job
             </button>
@@ -360,7 +361,7 @@ export default function AgentJobDetailPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400">CBM per unit</p>
-                      <p className="text-sm font-bold" style={{ color: '#f97316' }}>{calcCbm(item).toFixed(3)}</p>
+                      <p className="text-sm font-bold" style={{ color: '#ff6a00' }}>{calcCbm(item).toFixed(3)}</p>
                     </div>
                   </div>
                 </div>
@@ -368,7 +369,7 @@ export default function AgentJobDetailPage() {
               <button onClick={addItem} className="btn btn-sm btn-ghost w-full">+ Add Item</button>
               <div className="mt-3 pt-3 border-t flex justify-between text-sm font-bold">
                 <span>Total CBM</span>
-                <span style={{ color: '#f97316' }}>
+                <span style={{ color: '#ff6a00' }}>
                   {items.reduce((sum, item) => sum + calcCbm(item) * (Number(item.quantity) || 1), 0).toFixed(3)}
                 </span>
               </div>
@@ -408,7 +409,7 @@ export default function AgentJobDetailPage() {
               onClick={handleSubmitReport}
               disabled={submitting}
               className="btn w-full text-white font-bold rounded-xl text-base disabled:opacity-60"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Submit Report & Complete Job'}
             </button>
@@ -417,7 +418,7 @@ export default function AgentJobDetailPage() {
 
         {job.status === 'completed' && (
           <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
-            <div className="text-4xl mb-3">✅</div>
+            <CheckCircle2 className="w-10 h-10 mb-3 mx-auto text-green-500" />
             <h2 className="text-lg font-bold text-gray-800 mb-2">Job Complete</h2>
             <p className="text-sm text-gray-500">Your payout of 80% of the job fee has been triggered.</p>
           </div>

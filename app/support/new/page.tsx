@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 
+import { AlertCircle } from 'lucide-react';
 type BookingOption = {
   id: string;
   route: string;
@@ -17,7 +18,7 @@ type Priority = 'low' | 'medium' | 'high' | 'critical';
 const PRIORITIES: { value: Priority; label: string; color: string }[] = [
   { value: 'low',      label: 'Low',      color: '#6b7280' },
   { value: 'medium',   label: 'Medium',   color: '#f59e0b' },
-  { value: 'high',     label: 'High',     color: '#f97316' },
+  { value: 'high',     label: 'High',     color: '#ff6a00' },
   { value: 'critical', label: 'Critical', color: '#ef4444' },
 ];
 
@@ -96,7 +97,7 @@ export default function NewSupportTicketPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/bookings" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
@@ -110,7 +111,7 @@ export default function NewSupportTicketPage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         {loading && (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         )}
 
@@ -119,9 +120,7 @@ export default function NewSupportTicketPage() {
 
             {error && (
               <div className="alert alert-error text-sm">
-                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-                </svg>
+                <AlertCircle className="w-5 h-5 shrink-0" />
                 {error}
               </div>
             )}
@@ -198,7 +197,7 @@ export default function NewSupportTicketPage() {
                 type="submit"
                 disabled={submitting}
                 className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Submit Ticket'}
               </button>

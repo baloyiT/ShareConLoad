@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
@@ -10,80 +10,35 @@ import ContainerList from "@/components/ContainerList";
 import { Container } from "@/components/ContainerCard";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
 import RoleSwitcher from "@/components/RoleSwitcher";
+import { BarChart3, ChevronDown, Clock, DollarSign, FileText, Globe, Menu, Package, Settings, Ship, SearchX, Shield, ShieldCheck, Handshake, Users, X } from 'lucide-react';
 
 // ─── Brand data ───────────────────────────────────────────────────────────────
 
 const FEATURES = [
   {
     icon: (
-      <svg
-        width="20"
-        height="20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        viewBox="0 0 24 24"
-      >
-        <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
+      <Users size={20} />
     ),
     title: "Smarter Connections",
     desc: "Match capacity with real demand",
   },
   {
     icon: (
-      <svg
-        width="20"
-        height="20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        viewBox="0 0 24 24"
-      >
-        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
+      <BarChart3 size={20} />
     ),
     title: "Reduce Empty Miles",
     desc: "Optimize routes and maximize utilization",
   },
   {
     icon: (
-      <svg
-        width="20"
-        height="20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        viewBox="0 0 24 24"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <line x1="2" y1="12" x2="22" y2="12" />
-        <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
-      </svg>
+      <Globe size={20} />
     ),
     title: "Global Reach",
     desc: "Connect across ports, countries & continents",
   },
   {
     icon: (
-      <svg
-        width="20"
-        height="20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        viewBox="0 0 24 24"
-      >
-        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
+      <ShieldCheck size={20} />
     ),
     title: "Trusted Operators",
     desc: "Verified & reliable logistics partners",
@@ -93,42 +48,28 @@ const FEATURES = [
 const TRUST = [
   {
     icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
+      <Shield size={24} />
     ),
     title: "Secure Bookings",
     desc: "Your booking and data are safe with us.",
   },
   {
     icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
-      </svg>
+      <Clock size={24} />
     ),
     title: "24/7 Support",
     desc: "We are here to help you with anything, anytime.",
   },
   {
     icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
-      </svg>
+      <FileText size={24} />
     ),
     title: "Flexible Bookings",
     desc: "Cancel or change your booking with ease.",
   },
   {
     icon: (
-      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-      </svg>
+      <DollarSign size={24} />
     ),
     title: "Transparent Pricing",
     desc: "You always know exactly what you pay.",
@@ -311,9 +252,9 @@ export default function HomePage() {
               className="h-9 w-auto"
             />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: "#0f2044" }}>Share</span>
-              <span style={{ color: "#f97316" }}>Con</span>
-              <span style={{ color: "#0f2044" }}>Load</span>
+              <span style={{ color: "#0b103a" }}>Share</span>
+              <span style={{ color: "#ff6a00" }}>Con</span>
+              <span style={{ color: "#0b103a" }}>Load</span>
             </span>
           </Link>
 
@@ -358,26 +299,24 @@ export default function HomePage() {
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors ml-1"
               aria-label="Open menu"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="w-5 h-5 text-gray-600" />
             </button>
             {user ? (
               <>
                 <Link
                   href="/bookings"
                   className="hidden sm:flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-white hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: "#0f2044" }}
+                  style={{ backgroundColor: "#0b103a" }}
                 >
-                  📦 My Bookings
+                  <Package className="w-4 h-4" /> My Bookings
                 </Link>
                 {isAdmin && (
                   <Link
                     href="/admin"
                     className="hidden sm:flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors"
-                    style={{ color: '#0f2044', backgroundColor: '#e8eef8' }}
+                    style={{ color: '#0b103a', backgroundColor: '#e8eef8' }}
                   >
-                    ⚙️ Admin
+                    <Settings className="w-4 h-4" /> Admin
                   </Link>
                 )}
                 <RoleSwitcher currentRole="customer" />
@@ -386,7 +325,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-2 pl-1">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ backgroundColor: "#0f2044" }}
+                    style={{ backgroundColor: "#0b103a" }}
                   >
                     {userInitials}
                   </div>
@@ -413,7 +352,7 @@ export default function HomePage() {
                 <Link
                   href="/auth/register"
                   className="text-sm font-semibold text-white px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: "#f97316" }}
+                  style={{ backgroundColor: "#ff6a00" }}
                 >
                   Sign Up
                 </Link>
@@ -437,18 +376,16 @@ export default function HomePage() {
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <span className="text-base font-extrabold tracking-tight">
-                <span style={{ color: '#0f2044' }}>Share</span>
-                <span style={{ color: '#f97316' }}>Con</span>
-                <span style={{ color: '#0f2044' }}>Load</span>
+                <span style={{ color: '#0b103a' }}>Share</span>
+                <span style={{ color: '#ff6a00' }}>Con</span>
+                <span style={{ color: '#0b103a' }}>Load</span>
               </span>
               <button
                 onClick={() => setMobileNavOpen(false)}
                 className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                 aria-label="Close menu"
               >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
@@ -483,9 +420,9 @@ export default function HomePage() {
                     href="/bookings"
                     onClick={() => setMobileNavOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                    style={{ color: '#0f2044', backgroundColor: '#e8eef8' }}
+                    style={{ color: '#0b103a', backgroundColor: '#e8eef8' }}
                   >
-                    📦 My Bookings
+                    <Package className="w-4 h-4" /> My Bookings
                   </Link>
                   <RoleSwitcher variant="flat" currentRole="customer" onNavigate={() => setMobileNavOpen(false)} />
                   {isAdmin && (
@@ -493,9 +430,9 @@ export default function HomePage() {
                       href="/admin"
                       onClick={() => setMobileNavOpen(false)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                      style={{ color: '#0f2044', backgroundColor: '#e8eef8' }}
+                      style={{ color: '#0b103a', backgroundColor: '#e8eef8' }}
                     >
-                      ⚙️ Admin Dashboard
+                      <Settings className="w-4 h-4" /> Admin Dashboard
                     </Link>
                   )}
                 </>
@@ -524,7 +461,7 @@ export default function HomePage() {
                     href="/auth/register"
                     onClick={() => setMobileNavOpen(false)}
                     className="w-full text-center text-sm font-semibold text-white px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: '#f97316' }}
+                    style={{ backgroundColor: '#ff6a00' }}
                   >
                     Sign Up
                   </Link>
@@ -563,7 +500,7 @@ export default function HomePage() {
             >
               Share the Load.
               <br />
-              <span style={{ color: '#f97316' }}>Connect the World.</span>
+              <span style={{ color: '#ff6a00' }}>Connect the World.</span>
             </h1>
             <p className="text-gray-300 text-base lg:text-lg mb-8 max-w-lg leading-relaxed">
               ShareConLoad connects shippers, operators, and freight agents to move containers smarter across every global route — reducing empty miles and building a more efficient logistics network.
@@ -574,12 +511,10 @@ export default function HomePage() {
               <a
                 href="#listings"
                 className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl text-white hover:opacity-90 transition-opacity shadow-sm"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 Find Container Space
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDown className="w-4 h-4" />
               </a>
               <Link
                 href="/onboarding/operator"
@@ -591,7 +526,7 @@ export default function HomePage() {
               <Link
                 href="/onboarding/agent"
                 className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl border-2 hover:bg-white/10 transition-colors"
-                style={{ borderColor: 'rgba(22,163,74,0.6)', color: '#86efac' }}
+                style={{ borderColor: 'rgba(31,168,255,0.6)', color: '#1fa8ff' }}
               >
                 Join as Agent
               </Link>
@@ -603,7 +538,7 @@ export default function HomePage() {
                 <div key={title} className="flex flex-col gap-2">
                   <div
                     className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-white"
-                    style={{ backgroundColor: '#f97316' }}
+                    style={{ backgroundColor: '#ff6a00' }}
                   >
                     {icon}
                   </div>
@@ -622,7 +557,7 @@ export default function HomePage() {
         {/* Search form */}
         <p
           className="text-xs font-semibold uppercase tracking-widest mb-3"
-          style={{ color: "#f97316" }}
+          style={{ color: "#ff6a00" }}
         >
           Find Container Space
         </p>
@@ -691,7 +626,7 @@ export default function HomePage() {
             <button
               type="submit"
               className="ml-auto text-white font-semibold px-8 py-2 rounded-xl text-sm hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: "#0f2044" }}
+              style={{ backgroundColor: "#0b103a" }}
             >
               Search
             </button>
@@ -708,7 +643,7 @@ export default function HomePage() {
               {!loading && (
                 <span
                   className="text-xs font-bold px-2.5 py-1 rounded-full"
-                  style={{ backgroundColor: "#fff7ed", color: "#f97316" }}
+                  style={{ backgroundColor: "#fff7ed", color: "#ff6a00" }}
                 >
                   {filteredContainers.length} {searched ? "result" : "open"}
                   {filteredContainers.length !== 1 ? "s" : ""}
@@ -734,7 +669,7 @@ export default function HomePage() {
           <div className="flex justify-center py-24">
             <span
               className="loading loading-spinner loading-lg"
-              style={{ color: "#f97316" }}
+              style={{ color: "#ff6a00" }}
             />
           </div>
         )}
@@ -749,11 +684,7 @@ export default function HomePage() {
               className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
               style={{ backgroundColor: '#f3f4f6' }}
             >
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 11h6M11 8v6" />
-              </svg>
+              <SearchX className="w-8 h-8 text-gray-400" strokeWidth={1.5} />
             </div>
             <h3 className="text-lg font-bold text-gray-800 mb-1">No results found</h3>
             <p className="text-sm text-gray-400 max-w-xs leading-relaxed mb-5">
@@ -762,7 +693,7 @@ export default function HomePage() {
             <button
               onClick={handleReset}
               className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Clear filters
             </button>
@@ -781,7 +712,7 @@ export default function HomePage() {
             <div key={title} className="flex flex-col items-center gap-3">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: "#fff7ed", color: "#f97316" }}
+                style={{ backgroundColor: "#fff7ed", color: "#ff6a00" }}
               >
                 {icon}
               </div>
@@ -793,16 +724,16 @@ export default function HomePage() {
       </section>
 
       {/* ── Supply-side CTA ──────────────────────────────────────────────── */}
-      <section style={{ backgroundColor: '#0f2044' }}>
+      <section style={{ backgroundColor: '#0b103a' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 sm:grid-cols-2 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
 
           {/* Operator column */}
           <div className="flex items-center gap-4 pb-6 sm:pb-0 sm:pr-6">
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: 'rgba(249,115,22,0.15)' }}
             >
-              🚢
+              <Ship className="w-6 h-6" style={{ color: '#ff6a00' }} />
             </div>
             <div className="flex-1">
               <p className="text-white font-bold text-lg leading-tight">
@@ -814,7 +745,7 @@ export default function HomePage() {
               <Link
                 href="/onboarding/operator"
                 className="inline-block text-sm font-bold px-6 py-2.5 rounded-xl text-white hover:opacity-90 transition-opacity whitespace-nowrap"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 I Have Container Space →
               </Link>
@@ -824,10 +755,10 @@ export default function HomePage() {
           {/* Agent column */}
           <div className="flex items-center gap-4 pt-6 sm:pt-0 sm:pl-6">
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
-              style={{ backgroundColor: 'rgba(22,163,74,0.15)' }}
+              className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: 'rgba(31,168,255,0.15)' }}
             >
-              🤝
+              <Handshake className="w-6 h-6" style={{ color: '#1fa8ff' }} />
             </div>
             <div className="flex-1">
               <p className="text-white font-bold text-lg leading-tight">
@@ -839,7 +770,7 @@ export default function HomePage() {
               <Link
                 href="/onboarding/agent"
                 className="inline-block text-sm font-bold px-6 py-2.5 rounded-xl text-white hover:opacity-90 transition-opacity whitespace-nowrap"
-                style={{ backgroundColor: '#16a34a' }}
+                style={{ backgroundColor: '#1fa8ff' }}
               >
                 Join as Agent →
               </Link>
@@ -858,9 +789,9 @@ export default function HomePage() {
             <Link href="/" className="flex items-center gap-2.5">
               <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
               <span className="text-base font-extrabold tracking-tight">
-                <span style={{ color: '#0f2044' }}>Share</span>
-                <span style={{ color: '#f97316' }}>Con</span>
-                <span style={{ color: '#0f2044' }}>Load</span>
+                <span style={{ color: '#0b103a' }}>Share</span>
+                <span style={{ color: '#ff6a00' }}>Con</span>
+                <span style={{ color: '#0b103a' }}>Load</span>
               </span>
             </Link>
             <p className="text-xs text-gray-400 leading-relaxed max-w-[220px]">

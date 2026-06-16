@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 
+import { AlertCircle, Mail } from 'lucide-react';
 export default function ForgotPasswordPage() {
   const [email,   setEmail]   = useState('');
   const [error,   setError]   = useState<string | null>(null);
@@ -35,20 +36,21 @@ export default function ForgotPasswordPage() {
       {/* ── Left panel ───────────────────────────────────────────────────── */}
       <div
         className="hidden lg:flex flex-col justify-between w-[480px] shrink-0 relative overflow-hidden p-10"
-        style={{ backgroundColor: '#0f2044' }}
+        style={{ backgroundColor: '#0b103a' }}
       >
         <div className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'screen', opacity: 0.25 }}>
           <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
         </div>
         <Link href="/" className="relative flex items-center gap-3 z-10">
+          <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
           <span className="text-2xl font-extrabold tracking-tight">
-            <span className="text-white">Share</span><span style={{ color: '#f97316' }}>Con</span><span className="text-white">Load</span>
+            <span className="text-white">Share</span><span style={{ color: '#ff6a00' }}>Con</span><span className="text-white">Load</span>
           </span>
         </Link>
         <div className="relative z-10">
           <h2 className="text-3xl font-extrabold text-white leading-snug mb-4">
             Reset your<br />
-            <span style={{ color: '#f97316' }}>password.</span>
+            <span style={{ color: '#ff6a00' }}>password.</span>
           </h2>
           <p className="text-gray-400 text-sm leading-relaxed">
             We&apos;ll send a secure link to your email so you can set a new password.
@@ -65,7 +67,7 @@ export default function ForgotPasswordPage() {
             <Link href="/" className="flex items-center gap-2.5">
               <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
               <span className="text-xl font-extrabold tracking-tight">
-                <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+                <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
               </span>
             </Link>
           </div>
@@ -78,9 +80,7 @@ export default function ForgotPasswordPage() {
                   className="w-14 h-14 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: '#fff7ed' }}
                 >
-                  <svg className="w-7 h-7" style={{ color: '#f97316' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+                  <Mail className="w-7 h-7" style={{ color: '#ff6a00' }} />
                 </div>
                 <div>
                   <h1 className="text-xl font-extrabold text-gray-900 mb-1">Check your inbox</h1>
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
                   <button
                     onClick={() => setSent(false)}
                     className="font-semibold hover:underline"
-                    style={{ color: '#f97316' }}
+                    style={{ color: '#ff6a00' }}
                   >
                     Try again
                   </button>
@@ -109,9 +109,7 @@ export default function ForgotPasswordPage() {
 
                 {error && (
                   <div className="alert alert-error text-sm mb-5">
-                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-                    </svg>
+                    <AlertCircle className="w-4 h-4 shrink-0" />
                     {error}
                   </div>
                 )}
@@ -134,7 +132,7 @@ export default function ForgotPasswordPage() {
                     type="submit"
                     disabled={loading}
                     className="w-full btn text-white font-bold rounded-xl mt-1 hover:opacity-90 transition-opacity disabled:opacity-60"
-                    style={{ backgroundColor: '#f97316' }}
+                    style={{ backgroundColor: '#ff6a00' }}
                   >
                     {loading ? <span className="loading loading-spinner loading-sm" /> : 'Send reset link'}
                   </button>

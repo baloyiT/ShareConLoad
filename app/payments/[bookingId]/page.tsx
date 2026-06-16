@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import PaymentStageCard from '@/components/PaymentStageCard';
 import PageHero from '@/components/PageHero';
+import { Check } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -152,7 +153,7 @@ export default function PaymentPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -161,7 +162,7 @@ export default function PaymentPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 text-center px-4">
         <p className="text-gray-500">{error ?? 'Booking not found.'}</p>
-        <Link href="/bookings" className="btn btn-sm text-white" style={{ backgroundColor: '#0f2044' }}>
+        <Link href="/bookings" className="btn btn-sm text-white" style={{ backgroundColor: '#0b103a' }}>
           ← My Bookings
         </Link>
       </div>
@@ -183,7 +184,7 @@ export default function PaymentPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/bookings" className="text-sm text-gray-500 hover:text-gray-800">← My Bookings</Link>
@@ -203,7 +204,7 @@ export default function PaymentPage() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-4 flex flex-wrap gap-4 justify-between">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Total</p>
-            <p className="text-xl font-extrabold" style={{ color: '#0f2044' }}>R{booking.total_price.toFixed(2)}</p>
+            <p className="text-xl font-extrabold" style={{ color: '#0b103a' }}>R{booking.total_price.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Paid</p>
@@ -211,7 +212,7 @@ export default function PaymentPage() {
           </div>
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Remaining</p>
-            <p className="text-xl font-extrabold" style={{ color: remaining > 0 ? '#f97316' : '#22c55e' }}>
+            <p className="text-xl font-extrabold" style={{ color: remaining > 0 ? '#ff6a00' : '#22c55e' }}>
               R{remaining.toFixed(2)}
             </p>
           </div>
@@ -222,8 +223,8 @@ export default function PaymentPage() {
         </div>
 
         {allPaid && (
-          <div className="alert text-sm font-semibold" style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
-            ✓ All payments complete. Your cargo release can be authorised once conditions are met.
+          <div className="alert text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+            <Check className="w-4 h-4" strokeWidth={3} /> All payments complete. Your cargo release can be authorised once conditions are met.
           </div>
         )}
 

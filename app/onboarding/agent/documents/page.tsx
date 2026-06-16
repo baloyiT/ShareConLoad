@@ -3,8 +3,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
+import { Check } from 'lucide-react';
 
 type DocKey = 'doc_license' | 'doc_business_reg' | 'doc_identity' | 'doc_proof_address';
 
@@ -73,10 +75,13 @@ export default function AgentOnboardingStep3() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
       <nav className="flex items-center px-6 py-4">
-        <Link href="/onboarding/agent/credentials" className="text-2xl font-extrabold tracking-tight">
-          <span className="text-white">Share</span><span style={{ color: '#f97316' }}>Con</span><span className="text-white">Load</span>
+        <Link href="/onboarding/agent/credentials" className="flex items-center gap-2.5">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
+          <span className="text-2xl font-extrabold tracking-tight">
+            <span className="text-white">Share</span><span style={{ color: '#ff6a00' }}>Con</span><span className="text-white">Load</span>
+          </span>
         </Link>
       </nav>
 
@@ -85,7 +90,7 @@ export default function AgentOnboardingStep3() {
           {STEPS.map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i === 2 ? 'bg-green-500 text-white' : i < 2 ? 'bg-white/60 text-gray-700' : 'bg-white/20 text-white/60'}`}>
-                {i < 2 ? '✓' : i + 1}
+                {i < 2 ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : i + 1}
               </div>
               {i < STEPS.length - 1 && <div className="w-8 h-0.5 bg-white/20" />}
             </div>
@@ -116,7 +121,7 @@ export default function AgentOnboardingStep3() {
                   className="file-input file-input-bordered w-full text-sm"
                 />
                 {files[key] && (
-                  <p className="text-xs text-green-600 mt-1">✓ {files[key]!.name}</p>
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><Check className="w-3 h-3" strokeWidth={3} /> {files[key]!.name}</p>
                 )}
               </div>
             ))}

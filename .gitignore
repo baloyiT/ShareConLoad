@@ -60,6 +60,9 @@ node_modules/
 # Supabase CLI temp
 supabase/.temp/
 
+# Claude Code worktrees
+.claude/worktrees/
+
 # Debug / scratch screenshots (not source assets)
 MyAsset/*.png
 MyAsset/*.jpg

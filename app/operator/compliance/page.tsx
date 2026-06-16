@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 
+import { Check } from 'lucide-react';
 type DocRecord = { doc_type: string; status: string };
 
 type StepState = 'done' | 'in_progress' | 'not_started';
@@ -77,7 +78,7 @@ export default function ComplianceHubPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -110,7 +111,7 @@ export default function ComplianceHubPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs font-semibold text-gray-500">{completedCount} of 5 steps complete</span>
-          <span className="text-xs font-bold" style={{ color: allDone ? '#22c55e' : '#0f2044' }}>
+          <span className="text-xs font-bold" style={{ color: allDone ? '#22c55e' : '#0b103a' }}>
             {Math.round((completedCount / 5) * 100)}%
           </span>
         </div>
@@ -119,7 +120,7 @@ export default function ComplianceHubPage() {
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${(completedCount / 5) * 100}%`,
-              backgroundColor: allDone ? '#22c55e' : '#f97316',
+              backgroundColor: allDone ? '#22c55e' : '#ff6a00',
             }}
           />
         </div>
@@ -128,9 +129,7 @@ export default function ComplianceHubPage() {
       {/* All done banner */}
       {allDone && (
         <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-          <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-          </svg>
+          <Check className="w-5 h-5 text-green-500 shrink-0" strokeWidth={2.5} />
           <p className="text-sm font-bold text-green-800">All steps complete — your account is under review.</p>
         </div>
       )}
@@ -145,20 +144,18 @@ export default function ComplianceHubPage() {
             <div
               key={step.number}
               className="bg-white rounded-2xl border shadow-sm p-5 flex items-start gap-4"
-              style={{ borderColor: isNext ? '#0f2044' : '#f3f4f6', borderWidth: isNext ? '1.5px' : '1px' }}
+              style={{ borderColor: isNext ? '#0b103a' : '#f3f4f6', borderWidth: isNext ? '1.5px' : '1px' }}
             >
               {/* Number / check circle */}
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
                 style={{
-                  backgroundColor: state === 'done' ? '#22c55e' : isNext ? '#0f2044' : '#f3f4f6',
+                  backgroundColor: state === 'done' ? '#22c55e' : isNext ? '#0b103a' : '#f3f4f6',
                   color: state === 'done' || isNext ? '#ffffff' : '#9ca3af',
                 }}
               >
                 {state === 'done' ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check className="w-4 h-4" strokeWidth={3} />
                 ) : step.number}
               </div>
 
@@ -189,7 +186,7 @@ export default function ComplianceHubPage() {
                     <Link
                       href={step.href}
                       className="btn btn-sm btn-outline rounded-xl text-xs font-semibold"
-                      style={{ borderColor: '#0f2044', color: '#0f2044' }}
+                      style={{ borderColor: '#0b103a', color: '#0b103a' }}
                     >
                       Edit
                     </Link>
@@ -197,7 +194,7 @@ export default function ComplianceHubPage() {
                     <Link
                       href={step.href}
                       className="btn btn-sm text-white font-bold rounded-xl text-xs"
-                      style={{ backgroundColor: '#0f2044' }}
+                      style={{ backgroundColor: '#0b103a' }}
                     >
                       Start →
                     </Link>

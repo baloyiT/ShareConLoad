@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 
+import { ArrowLeft, Check, ClipboardList, CreditCard, Package, Plus } from 'lucide-react';
 type CompletionStatus = {
   profile:   boolean;
   contact:   boolean;
@@ -23,9 +24,7 @@ function CheckIcon({ done }: { done: boolean }) {
   if (done) {
     return (
       <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#22c55e' }}>
-        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-        </svg>
+        <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
       </span>
     );
   }
@@ -58,13 +57,13 @@ function NavItem({
       onClick={onClick}
       className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors relative"
       style={active
-        ? { backgroundColor: '#f0f4ff', color: '#0f2044' }
+        ? { backgroundColor: '#f0f4ff', color: '#0b103a' }
         : { color: '#6b7280' }}
     >
-      {icon && <span className="text-base leading-none shrink-0">{icon}</span>}
+      {icon && <span className="shrink-0">{icon}</span>}
       <span className="flex-1 truncate">{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span className="text-xs font-bold text-white px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: '#f97316' }}>
+        <span className="text-xs font-bold text-white px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: '#ff6a00' }}>
           {badge}
         </span>
       )}
@@ -89,7 +88,7 @@ function ComplianceItem({
   const color = done
     ? '#16a34a'
     : active
-      ? '#0f2044'
+      ? '#0b103a'
       : '#6b7280';
 
   const bg = done ? '#f0fdf4' : active ? '#f0f4ff' : 'transparent';
@@ -104,9 +103,7 @@ function ComplianceItem({
       <CheckIcon done={done} />
       <span className="flex-1 truncate">{label}</span>
       {done && (
-        <svg className="w-3 h-3 shrink-0" style={{ color: '#16a34a' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-        </svg>
+        <Check className="w-3 h-3 shrink-0" style={{ color: '#16a34a' }} strokeWidth={2.5} />
       )}
     </Link>
   );
@@ -196,13 +193,13 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-            style={{ backgroundColor: '#f97316' }}
+            style={{ backgroundColor: '#ff6a00' }}
           >
             {info?.initials ?? '…'}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-gray-800 truncate">{info?.name ?? '…'}</p>
-            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#fff7ed', color: '#f97316' }}>
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#fff7ed', color: '#ff6a00' }}>
               Operator
             </span>
           </div>
@@ -231,7 +228,7 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${(totalDone / 5) * 100}%`,
-                backgroundColor: totalDone === 5 ? '#22c55e' : '#f97316',
+                backgroundColor: totalDone === 5 ? '#22c55e' : '#ff6a00',
                 minWidth: totalDone > 0 ? '8px' : '0',
               }}
             />
@@ -253,9 +250,9 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400 px-3 mb-1.5">Operations</p>
           <div className="flex flex-col gap-0.5">
-            <NavItem href="/operator" label="My Containers" icon="📦" exact onClick={onClose} />
-            <NavItem href="/operator/create" label="Create Container" icon="➕" exact onClick={onClose} />
-            <NavItem href="/operator/bookings" label="Manage Bookings" icon="📋" onClick={onClose} />
+            <NavItem href="/operator" label="My Containers" icon={<Package className="w-4 h-4" />} exact onClick={onClose} />
+            <NavItem href="/operator/create" label="Create Container" icon={<Plus className="w-4 h-4" />} exact onClick={onClose} />
+            <NavItem href="/operator/bookings" label="Manage Bookings" icon={<ClipboardList className="w-4 h-4" />} onClick={onClose} />
           </div>
         </div>
 
@@ -263,7 +260,7 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-gray-400 px-3 mb-1.5">Finance</p>
           <div className="flex flex-col gap-0.5">
-            <NavItem href="/operator/payouts" label="Payout History" icon="💳" onClick={onClose} />
+            <NavItem href="/operator/payouts" label="Payout History" icon={<CreditCard className="w-4 h-4" />} onClick={onClose} />
           </div>
         </div>
 
@@ -276,9 +273,7 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
           className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
           onClick={onClose}
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to marketplace
         </Link>
       </div>

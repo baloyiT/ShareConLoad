@@ -1,0 +1,426 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: transparent; }
+
+  .hero {
+    padding: 4rem 2rem 3rem;
+    text-align: center;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .hero-eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-info);
+    background: var(--color-background-info);
+    padding: 4px 14px;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    line-height: 1.2;
+    max-width: 640px;
+    margin: 0 auto 1.25rem;
+  }
+  .hero h1 span {
+    color: #FF6A00;
+  }
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--color-text-secondary);
+    max-width: 560px;
+    margin: 0 auto 2rem;
+    line-height: 1.75;
+  }
+  .hero-cta {
+    display: inline-block;
+    background: #FF6A00;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 12px 32px;
+    border-radius: var(--border-radius-md);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .hero-cta:hover { background: #e05e00; }
+
+  .section {
+    padding: 3rem 2rem;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #FF6A00;
+    margin-bottom: 0.75rem;
+  }
+  .section h2 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+  .section p {
+    font-size: 15px;
+    color: var(--color-text-secondary);
+    line-height: 1.8;
+    margin-bottom: 1rem;
+  }
+  .section p:last-child { margin-bottom: 0; }
+
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .problem-card {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 1.25rem;
+  }
+  .problem-card .icon {
+    font-size: 22px;
+    color: #FF6A00;
+    margin-bottom: 0.75rem;
+  }
+  .problem-card h3 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.4rem;
+  }
+  .problem-card p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .who-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .who-card {
+    border: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-primary);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+  }
+  .who-card .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 0.75rem;
+  }
+  .badge-op { background: #09103A; color: #FFB37B; }
+  .badge-sh { background: #FF6A00; color: #fff; }
+  .badge-ag { background: #1FABFF22; color: #1FABFF; border: 0.5px solid #1FABFF44; }
+  .who-card h3 {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.5rem;
+  }
+  .who-card p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .mission-block {
+    background: #09103A;
+    border-radius: var(--border-radius-lg);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    margin: 3rem 2rem;
+  }
+  .mission-block .slogan {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #FFB37B;
+    margin-bottom: 1rem;
+  }
+  .mission-block h2 {
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.3;
+    max-width: 500px;
+    margin: 0 auto 1rem;
+  }
+  .mission-block h2 span { color: #FF6A00; }
+  .mission-block p {
+    font-size: 14px;
+    color: #FFB37B99;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.75;
+  }
+
+  .corridors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 1.25rem;
+  }
+  .corridor-tag {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 99px;
+    border: 0.5px solid var(--color-border-secondary);
+    color: var(--color-text-secondary);
+    background: var(--color-background-secondary);
+  }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .value-item {
+    padding: 1.25rem;
+    border-left: 2px solid #FF6A00;
+    border-radius: 0;
+    background: transparent;
+  }
+  .value-item h3 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.35rem;
+  }
+  .value-item p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .cta-section {
+    padding: 3.5rem 2rem;
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .cta-section h2 {
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    line-height: 1.3;
+    margin-bottom: 1rem;
+  }
+  .cta-section h2 span { color: #FF6A00; }
+  .cta-section p {
+    font-size: 15px;
+    color: var(--color-text-secondary);
+    line-height: 1.75;
+    margin-bottom: 2rem;
+  }
+  .cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  .btn-primary {
+    background: #FF6A00;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px 28px;
+    border-radius: var(--border-radius-md);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: #e05e00; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 11px 28px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-secondary:hover { background: var(--color-background-secondary); }
+  .divider {
+    border: none;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    margin: 0 2rem;
+  }
+</style>
+
+<h2 class="sr-only">ShareConLoad — About Us page content</h2>
+
+<div class="hero">
+  <div class="hero-eyebrow">About ShareConLoad</div>
+  <h1>The world's cargo moves in containers.<br>Most of that space <span>sails empty.</span></h1>
+  <p class="hero-sub">Every day, billions of dollars of container space is wasted across global trade corridors — while thousands of shippers pay full container rates for half a container's worth of goods. We built ShareConLoad to end that.</p>
+  <a class="hero-cta" href="https://www.shareconload.com">Join the platform</a>
+</div>
+
+<div class="section">
+  <div class="section-label">The problem</div>
+  <h2>Global trade is broken for everyone who isn't a large corporation</h2>
+  <p>The international freight industry runs on relationships, WhatsApp messages, and guesswork. Operators haul empty space at their own cost. Shippers overpay for space they don't need. Agents manage fragmented chaos across dozens of conversations. And small and medium businesses across the world remain locked out of international trade entirely — because the system was never built for them.</p>
+  <p>These aren't isolated frustrations. They are structural failures that cost the global trade ecosystem billions every year. We mapped every one of them and built the solution.</p>
+
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="icon"><i class="ti ti-box-off" aria-hidden="true"></i></div>
+      <h3>Empty space = lost revenue</h3>
+      <p>Operators lose money every time a container sails with unfilled space. There was no marketplace to fix it — until now.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon"><i class="ti ti-currency-dollar-off" aria-hidden="true"></i></div>
+      <h3>Shippers overpay</h3>
+      <p>Paying full FCL rates for partial loads is the norm. No platform existed to connect shippers to the space that's already there.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon"><i class="ti ti-list-search" aria-hidden="true"></i></div>
+      <h3>Agents work blind</h3>
+      <p>Freight forwarders and clearing agents juggle operators and shippers across email, phone, and WhatsApp — with no single system of record.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon"><i class="ti ti-shield-off" aria-hidden="true"></i></div>
+      <h3>No trust layer</h3>
+      <p>Cross-border transactions between unknown parties move on faith. Money is sent. Goods don't always follow. There is no escrow, no protection, no recourse.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon"><i class="ti ti-info-circle" aria-hidden="true"></i></div>
+      <h3>Information asymmetry</h3>
+      <p>Operators don't know who needs space. Shippers don't know who has it. The global LCL market is enormous — and completely dark.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon"><i class="ti ti-lock-access" aria-hidden="true"></i></div>
+      <h3>SMEs locked out</h3>
+      <p>Small businesses in emerging markets cannot access international trade affordably. Full container costs are a wall they can't climb alone.</p>
+    </div>
+  </div>
+</div>
+
+<div class="mission-block">
+  <div class="slogan">Share the Load, Connect the World</div>
+  <h2>We built the marketplace that <span>global trade was missing</span></h2>
+  <p>ShareConLoad is a live digital container load-sharing marketplace — the first platform purpose-built to connect Operators, Shippers, and Agents in one verified, payments-protected ecosystem.</p>
+</div>
+
+<div class="section">
+  <div class="section-label">The solution</div>
+  <h2>One platform. Three powerful roles. Zero wasted space.</h2>
+  <p>ShareConLoad is a two-sided marketplace with three distinct user types — each solving a different piece of the same broken puzzle. Every role benefits directly from the others being on the platform.</p>
+
+  <div class="who-grid">
+    <div class="who-card">
+      <div class="badge badge-op">Operator</div>
+      <h3>You have the space</h3>
+      <p>List your available container space, set your rates, and connect with verified shippers on your trade corridor. Stop sailing empty. Start earning on every cubic metre.</p>
+    </div>
+    <div class="who-card">
+      <div class="badge badge-sh">Shipper</div>
+      <h3>You need the space</h3>
+      <p>Book only what you need. No full container costs, no middleman markups, no payment risk. Shippers pay zero platform fees — your goods move, your margins stay intact.</p>
+    </div>
+    <div class="who-card">
+      <div class="badge badge-ag">Agent</div>
+      <h3>You connect both worlds</h3>
+      <p>Freight forwarders and clearing agents operate on both sides of the marketplace. One platform replaces the chaos of dozens of conversations — and your commission is structured, transparent, and protected.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section">
+  <div class="section-label">Why ShareConLoad</div>
+  <h2>Not just a platform — a complete trade infrastructure</h2>
+  <p>We have built more than a booking tool. ShareConLoad is a fully integrated ecosystem that handles discovery, matching, payment, and settlement — end to end. Payments are processed through Paystack and Flutterwave with MTN Mobile Money integration, making the platform genuinely accessible across Africa and beyond. Escrow is milestone-based: funds are released in stages tied to real shipment progress — so every party is protected at every step.</p>
+  <p>Our commission structure is tiered and decreasing as volume grows, rewarding operators and agents who scale with the platform. Shippers always pay zero platform fees — because removing friction for cargo owners is how we grow the supply side. This is a marketplace built with commercial intelligence, not just good intentions.</p>
+</div>
+
+<div class="section">
+  <div class="section-label">Trade corridors</div>
+  <h2>Built for the trade routes that matter most</h2>
+  <p>ShareConLoad launches across the highest-volume emerging market corridors — with global expansion built into the architecture from day one.</p>
+  <div class="corridors">
+    <span class="corridor-tag">South Africa → China</span>
+    <span class="corridor-tag">Ghana → UAE</span>
+    <span class="corridor-tag">Nigeria → India</span>
+    <span class="corridor-tag">South Africa → India</span>
+    <span class="corridor-tag">Ghana → Malaysia</span>
+    <span class="corridor-tag">Nigeria → China</span>
+    <span class="corridor-tag">Intra-Africa routes</span>
+    <span class="corridor-tag">South Africa → UAE</span>
+    <span class="corridor-tag">Asia → Africa</span>
+    <span class="corridor-tag">Africa → Europe</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Our values</div>
+  <h2>The principles we have built into the platform</h2>
+  <div class="values-grid">
+    <div class="value-item">
+      <h3>Transparency</h3>
+      <p>Every rate, every commission, every payment milestone is visible to all parties. No hidden fees, no surprises.</p>
+    </div>
+    <div class="value-item">
+      <h3>Access</h3>
+      <p>We believe any business — anywhere in the world — should be able to participate in international trade without prohibitive cost.</p>
+    </div>
+    <div class="value-item">
+      <h3>Trust</h3>
+      <p>Verified users, milestone-based escrow, and a structured dispute framework mean every transaction is protected.</p>
+    </div>
+    <div class="value-item">
+      <h3>Efficiency</h3>
+      <p>Empty space is waste. Our entire platform is engineered to eliminate it — for operators, for shippers, for the industry.</p>
+    </div>
+    <div class="value-item">
+      <h3>Scale</h3>
+      <p>We have built for global reach from the start. Every corridor we launch is a foundation for the next.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="cta-section">
+  <h2>The space exists.<br>The shippers exist.<br><span>Now the platform exists.</span></h2>
+  <p>ShareConLoad is live and onboarding its founding community of Operators, Shippers, and Agents right now. Early access is limited. The businesses that join first will shape how global container load-sharing works — and earn the best terms on the platform.</p>
+  <div class="cta-buttons">
+    <a class="btn-primary" href="https://www.shareconload.com">Join the waitlist</a>
+    <a class="btn-secondary" href="https://www.shareconload.com">Learn how it works</a>
+  </div>
+</div>

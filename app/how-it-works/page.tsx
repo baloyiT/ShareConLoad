@@ -1,6 +1,7 @@
-﻿import Image from 'next/image';
+import Image from 'next/image';
 import Link from 'next/link';
 
+import { Check, ChevronRight } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Step = {
@@ -24,34 +25,34 @@ const SHIPPER_STEPS: Step[] = [
     num: 1,
     title: 'Find a Container',
     desc: 'Browse verified operators with open routes. Filter by origin city, destination, departure date, and price per CBM. Every listing shows available space and operator compliance status.',
-    numColor: '#f97316',
+    numColor: '#ff6a00',
   },
   {
     num: 2,
     title: 'Book Your Space',
     desc: 'Enter the CBM you need, no whole-container commitment. Add shipment details and reserve your slot. Space is held once the deposit is paid.',
     badge: 'Takes under 5 minutes',
-    numColor: '#f97316',
+    numColor: '#ff6a00',
   },
   {
     num: 3,
     title: 'Declare & Pay Deposit',
     desc: 'Provide item descriptions and declared values for customs. Pay the 20% deposit to confirm the booking. The remaining balance is split into two further stages as the shipment progresses.',
     badge: '20% deposit secures your space',
-    numColor: '#f97316',
+    numColor: '#ff6a00',
   },
   {
     num: 4,
     title: 'Drop Off Your Goods',
     desc: "Deliver goods to the operator's warehouse or collection point before the loading deadline. The operator handles packing, loading, and customs coordination.",
-    numColor: '#f97316',
+    numColor: '#ff6a00',
   },
   {
     num: 5,
     title: 'Track & Receive',
     desc: 'Follow the shipment through every milestone, loading, departure, transit, arrival, customs clearance, delivery. Pay the remaining 30% before cargo is released at the destination.',
     badge: 'Cargo released once final payment clears',
-    numColor: '#0f2044',
+    numColor: '#0b103a',
   },
 ];
 
@@ -60,33 +61,33 @@ const OPERATOR_STEPS: Step[] = [
     num: 1,
     title: 'Create a Listing',
     desc: 'Define route, departure date, total capacity, and price per CBM. The container goes live on the marketplace immediately, visible to shippers searching that route.',
-    numColor: '#0f2044',
+    numColor: '#0b103a',
   },
   {
     num: 2,
     title: 'Complete Verification',
     desc: 'Submit KYC documents, identity, business registration, banking, insurance, and warehouse address. Done once. Verified operators display a trust badge on all listings.',
     badge: 'One-time compliance check',
-    numColor: '#0f2044',
+    numColor: '#0b103a',
   },
   {
     num: 3,
     title: 'Accept Bookings',
     desc: 'Shippers find the listing and book space. Review declarations, manage the manifest, and coordinate collection, all from the operator portal.',
-    numColor: '#0f2044',
+    numColor: '#0b103a',
   },
   {
     num: 4,
     title: 'Ship & Update Milestones',
     desc: 'Execute the shipment as planned. Post milestones at each stage so shippers stay informed automatically.',
-    numColor: '#0f2044',
+    numColor: '#0b103a',
   },
   {
     num: 5,
     title: 'Get Paid',
     desc: 'Payouts are released as each payment stage clears, after booking confirmation, pre-departure, and final cargo release.',
     badge: 'Staged payouts, predictable cash flow',
-    numColor: '#f97316',
+    numColor: '#ff6a00',
   },
 ];
 
@@ -172,8 +173,8 @@ function StepContent({
   const textAlign = align === 'left' ? 'lg:text-right' : 'lg:text-left';
   const badgeClass =
     badgeVariant === 'orange'
-      ? 'bg-[#fff7ed] text-[#f97316]'
-      : 'bg-[#eef2ff] text-[#0f2044]';
+      ? 'bg-[#fff7ed] text-[#ff6a00]'
+      : 'bg-[#eef2ff] text-[#0b103a]';
 
   return (
     <div className={`text-left ${textAlign}`}>
@@ -303,19 +304,7 @@ function StepRow({
 function BenefitItem({ text }: { text: string }) {
   return (
     <li className="flex items-start gap-2.5 text-sm text-gray-700">
-      <svg
-        className="w-4 h-4 mt-0.5 shrink-0 text-green-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2.5}
-          d="M5 13l4 4L19 7"
-        />
-      </svg>
+      <Check className="w-4 h-4 mt-0.5 shrink-0 text-green-500" strokeWidth={2.5} />
       {text}
     </li>
   );
@@ -333,9 +322,9 @@ export default function HowItWorksPage() {
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span>
-              <span style={{ color: '#f97316' }}>Con</span>
-              <span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span>
+              <span style={{ color: '#ff6a00' }}>Con</span>
+              <span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-5 text-sm font-medium text-gray-600">
@@ -345,7 +334,7 @@ export default function HowItWorksPage() {
             <Link
               href="/how-it-works"
               className="font-semibold"
-              style={{ color: '#0f2044' }}
+              style={{ color: '#0b103a' }}
             >
               How It Works
             </Link>
@@ -363,7 +352,7 @@ export default function HowItWorksPage() {
             <Link
               href="/auth/register"
               className="text-sm font-semibold text-white px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Sign Up
             </Link>
@@ -374,7 +363,7 @@ export default function HowItWorksPage() {
       {/* ── Hero ── */}
       <section
         className="relative overflow-hidden py-24 px-4"
-        style={{ backgroundColor: '#0f2044' }}
+        style={{ backgroundColor: '#0b103a' }}
       >
         <div className="absolute inset-0 pointer-events-none opacity-20">
           <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
@@ -382,7 +371,7 @@ export default function HowItWorksPage() {
         <div className="relative max-w-3xl mx-auto text-center z-10">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-4">
             Ship smarter.{' '}
-            <span style={{ color: '#f97316' }}>Share the container.</span>
+            <span style={{ color: '#ff6a00' }}>Share the container.</span>
           </h1>
           <p className="text-gray-300 text-lg mb-10 max-w-2xl mx-auto">
             ShareConLoad lets multiple shippers share a single container, so you only pay for the
@@ -392,7 +381,7 @@ export default function HowItWorksPage() {
             <Link
               href="/#listings"
               className="px-6 py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Browse Containers
             </Link>
@@ -411,7 +400,7 @@ export default function HowItWorksPage() {
         <div className="max-w-3xl mx-auto">
           <p
             className="text-xs font-extrabold uppercase tracking-widest mb-3"
-            style={{ color: '#f97316' }}
+            style={{ color: '#ff6a00' }}
           >
             What is shared container shipping?
           </p>
@@ -424,7 +413,7 @@ export default function HowItWorksPage() {
             or wait for a consolidator to fill one. ShareConLoad changes that, operators list spare
             capacity, shippers book exactly the CBM they need, and everyone pays their fair share.
           </p>
-          <blockquote className="border-l-4 pl-5 py-2" style={{ borderColor: '#f97316' }}>
+          <blockquote className="border-l-4 pl-5 py-2" style={{ borderColor: '#ff6a00' }}>
             <p className="text-gray-700 text-sm italic leading-relaxed">
               &ldquo;Instead of booking a full 20ft container for $3,000+, book 3 CBM for your
               actual goods and pay only for that space.&rdquo;
@@ -438,7 +427,7 @@ export default function HowItWorksPage() {
         <div className="max-w-3xl mx-auto">
           <span
             className="inline-block text-xs font-extrabold uppercase tracking-widest mb-3 px-3 py-1.5 rounded-full"
-            style={{ backgroundColor: '#fff7ed', color: '#f97316' }}
+            style={{ backgroundColor: '#fff7ed', color: '#ff6a00' }}
           >
             For Shippers
           </span>
@@ -454,9 +443,9 @@ export default function HowItWorksPage() {
                 key={step.num}
                 step={step}
                 side={i % 2 === 0 ? 'left' : 'right'}
-                spineColor="#f97316"
-                accentColor="#f97316"
-                badgeVariant={step.numColor === '#0f2044' ? 'navy' : 'orange'}
+                spineColor="#ff6a00"
+                accentColor="#ff6a00"
+                badgeVariant={step.numColor === '#0b103a' ? 'navy' : 'orange'}
                 isFirst={i === 0}
                 isLast={i === SHIPPER_STEPS.length - 1}
               />
@@ -466,11 +455,11 @@ export default function HowItWorksPage() {
       </section>
 
       {/* ── Payment Stages ── */}
-      <section className="py-16 px-4" style={{ backgroundColor: '#0f2044' }}>
+      <section className="py-16 px-4" style={{ backgroundColor: '#0b103a' }}>
         <div className="max-w-3xl mx-auto">
           <p
             className="text-xs font-extrabold uppercase tracking-widest mb-3"
-            style={{ color: '#f97316' }}
+            style={{ color: '#ff6a00' }}
           >
             How payments work
           </p>
@@ -486,24 +475,12 @@ export default function HowItWorksPage() {
             {PAYMENT_STAGES.map((stage, i) => (
               <div key={stage.label} className="flex flex-col sm:flex-row items-center gap-3 flex-1">
                 {i > 0 && (
-                  <svg
-                    className="w-5 h-5 text-gray-500 shrink-0 rotate-90 sm:rotate-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                  <ChevronRight className="w-5 h-5 text-gray-500 shrink-0 rotate-90 sm:rotate-0" />
                 )}
                 <div className="bg-white/10 rounded-2xl p-5 flex-1 w-full">
                   <div
                     className="text-4xl font-extrabold mb-1"
-                    style={{ color: '#f97316' }}
+                    style={{ color: '#ff6a00' }}
                   >
                     {stage.pct}%
                   </div>
@@ -522,7 +499,7 @@ export default function HowItWorksPage() {
         <div className="max-w-3xl mx-auto">
           <span
             className="inline-block text-xs font-extrabold uppercase tracking-widest mb-3 px-3 py-1.5 rounded-full"
-            style={{ backgroundColor: '#eef2ff', color: '#0f2044' }}
+            style={{ backgroundColor: '#eef2ff', color: '#0b103a' }}
           >
             For Operators
           </span>
@@ -538,9 +515,9 @@ export default function HowItWorksPage() {
                 key={step.num}
                 step={step}
                 side={i % 2 === 0 ? 'right' : 'left'}
-                spineColor="#0f2044"
-                accentColor="#0f2044"
-                badgeVariant={step.numColor === '#f97316' ? 'orange' : 'navy'}
+                spineColor="#0b103a"
+                accentColor="#0b103a"
+                badgeVariant={step.numColor === '#ff6a00' ? 'orange' : 'navy'}
                 isFirst={i === 0}
                 isLast={i === OPERATOR_STEPS.length - 1}
               />
@@ -594,7 +571,7 @@ export default function HowItWorksPage() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <span
                 className="inline-block text-xs font-extrabold uppercase tracking-widest mb-1 px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: '#fff7ed', color: '#f97316' }}
+                style={{ backgroundColor: '#fff7ed', color: '#ff6a00' }}
               >
                 Shippers
               </span>
@@ -610,7 +587,7 @@ export default function HowItWorksPage() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <span
                 className="inline-block text-xs font-extrabold uppercase tracking-widest mb-1 px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: '#eef2ff', color: '#0f2044' }}
+                style={{ backgroundColor: '#eef2ff', color: '#0b103a' }}
               >
                 Operators
               </span>
@@ -646,7 +623,7 @@ export default function HowItWorksPage() {
       {/* ── Final CTA ── */}
       <section
         className="relative overflow-hidden py-24 px-4"
-        style={{ backgroundColor: '#0f2044' }}
+        style={{ backgroundColor: '#0b103a' }}
       >
         <div className="absolute inset-0 pointer-events-none opacity-20">
           <Image src="/world-map-overlay.png" alt="" fill sizes="100vw" className="object-cover" />
@@ -662,7 +639,7 @@ export default function HowItWorksPage() {
             <Link
               href="/#listings"
               className="px-7 py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Browse Containers →
             </Link>
@@ -690,9 +667,9 @@ export default function HowItWorksPage() {
             <Link href="/" className="flex items-center gap-2 mb-3">
               <Image src="/logo1.png" alt="" width={32} height={32} className="h-8 w-auto" />
               <span className="font-extrabold text-base">
-                <span style={{ color: '#0f2044' }}>Share</span>
-                <span style={{ color: '#f97316' }}>Con</span>
-                <span style={{ color: '#0f2044' }}>Load</span>
+                <span style={{ color: '#0b103a' }}>Share</span>
+                <span style={{ color: '#ff6a00' }}>Con</span>
+                <span style={{ color: '#0b103a' }}>Load</span>
               </span>
             </Link>
             <p className="text-xs text-gray-400 leading-relaxed">

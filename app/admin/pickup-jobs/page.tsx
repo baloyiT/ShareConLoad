@@ -17,7 +17,7 @@ type PickupJob = {
 };
 
 const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
-  pending_selection: { bg: '#fff7ed', color: '#f97316', label: 'Pending Selection' },
+  pending_selection: { bg: '#fff7ed', color: '#ff6a00', label: 'Pending Selection' },
   pending_payment:   { bg: '#fefce8', color: '#ca8a04', label: 'Pending Payment'   },
   paid:              { bg: '#fefce8', color: '#ca8a04', label: 'Paid'              },
   assigned:          { bg: '#eff6ff', color: '#2563eb', label: 'Assigned'          },
@@ -93,7 +93,7 @@ export default function AdminPickupJobsPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-16 text-gray-400">No pickup jobs yet.</div>

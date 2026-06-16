@@ -1,5 +1,7 @@
 'use client';
 
+import { Check, Lock, Ship, Unlock, type LucideIcon } from 'lucide-react';
+
 type Payment = {
   id: string;
   stage: 'deposit_20' | 'pre_departure_50' | 'final_release_30';
@@ -9,24 +11,24 @@ type Payment = {
   paid_at: string | null;
 };
 
-const STAGE_META: Record<string, { label: string; percent: string; description: string; icon: string }> = {
+const STAGE_META: Record<string, { label: string; percent: string; description: string; icon: LucideIcon }> = {
   deposit_20: {
     label:       'Stage 1 — Booking Deposit',
     percent:     '20%',
     description: 'Secures your space in the container. Due within 24 hours of booking.',
-    icon:        '🔒',
+    icon:        Lock,
   },
   pre_departure_50: {
     label:       'Stage 2 — Pre-Departure',
     percent:     '50%',
     description: 'Due 7 days before departure. Must be paid for cargo to be loaded.',
-    icon:        '🚢',
+    icon:        Ship,
   },
   final_release_30: {
     label:       'Stage 3 — Final Release',
     percent:     '30%',
     description: 'Due upon cargo arrival. Required before release is authorised.',
-    icon:        '🔓',
+    icon:        Unlock,
   },
 };
 
@@ -52,22 +54,23 @@ type Props = {
 export default function PaymentStageCard({ payment, isPayable, lockReason, onPay, paying }: Props) {
   const meta   = STAGE_META[payment.stage];
   const status = STATUS_CONFIG[payment.status] ?? STATUS_CONFIG.pending;
+  const StageIcon = meta.icon;
 
   return (
     <div
       className="bg-white rounded-2xl border overflow-hidden"
-      style={{ borderColor: isPayable && payment.status === 'pending' ? '#f97316' : '#e5e7eb' }}
+      style={{ borderColor: isPayable && payment.status === 'pending' ? '#ff6a00' : '#e5e7eb' }}
     >
       {/* Top stripe */}
       <div
         className="h-1 w-full"
-        style={{ backgroundColor: payment.status === 'paid' ? '#22c55e' : isPayable ? '#f97316' : '#e5e7eb' }}
+        style={{ backgroundColor: payment.status === 'paid' ? '#22c55e' : isPayable ? '#ff6a00' : '#e5e7eb' }}
       />
 
       <div className="p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">{meta.icon}</span>
+            <StageIcon className="w-5 h-5 text-gray-500 shrink-0" />
             <div>
               <p className="text-sm font-bold text-gray-800">{meta.label}</p>
               <p className="text-xs text-gray-400 mt-0.5">{meta.description}</p>
@@ -100,7 +103,7 @@ export default function PaymentStageCard({ payment, isPayable, lockReason, onPay
               onClick={() => onPay(payment.id)}
               disabled={paying}
               className="btn text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               {paying
                 ? <span className="loading loading-spinner loading-sm" />
@@ -110,16 +113,14 @@ export default function PaymentStageCard({ payment, isPayable, lockReason, onPay
 
           {payment.status === 'paid' && (
             <div className="flex items-center gap-1.5 text-sm font-semibold text-green-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
+              <Check className="w-4 h-4" strokeWidth={2.5} />
               Confirmed
             </div>
           )}
 
           {!isPayable && payment.status === 'pending' && (
             <span className="flex items-center gap-1.5 text-xs text-gray-400 max-w-[180px] text-right leading-tight">
-              🔒 {lockReason ?? 'Complete previous stage first'}
+              <Lock className="w-3 h-3 shrink-0" /> {lockReason ?? 'Complete previous stage first'}
             </span>
           )}
         </div>

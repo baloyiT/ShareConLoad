@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -6,6 +6,10 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 
+import {
+  AlertCircle, ClipboardList, Ship, CreditCard, TrendingUp, Scale, Flag, Unlock,
+  ArrowRightLeft, User, IdCard, Ruler, Truck, RulerDimensionLine, DollarSign, PackageCheck,
+} from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Profile = {
@@ -136,7 +140,7 @@ export default function AdminDashboard() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -152,9 +156,7 @@ export default function AdminDashboard() {
         {/* Error */}
         {error && (
           <div className="alert alert-error text-sm">
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-            </svg>
+            <AlertCircle className="w-5 h-5 shrink-0" />
             {error}
           </div>
         )}
@@ -162,7 +164,7 @@ export default function AdminDashboard() {
         {/* Loading */}
         {loading && (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         )}
 
@@ -173,28 +175,28 @@ export default function AdminDashboard() {
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Operations</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {[
-                  { href: '/admin/bookings',   label: 'Bookings',    icon: '📋', desc: 'Manage all bookings'         },
-                  { href: '/admin/operators',  label: 'Operators',   icon: '🚢', desc: 'Payout controls'             },
-                  { href: '/admin/payouts',    label: 'Payouts',     icon: '💳', desc: 'Payout history'              },
-                  { href: '/admin/commission', label: 'Commission',  icon: '💹', desc: 'Tiered & fixed rates'         },
-                  { href: '/admin/disputes',   label: 'Disputes',    icon: '⚖️', desc: 'Resolve disputes'            },
-                  { href: '/admin/compliance', label: 'Compliance',  icon: '🚩', desc: 'Compliance flags'            },
-                  { href: '/admin/release',    label: 'Release',     icon: '🔓', desc: 'Cargo release auth'          },
-                  { href: '/admin/fx-rates',  label: 'FX Rates',    icon: '💱', desc: 'Currency exchange rates'      },
-                  { href: '/admin/agents',               label: 'Agents',              icon: '👤', desc: 'Review agent KYC applications'    },
-                  { href: '/admin/customers',            label: 'Customers',           icon: '🪪', desc: 'Review customer identity KYC'       },
-                  { href: '/admin/measurement-agents',   label: 'Measurement Agents',  icon: '📐', desc: 'Manage measurement agents'           },
-                  { href: '/admin/transporters',         label: 'Transporters',        icon: '🚛', desc: 'Manage transporters'                 },
-                  { href: '/admin/measurement-jobs',     label: 'Measurement Jobs',    icon: '📏', desc: 'Assign & track measurement jobs'      },
-                  { href: '/admin/rate-bands',           label: 'Rate Bands',          icon: '💲', desc: 'Measurement pricing zones'             },
-                  { href: '/admin/pickup-jobs',          label: 'Pickup Jobs',         icon: '🚚', desc: 'Assign & track pickup jobs'             },
-                ].map(({ href, label, icon, desc }) => (
+                  { href: '/admin/bookings',   label: 'Bookings',    icon: ClipboardList, desc: 'Manage all bookings'         },
+                  { href: '/admin/operators',  label: 'Operators',   icon: Ship, desc: 'Payout controls'             },
+                  { href: '/admin/payouts',    label: 'Payouts',     icon: CreditCard, desc: 'Payout history'              },
+                  { href: '/admin/commission', label: 'Commission',  icon: TrendingUp, desc: 'Tiered & fixed rates'         },
+                  { href: '/admin/disputes',   label: 'Disputes',    icon: Scale, desc: 'Resolve disputes'            },
+                  { href: '/admin/compliance', label: 'Compliance',  icon: Flag, desc: 'Compliance flags'            },
+                  { href: '/admin/release',    label: 'Release',     icon: Unlock, desc: 'Cargo release auth'          },
+                  { href: '/admin/fx-rates',  label: 'FX Rates',    icon: ArrowRightLeft, desc: 'Currency exchange rates'      },
+                  { href: '/admin/agents',               label: 'Agents',              icon: User, desc: 'Review agent KYC applications'    },
+                  { href: '/admin/customers',            label: 'Customers',           icon: IdCard, desc: 'Review customer identity KYC'       },
+                  { href: '/admin/measurement-agents',   label: 'Measurement Agents',  icon: Ruler, desc: 'Manage measurement agents'           },
+                  { href: '/admin/transporters',         label: 'Transporters',        icon: Truck, desc: 'Manage transporters'                 },
+                  { href: '/admin/measurement-jobs',     label: 'Measurement Jobs',    icon: RulerDimensionLine, desc: 'Assign & track measurement jobs'      },
+                  { href: '/admin/rate-bands',           label: 'Rate Bands',          icon: DollarSign, desc: 'Measurement pricing zones'             },
+                  { href: '/admin/pickup-jobs',          label: 'Pickup Jobs',         icon: PackageCheck, desc: 'Assign & track pickup jobs'             },
+                ].map(({ href, label, icon: Icon, desc }) => (
                   <Link
                     key={href}
                     href={href}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50 transition-colors text-center group"
                   >
-                    <span className="text-2xl">{icon}</span>
+                    <Icon className="w-6 h-6 text-gray-700 group-hover:text-orange-500 transition-colors" strokeWidth={1.75} />
                     <span className="text-sm font-bold text-gray-800 group-hover:text-orange-600 transition-colors">{label}</span>
                     <span className="text-xs text-gray-400">{desc}</span>
                   </Link>
@@ -221,7 +223,7 @@ export default function AdminDashboard() {
                       ? 'text-white shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
-                  style={activeTab === tab.key ? { backgroundColor: '#0f2044' } : {}}
+                  style={activeTab === tab.key ? { backgroundColor: '#0b103a' } : {}}
                 >
                   {tab.label}
                   {tab.count !== undefined && (
@@ -291,7 +293,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           <div
                             className="w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: '#0f2044' }}
+                            style={{ backgroundColor: '#0b103a' }}
                           >
                             {(u.email ?? u.full_name ?? '?').charAt(0).toUpperCase()}
                           </div>
@@ -306,7 +308,7 @@ export default function AdminDashboard() {
                       <Td>
                         <span
                           className="badge badge-sm text-white font-semibold"
-                          style={{ backgroundColor: u.role_type === 'operator' ? '#f97316' : '#0f2044' }}
+                          style={{ backgroundColor: u.role_type === 'operator' ? '#ff6a00' : '#0b103a' }}
                         >
                           {u.role_type ?? '-'}
                         </span>
@@ -346,13 +348,13 @@ export default function AdminDashboard() {
                             className="h-full rounded-full"
                             style={{
                               width: `${((c.total_capacity_cbm - c.available_capacity_cbm) / c.total_capacity_cbm) * 100}%`,
-                              backgroundColor: '#f97316',
+                              backgroundColor: '#ff6a00',
                             }}
                           />
                         </div>
                       </Td>
                       <Td>
-                        <span className="font-semibold text-sm" style={{ color: '#f97316' }}>
+                        <span className="font-semibold text-sm" style={{ color: '#ff6a00' }}>
                           R{c.price_per_cbm}
                         </span>
                       </Td>
@@ -398,7 +400,7 @@ export default function AdminDashboard() {
                       </Td>
                       <Td><span className="text-sm text-gray-700">{b.total_cbm} CBM</span></Td>
                       <Td>
-                        <span className="font-semibold text-sm" style={{ color: '#f97316' }}>
+                        <span className="font-semibold text-sm" style={{ color: '#ff6a00' }}>
                           R{b.total_price.toFixed(2)}
                         </span>
                       </Td>
@@ -432,7 +434,7 @@ function StatCard({ label, value, highlight }: { label: string; value: string | 
       <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</p>
       <p
         className="text-2xl font-extrabold"
-        style={{ color: highlight ? '#f97316' : '#111827' }}
+        style={{ color: highlight ? '#ff6a00' : '#111827' }}
       >
         {value}
       </p>
@@ -463,7 +465,7 @@ function BreakdownCard({
       <button
         onClick={onView}
         className="mt-auto text-xs font-semibold hover:underline text-left"
-        style={{ color: '#f97316' }}
+        style={{ color: '#ff6a00' }}
       >
         View all →
       </button>

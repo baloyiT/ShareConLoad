@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
+import { CheckCircle2 } from 'lucide-react';
 
 type Job = {
   id: string;
@@ -176,7 +177,7 @@ export default function TransporterJobDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -216,7 +217,7 @@ export default function TransporterJobDetailPage() {
             {job.total_weight_kg && <div className="flex justify-between"><span className="text-gray-500">Weight</span><span className="font-medium">{job.total_weight_kg} kg</span></div>}
             <div className="flex justify-between text-base font-bold pt-2 border-t mt-2">
               <span>Your Fee (85%)</span>
-              <span style={{ color: '#f97316' }}>{fmtMoney(job.quoted_fee * 0.85)}</span>
+              <span style={{ color: '#ff6a00' }}>{fmtMoney(job.quoted_fee * 0.85)}</span>
             </div>
           </div>
         </div>
@@ -227,7 +228,7 @@ export default function TransporterJobDetailPage() {
             onClick={handleConfirmCollection}
             disabled={actionLoading}
             className="btn w-full text-white font-bold rounded-xl text-base disabled:opacity-60"
-            style={{ backgroundColor: '#7c3aed' }}
+            style={{ backgroundColor: '#1fa8ff' }}
           >
             {actionLoading ? <span className="loading loading-spinner loading-sm" /> : 'Confirm Collection'}
           </button>
@@ -246,7 +247,7 @@ export default function TransporterJobDetailPage() {
 
         {job.status === 'delivered' && (
           <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
-            <div className="text-4xl mb-3">&#x2705;</div>
+            <CheckCircle2 className="w-10 h-10 mx-auto mb-3" style={{ color: '#16a34a' }} />
             <h2 className="text-lg font-bold text-gray-800 mb-2">Delivery Complete</h2>
             <p className="text-sm text-gray-500">Your payout of {fmtMoney(job.quoted_fee * 0.85)} has been triggered.</p>
           </div>

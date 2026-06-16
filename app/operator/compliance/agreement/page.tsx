@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,6 +7,7 @@ import { supabase } from '@/services/supabaseClient';
 import { notify } from '@/services/notificationService';
 import ComplianceStepper from '@/components/ComplianceStepper';
 
+import { Check } from 'lucide-react';
 const AGREEMENT_VERSION = '1.0';
 
 function fmt(d: string) {
@@ -84,7 +85,7 @@ export default function ComplianceAgreementPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} /></div>;
+    return <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} /></div>;
   }
 
   return (
@@ -99,9 +100,7 @@ export default function ComplianceAgreementPage() {
 
       {signedAt && (
         <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-          <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-          </svg>
+          <Check className="w-5 h-5 text-green-500 shrink-0" strokeWidth={2.5} />
           <div>
             <p className="text-sm font-bold text-green-800">Agreement signed</p>
             <p className="text-xs text-green-600">Signed on {fmt(signedAt)} · Version {AGREEMENT_VERSION}</p>
@@ -140,7 +139,7 @@ export default function ComplianceAgreementPage() {
             To update your signed agreement, contact <span className="font-mono">support@shareconload.com</span>.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
-            <Link href="/operator/compliance" className="btn flex-1 font-bold rounded-xl text-white" style={{ backgroundColor: '#0f2044' }}>
+            <Link href="/operator/compliance" className="btn flex-1 font-bold rounded-xl text-white" style={{ backgroundColor: '#0b103a' }}>
               View Compliance Status
             </Link>
             <Link href="/operator" className="btn flex-1 btn-ghost rounded-xl font-semibold text-gray-600">
@@ -166,7 +165,7 @@ export default function ComplianceAgreementPage() {
             onClick={handleSign}
             disabled={!confirmed || signing}
             className="btn text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
-            style={{ backgroundColor: '#0f2044' }}
+            style={{ backgroundColor: '#0b103a' }}
           >
             {signing ? <span className="loading loading-spinner loading-sm" /> : 'Sign Agreement'}
           </button>

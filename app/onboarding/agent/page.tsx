@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect } from 'react';
 import { useActionState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -30,12 +31,15 @@ export default function AgentOnboardingStep1() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
       <nav className="flex items-center px-6 py-4">
-        <Link href="/onboarding" className="text-2xl font-extrabold tracking-tight">
-          <span className="text-white">Share</span>
-          <span style={{ color: '#f97316' }}>Con</span>
-          <span className="text-white">Load</span>
+        <Link href="/onboarding" className="flex items-center gap-2.5">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
+          <span className="text-2xl font-extrabold tracking-tight">
+            <span className="text-white">Share</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
+            <span className="text-white">Load</span>
+          </span>
         </Link>
       </nav>
 

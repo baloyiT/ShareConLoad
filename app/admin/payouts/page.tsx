@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -242,7 +242,7 @@ export default function AdminPayoutsPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-800">← Admin</Link>
@@ -287,7 +287,7 @@ export default function AdminPayoutsPage() {
                 onClick={() => setStatusFilter(s)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors"
                 style={active
-                  ? { backgroundColor: '#0f2044', color: '#fff', borderColor: '#0f2044' }
+                  ? { backgroundColor: '#0b103a', color: '#fff', borderColor: '#0b103a' }
                   : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }}
               >
                 {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -306,7 +306,7 @@ export default function AdminPayoutsPage() {
 
         {loading ? (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20">
@@ -384,7 +384,7 @@ export default function AdminPayoutsPage() {
                                 disabled={!!blockReason || isTriggering}
                                 title={blockReason?.message ?? undefined}
                                 className="btn btn-sm text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-40 whitespace-nowrap"
-                                style={{ backgroundColor: '#0f2044' }}
+                                style={{ backgroundColor: '#0b103a' }}
                               >
                                 {isTriggering
                                   ? <span className="loading loading-spinner loading-xs" />

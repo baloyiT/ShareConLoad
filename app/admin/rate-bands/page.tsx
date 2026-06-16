@@ -148,14 +148,14 @@ export default function AdminRateBandsPage() {
         <div className="tabs tabs-boxed bg-white shadow-sm mb-6 p-1 rounded-xl w-fit">
           <button
             className={`tab tab-sm font-semibold rounded-lg ${tab === 'measurement' ? 'tab-active text-white' : 'text-gray-500'}`}
-            style={tab === 'measurement' ? { backgroundColor: '#f97316' } : {}}
+            style={tab === 'measurement' ? { backgroundColor: '#ff6a00' } : {}}
             onClick={() => { setTab('measurement'); setError(null); }}
           >
             Measurement
           </button>
           <button
             className={`tab tab-sm font-semibold rounded-lg ${tab === 'transporter' ? 'tab-active text-white' : 'text-gray-500'}`}
-            style={tab === 'transporter' ? { backgroundColor: '#f97316' } : {}}
+            style={tab === 'transporter' ? { backgroundColor: '#ff6a00' } : {}}
             onClick={() => { setTab('transporter'); setError(null); }}
           >
             Transporter
@@ -166,7 +166,7 @@ export default function AdminRateBandsPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : tab === 'measurement' ? (
           <>
@@ -212,7 +212,7 @@ export default function AdminRateBandsPage() {
                   className="input input-bordered input-sm w-40" />
                 <button type="submit" disabled={saving}
                   className="btn btn-sm text-white font-bold disabled:opacity-60"
-                  style={{ backgroundColor: '#f97316' }}>
+                  style={{ backgroundColor: '#ff6a00' }}>
                   {saving ? <span className="loading loading-spinner loading-xs" /> : 'Add'}
                 </button>
               </form>
@@ -274,7 +274,7 @@ export default function AdminRateBandsPage() {
                 </div>
                 <button type="submit" disabled={saving}
                   className="btn btn-sm text-white font-bold disabled:opacity-60"
-                  style={{ backgroundColor: '#f97316' }}>
+                  style={{ backgroundColor: '#ff6a00' }}>
                   {saving ? <span className="loading loading-spinner loading-xs" /> : 'Add Rate Band'}
                 </button>
               </form>

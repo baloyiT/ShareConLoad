@@ -228,7 +228,7 @@ export default function AdminOperatorsPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-800">← Admin</Link>
@@ -242,7 +242,7 @@ export default function AdminOperatorsPage() {
 
         {loading ? (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : operators.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20">
@@ -266,7 +266,7 @@ export default function AdminOperatorsPage() {
                       <tr key={op.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#f97316' }}>
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#ff6a00' }}>
                               {(p?.legal_name ?? '?')[0].toUpperCase()}
                             </div>
                             <span className="font-medium text-gray-800 text-sm">{p?.legal_name ?? <span className="text-gray-400 italic">No name</span>}</span>

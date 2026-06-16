@@ -1,6 +1,7 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import Image from 'next/image';
 
+import { ArrowLeft } from 'lucide-react';
 export const metadata = { title: 'Privacy Policy, ShareConLoad' };
 
 function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
@@ -28,7 +29,7 @@ function Bullets({ items }: { items: string[] }) {
     <ul className="space-y-1 pl-1">
       {items.map((item) => (
         <li key={item} className="flex items-start gap-2">
-          <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#f97316' }} />
+          <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#ff6a00' }} />
           <span>{item}</span>
         </li>
       ))}
@@ -45,24 +46,22 @@ export default function PrivacyPolicyPage() {
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
           <span className="text-lg font-extrabold tracking-tight">
-            <span style={{ color: '#0f2044' }}>Share</span>
-            <span style={{ color: '#f97316' }}>Con</span>
-            <span style={{ color: '#0f2044' }}>Load</span>
+            <span style={{ color: '#0b103a' }}>Share</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
+            <span style={{ color: '#0b103a' }}>Load</span>
           </span>
         </Link>
         <div className="flex-1" />
         <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to Home
         </Link>
       </nav>
 
       {/* Hero */}
-      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#f97316' }}>Legal</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#ff6a00' }}>Legal</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">Privacy Policy</h1>
           <p className="text-gray-400 text-sm">Effective Date: 09 May 2026 · VEYQON GROUP (Pty) Ltd</p>
         </div>
@@ -132,7 +131,7 @@ export default function PrivacyPolicyPage() {
           <Section number="9" title="User Rights">
             <p className="mb-1.5">Subject to applicable laws, users may request to:</p>
             <Bullets items={['Access their personal information','Correct inaccurate information','Update account information','Request deletion of personal information where legally permissible','Object to certain processing activities','Withdraw consent where applicable']} />
-            <p className="mt-3">Requests may be submitted to: <a href="mailto:support@shareconload.com" className="font-semibold hover:underline" style={{ color: '#f97316' }}>support@shareconload.com</a>. ShareConLoad may require reasonable identity verification before processing requests.</p>
+            <p className="mt-3">Requests may be submitted to: <a href="mailto:support@shareconload.com" className="font-semibold hover:underline" style={{ color: '#ff6a00' }}>support@shareconload.com</a>. ShareConLoad may require reasonable identity verification before processing requests.</p>
           </Section>
 
           <Section number="10" title="Cookies and Tracking Technologies">
@@ -167,8 +166,8 @@ export default function PrivacyPolicyPage() {
               <p className="font-bold text-gray-900">VEYQON GROUP (Pty) Ltd</p>
               <p>Registration Number: 2026/353683/07</p>
               <p>Republic of South Africa</p>
-              <p>Website: <a href="https://shareconload.com" className="hover:underline" style={{ color: '#f97316' }}>shareconload.com</a></p>
-              <p>Email: <a href="mailto:support@shareconload.com" className="hover:underline" style={{ color: '#f97316' }}>support@shareconload.com</a></p>
+              <p>Website: <a href="https://shareconload.com" className="hover:underline" style={{ color: '#ff6a00' }}>shareconload.com</a></p>
+              <p>Email: <a href="mailto:support@shareconload.com" className="hover:underline" style={{ color: '#ff6a00' }}>support@shareconload.com</a></p>
             </div>
           </Section>
 

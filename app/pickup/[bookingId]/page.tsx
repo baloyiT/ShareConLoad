@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Star } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
 
 type Step = 'address' | 'select' | 'paying';
@@ -223,7 +224,7 @@ function PickupContent({ bookingId }: { bookingId: string }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -272,7 +273,7 @@ function PickupContent({ bookingId }: { bookingId: string }) {
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={submitting}
               className="btn w-full text-white font-bold rounded-xl disabled:opacity-60"
-              style={{ backgroundColor: '#f97316' }}>
+              style={{ backgroundColor: '#ff6a00' }}>
               {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Find Available Transporters'}
             </button>
             <div className="text-center">
@@ -293,7 +294,7 @@ function PickupContent({ bookingId }: { bookingId: string }) {
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-base pt-1 border-t">
-                  <span>Total</span><span style={{ color: '#f97316' }}>{fmtMoney(quotedFee)}</span>
+                  <span>Total</span><span style={{ color: '#ff6a00' }}>{fmtMoney(quotedFee)}</span>
                 </div>
               </div>
             </div>
@@ -310,8 +311,8 @@ function PickupContent({ bookingId }: { bookingId: string }) {
                       <p className="text-xs text-gray-500">{t.vehicle_type} · {t.vehicle_capacity_cbm} CBM capacity</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-semibold text-gray-700">
-                        {t.average_rating != null ? `★ ${t.average_rating.toFixed(1)}` : 'New'}
+                      <p className="text-xs font-semibold text-gray-700 flex items-center justify-end gap-1">
+                        {t.average_rating != null ? <><Star size={12} fill="#f59e0b" color="#f59e0b" /> {t.average_rating.toFixed(1)}</> : 'New'}
                       </p>
                       <p className="text-xs text-gray-400">{t.total_jobs_completed} jobs</p>
                     </div>
@@ -327,7 +328,7 @@ function PickupContent({ bookingId }: { bookingId: string }) {
                 className="btn btn-ghost flex-1 rounded-xl">Back</button>
               <button onClick={handleProceedToPayment} disabled={submitting || !selectedId}
                 className="btn flex-1 text-white font-bold rounded-xl disabled:opacity-60"
-                style={{ backgroundColor: '#f97316' }}>
+                style={{ backgroundColor: '#ff6a00' }}>
                 {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Pay & Confirm'}
               </button>
             </div>
@@ -339,7 +340,7 @@ function PickupContent({ bookingId }: { bookingId: string }) {
 
         {step === 'paying' && (
           <div className="text-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
             <p className="text-sm text-gray-500 mt-4">Redirecting to payment…</p>
           </div>
         )}
@@ -352,7 +353,7 @@ export default function PickupPage({ params }: { params: { bookingId: string } }
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     }>
       <PickupContent bookingId={params.bookingId} />

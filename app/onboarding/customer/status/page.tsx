@@ -2,30 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import { Check, Search, X, type LucideIcon } from 'lucide-react';
 
 type KycStatus = 'pending_review' | 'verified' | 'rejected';
 
-const STATUS_CONFIG: Record<KycStatus, { label: string; color: string; bg: string; icon: string; message: string }> = {
+const STATUS_CONFIG: Record<KycStatus, { label: string; color: string; bg: string; icon: LucideIcon; message: string }> = {
   pending_review: {
     label:   'Under Review',
-    color:   '#f97316',
+    color:   '#ff6a00',
     bg:      '#fff7ed',
-    icon:    '🔍',
+    icon:    Search,
     message: 'Your documents are being reviewed by our compliance team. This usually takes 1–2 business days.',
   },
   verified: {
     label:   'Verified',
     color:   '#16a34a',
     bg:      '#f0fdf4',
-    icon:    '✅',
+    icon:    Check,
     message: 'Your identity has been verified. You can now book container space.',
   },
   rejected: {
     label:   'Action Required',
     color:   '#ef4444',
     bg:      '#fef2f2',
-    icon:    '❌',
+    icon:    X,
     message: 'Your verification was not approved. Please review the reason below and resubmit.',
   },
 };
@@ -73,10 +75,13 @@ export default function CustomerKycStatus() {
   const config = status ? STATUS_CONFIG[status] : null;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
       <nav className="flex items-center px-6 py-4">
-        <Link href="/" className="text-2xl font-extrabold tracking-tight">
-          <span className="text-white">Share</span><span style={{ color: '#f97316' }}>Con</span><span className="text-white">Load</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
+          <span className="text-2xl font-extrabold tracking-tight">
+            <span className="text-white">Share</span><span style={{ color: '#ff6a00' }}>Con</span><span className="text-white">Load</span>
+          </span>
         </Link>
       </nav>
 
@@ -86,12 +91,12 @@ export default function CustomerKycStatus() {
 
           {loading ? (
             <div className="flex justify-center py-8">
-              <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+              <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
             </div>
           ) : !status ? (
             <div>
               <p className="text-gray-500 mb-4">No verification submitted yet.</p>
-              <Link href="/onboarding/customer" className="btn text-white font-bold rounded-xl" style={{ backgroundColor: '#f97316' }}>
+              <Link href="/onboarding/customer" className="btn text-white font-bold rounded-xl" style={{ backgroundColor: '#ff6a00' }}>
                 Start Verification
               </Link>
             </div>
@@ -108,7 +113,7 @@ export default function CustomerKycStatus() {
                           className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
                           style={done ? { backgroundColor: config?.color, color: '#fff' } : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}
                         >
-                          {done ? '✓' : i + 1}
+                          {done ? <Check className="w-4 h-4" strokeWidth={3} /> : i + 1}
                         </div>
                         <span className="text-xs text-gray-500 text-center w-16">{step.label}</span>
                       </div>
@@ -123,7 +128,7 @@ export default function CustomerKycStatus() {
               {/* Status card */}
               <div className="rounded-xl px-5 py-4 mb-6 text-left" style={{ backgroundColor: config?.bg }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">{config?.icon}</span>
+                  {config && <config.icon className="w-5 h-5" style={{ color: config.color }} />}
                   <span className="font-bold text-sm" style={{ color: config?.color }}>{config?.label}</span>
                 </div>
                 <p className="text-sm text-gray-600">{config?.message}</p>
@@ -139,12 +144,12 @@ export default function CustomerKycStatus() {
 
               {/* CTA */}
               {status === 'verified' && (
-                <Link href="/" className="btn w-full text-white font-bold rounded-xl" style={{ backgroundColor: '#f97316' }}>
+                <Link href="/" className="btn w-full text-white font-bold rounded-xl" style={{ backgroundColor: '#ff6a00' }}>
                   Browse Containers →
                 </Link>
               )}
               {(status === 'rejected') && (
-                <Link href="/onboarding/customer" className="btn w-full text-white font-bold rounded-xl" style={{ backgroundColor: '#f97316' }}>
+                <Link href="/onboarding/customer" className="btn w-full text-white font-bold rounded-xl" style={{ backgroundColor: '#ff6a00' }}>
                   Resubmit Verification
                 </Link>
               )}

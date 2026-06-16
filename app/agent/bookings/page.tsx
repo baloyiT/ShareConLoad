@@ -186,9 +186,9 @@ export default function AgentBookingsPage() {
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/logo1.png" alt="ShareConLoad" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span>
-              <span style={{ color: '#f97316' }}>Con</span>
-              <span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span>
+              <span style={{ color: '#ff6a00' }}>Con</span>
+              <span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-5 text-sm font-medium text-gray-600">

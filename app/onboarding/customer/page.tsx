@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import { saveCustomerKycStep1 } from '@/actions/customerKycActions';
 
@@ -25,10 +26,13 @@ export default function CustomerKycStep1() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
       <nav className="flex items-center px-6 py-4">
-        <Link href="/" className="text-2xl font-extrabold tracking-tight">
-          <span className="text-white">Share</span><span style={{ color: '#f97316' }}>Con</span><span className="text-white">Load</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
+          <span className="text-2xl font-extrabold tracking-tight">
+            <span className="text-white">Share</span><span style={{ color: '#ff6a00' }}>Con</span><span className="text-white">Load</span>
+          </span>
         </Link>
       </nav>
 
@@ -38,7 +42,7 @@ export default function CustomerKycStep1() {
           {STEPS.map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'text-white' : 'bg-white/20 text-white/60'}`}
-                style={i === 0 ? { backgroundColor: '#f97316' } : {}}>
+                style={i === 0 ? { backgroundColor: '#ff6a00' } : {}}>
                 {i + 1}
               </div>
               {i < STEPS.length - 1 && <div className="w-8 h-0.5 bg-white/20" />}
@@ -133,7 +137,7 @@ export default function CustomerKycStep1() {
               type="submit"
               disabled={isPending}
               className="btn w-full text-white font-bold rounded-xl mt-2 hover:opacity-90 disabled:opacity-60"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               {isPending ? <span className="loading loading-spinner loading-sm" /> : 'Continue — Upload Documents →'}
             </button>

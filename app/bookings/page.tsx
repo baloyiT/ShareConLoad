@@ -1,12 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import {
-  Calendar, Package, Banknote, User, Hash,
-  CreditCard, MessageCircle, MoreHorizontal,
-  AlertTriangle, AlertCircle, Headphones,
-  Clock, CheckCircle, Ship, CheckCircle2, XCircle,
-} from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowRight, Banknote, Bell, Calendar, Check, CheckCircle, CheckCircle2, Circle, Clock, CreditCard, Hash, Headphones, MessageCircle, MoreHorizontal, Package, Ship, User, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -48,7 +43,7 @@ type UnreadNotif = {
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  pending:    { label: 'Pending',    color: '#f97316', bg: '#fff7ed', dot: '#f97316' },
+  pending:    { label: 'Pending',    color: '#ff6a00', bg: '#fff7ed', dot: '#ff6a00' },
   confirmed:  { label: 'Confirmed',  color: '#3b82f6', bg: '#eff6ff', dot: '#3b82f6' },
   loaded:     { label: 'Loaded',     color: '#8b5cf6', bg: '#f5f3ff', dot: '#8b5cf6' },
   in_transit: { label: 'In Transit', color: '#06b6d4', bg: '#ecfeff', dot: '#06b6d4' },
@@ -233,19 +228,19 @@ export default function MyBookingsPage() {
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <div className="flex items-center gap-3">
             {userName && (
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#0f2044' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#0b103a' }}>
                   {userInitials}
                 </div>
                 <div className="hidden sm:flex flex-col leading-tight">
                   <span className="text-sm font-medium text-gray-700 max-w-[130px] truncate">{userName}</span>
-                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full w-fit mt-0.5" style={{ backgroundColor: '#e8eef8', color: '#0f2044' }}>
-                    👤 Shipper
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full w-fit mt-0.5 flex items-center gap-1" style={{ backgroundColor: '#e8eef8', color: '#0b103a' }}>
+                    <User className="w-3 h-3" /> Shipper
                   </span>
                 </div>
               </div>
@@ -258,11 +253,9 @@ export default function MyBookingsPage() {
                 className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors"
                 aria-label="Notifications"
               >
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
+                <Bell className="w-5 h-5 text-gray-600" />
                 {unreadNotifs.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white rounded-full" style={{ backgroundColor: '#f97316' }}>
+                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white rounded-full" style={{ backgroundColor: '#ff6a00' }}>
                     {unreadNotifs.length > 9 ? '9+' : unreadNotifs.length}
                   </span>
                 )}
@@ -275,7 +268,7 @@ export default function MyBookingsPage() {
                     <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                       <span className="text-sm font-bold text-gray-800">Messages</span>
                       {unreadNotifs.length > 0 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-white" style={{ backgroundColor: '#f97316' }}>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-white" style={{ backgroundColor: '#ff6a00' }}>
                           {unreadNotifs.length} unread
                         </span>
                       )}
@@ -328,7 +321,7 @@ export default function MyBookingsPage() {
                 onClick={() => setStatusFilter(value)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors border"
                 style={active
-                  ? { backgroundColor: '#0f2044', color: '#fff', borderColor: '#0f2044' }
+                  ? { backgroundColor: '#0b103a', color: '#fff', borderColor: '#0b103a' }
                   : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }}
               >
                 {label}
@@ -345,12 +338,12 @@ export default function MyBookingsPage() {
           })}
         </div>
 
-        {loading && <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} /></div>}
+        {loading && <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} /></div>}
         {error   && <div className="alert alert-error text-sm max-w-lg mx-auto"><span>{error}</span></div>}
 
         {!loading && !error && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-gray-100">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4" style={{ backgroundColor: '#fff7ed' }}>📦</div>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: '#fff7ed' }}><Package className="w-7 h-7" style={{ color: '#ff6a00' }} /></div>
             <h2 className="text-xl font-bold text-gray-700 mb-2">
               {statusFilter === 'all' ? 'No bookings yet' : `No ${STATUS_CONFIG[statusFilter]?.label ?? statusFilter} bookings`}
             </h2>
@@ -358,7 +351,7 @@ export default function MyBookingsPage() {
               {statusFilter === 'all' ? 'Browse available containers and make your first booking.' : 'Try a different filter to see your other bookings.'}
             </p>
             {statusFilter === 'all' && (
-              <Link href="/#listings" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#f97316' }}>
+              <Link href="/#listings" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#ff6a00' }}>
                 Browse Containers
               </Link>
             )}
@@ -434,7 +427,7 @@ function BookingCard({
   return (
     <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
       <div className="rounded-t-2xl overflow-hidden">
-        <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#f97316' : cfg.color }} />
+        <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#ff6a00' : cfg.color }} />
       </div>
 
       <div className="p-5 sm:p-6">
@@ -449,9 +442,7 @@ function BookingCard({
                 {c ? (
                   <>
                     <span className="text-lg font-extrabold text-gray-900">{c.origin_city}</span>
-                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#f97316' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
+                    <ArrowRight className="w-5 h-5 shrink-0" style={{ color: '#ff6a00' }} strokeWidth={2.5} />
                     <span className="text-lg font-extrabold text-gray-900">{c.destination_city}</span>
                   </>
                 ) : (
@@ -461,7 +452,7 @@ function BookingCard({
               {isUrgent && daysLeft !== null && (
                 <span
                   className="shrink-0 text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap"
-                  style={{ backgroundColor: daysLeft <= 3 ? '#fef2f2' : '#fff7ed', color: daysLeft <= 3 ? '#ef4444' : '#f97316' }}
+                  style={{ backgroundColor: daysLeft <= 3 ? '#fef2f2' : '#fff7ed', color: daysLeft <= 3 ? '#ef4444' : '#ff6a00' }}
                 >
                   <span className="inline-flex items-center gap-1">
                     {daysLeft === 0
@@ -499,11 +490,11 @@ function BookingCard({
                           status === 'paid'
                             ? { backgroundColor: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }
                             : status === 'pending'
-                            ? { backgroundColor: '#fff7ed', color: '#f97316', borderColor: '#fed7aa' }
+                            ? { backgroundColor: '#fff7ed', color: '#ff6a00', borderColor: '#fed7aa' }
                             : { backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }
                         }
                       >
-                        {status === 'paid' ? '✓' : '○'} {PAYMENT_STAGE_SHORT[stage]}
+                        {status === 'paid' ? <Check className="w-2.5 h-2.5" strokeWidth={3} /> : <Circle className="w-2.5 h-2.5" />} {PAYMENT_STAGE_SHORT[stage]}
                       </span>
                     );
                   })}
@@ -526,7 +517,7 @@ function BookingCard({
               <Link
                 href={`/payments/${booking.id}`}
                 className="btn btn-sm font-bold rounded-lg hover:opacity-90 text-xs text-white w-full justify-center"
-                style={{ backgroundColor: hasPendingPayment ? '#f97316' : '#0f2044' }}
+                style={{ backgroundColor: hasPendingPayment ? '#ff6a00' : '#0b103a' }}
               >
                 {hasPendingPayment
                   ? <><CreditCard className="w-3.5 h-3.5" /> Pay Now</>
@@ -547,7 +538,7 @@ function BookingCard({
             >
               <MessageCircle className="w-4 h-4" />
               {messageCount > 0 && (
-                <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white rounded-full" style={{ backgroundColor: '#f97316' }}>
+                <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white rounded-full" style={{ backgroundColor: '#ff6a00' }}>
                   {messageCount > 9 ? '9+' : messageCount}
                 </span>
               )}

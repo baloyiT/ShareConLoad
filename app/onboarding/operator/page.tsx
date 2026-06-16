@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import { createOperatorProfile } from '@/actions/operatorActions';
 
+import { AlertCircle, Check, Info } from 'lucide-react';
 const COUNTRY_CODES: Record<string, string> = {
   'South Africa': '+27', 'Afghanistan': '+93', 'Albania': '+355', 'Algeria': '+213',
   'Angola': '+244', 'Argentina': '+54', 'Australia': '+61', 'Austria': '+43',
@@ -133,7 +134,7 @@ export default function OperatorOnboardingPage() {
   // Show spinner while confirming auth
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
         <span className="loading loading-spinner loading-lg text-white" />
       </div>
     );
@@ -142,15 +143,15 @@ export default function OperatorOnboardingPage() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}
     >
       {/* Nav */}
       <nav className="flex items-center px-6 py-4">
-        <Link href="/" className="flex items-center gap-3">
-          <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image src="/logo1.png" alt="" width={32} height={32} className="h-7 w-auto" />
           <span className="text-2xl font-extrabold tracking-tight">
             <span className="text-white">Share</span>
-            <span style={{ color: '#f97316' }}>Con</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
             <span className="text-white">Load</span>
           </span>
         </Link>
@@ -174,10 +175,7 @@ export default function OperatorOnboardingPage() {
             {/* Server error (real errors only — not auth, since we gate above) */}
             {state?.error && state.error !== 'You must be logged in.' && (
               <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
-                <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-                </svg>
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 {state.error}
               </div>
             )}
@@ -266,9 +264,7 @@ export default function OperatorOnboardingPage() {
                 />
                 {!phoneError && !fieldErrors.phone_number && phone.trim().length > 3 && (
                   <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
                     Valid phone number
                   </p>
                 )}
@@ -278,7 +274,7 @@ export default function OperatorOnboardingPage() {
                 type="submit"
                 disabled={isPending}
                 className="btn w-full text-white font-bold rounded-xl mt-1 hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 {isPending
                   ? <span className="loading loading-spinner loading-sm" />
@@ -320,9 +316,7 @@ function Field({
       {children}
       {error && (
         <p className="text-red-500 text-xs flex items-center gap-1">
-          <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
+          <Info className="w-3 h-3 shrink-0" />
           {error}
         </p>
       )}

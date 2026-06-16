@@ -9,6 +9,7 @@ import MilestoneTimeline from '@/components/MilestoneTimeline';
 import PageHero from '@/components/PageHero';
 import MessageThread from '@/components/MessageThread';
 
+import { Box, Check, CheckCircle, Clock, Search, Sparkles, Truck, X } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type BookingContainer = {
@@ -103,17 +104,15 @@ function stepState(stepStatus: string, currentStatus: string): StepState {
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 const CheckIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-  </svg>
+  <Check className="w-4 h-4" strokeWidth={2.5} />
 );
 
 const STEP_ICONS: Record<string, React.ReactNode> = {
-  pending:    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-  confirmed:  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-  loaded:     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" /></svg>,
-  in_transit: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>,
-  delivered:  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>,
+  pending:    <Clock className="w-4 h-4" />,
+  confirmed:  <CheckCircle className="w-4 h-4" />,
+  loaded:     <Box className="w-4 h-4" />,
+  in_transit: <Truck className="w-4 h-4" />,
+  delivered:  <Sparkles className="w-4 h-4" />,
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -169,7 +168,7 @@ export default function BookingTrackPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -178,12 +177,12 @@ export default function BookingTrackPage() {
   if (notFound || !booking) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 text-center px-4">
-        <div className="text-6xl">🔍</div>
+        <Search className="w-16 h-16 text-gray-300" />
         <h1 className="text-2xl font-bold text-gray-800">Booking not found</h1>
         <p className="text-gray-400 text-sm max-w-xs">
           This booking ID does not exist or you do not have access to it.
         </p>
-        <Link href="/bookings" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0f2044' }}>
+        <Link href="/bookings" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0b103a' }}>
           ← My Bookings
         </Link>
       </div>
@@ -210,7 +209,7 @@ export default function BookingTrackPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/bookings" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
@@ -241,9 +240,7 @@ export default function BookingTrackPage() {
       {isCancelled && (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-5">
           <div className="alert alert-error text-sm">
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-5 h-5 shrink-0" />
             This booking has been cancelled.
           </div>
         </div>
@@ -278,7 +275,7 @@ export default function BookingTrackPage() {
               </DetailRow>
               <div className="pt-1 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-gray-500 font-medium">Total Price</span>
-                <span className="text-lg font-extrabold" style={{ color: '#f97316' }}>
+                <span className="text-lg font-extrabold" style={{ color: '#ff6a00' }}>
                   R{booking.total_price.toFixed(2)}
                 </span>
               </div>
@@ -288,7 +285,7 @@ export default function BookingTrackPage() {
           {/* Current status card */}
           <div
             className="rounded-2xl p-5 text-white"
-            style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}
+            style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}
           >
             <p className="text-gray-400 text-xs uppercase tracking-wider mb-2">Current Status</p>
             <div className="flex items-center gap-3">
@@ -312,7 +309,7 @@ export default function BookingTrackPage() {
             <Link
               href={`/payments/${booking.id}`}
               className="btn text-white font-bold rounded-xl hover:opacity-90 w-full"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Make Payment →
             </Link>
@@ -345,7 +342,7 @@ export default function BookingTrackPage() {
                           className="w-0.5 flex-1 my-1 min-h-[2.5rem]"
                           style={{
                             backgroundColor:
-                              state === 'completed' ? '#f97316' : '#e5e7eb',
+                              state === 'completed' ? '#ff6a00' : '#e5e7eb',
                           }}
                         />
                       )}
@@ -386,7 +383,7 @@ export default function BookingTrackPage() {
                         ) : state === 'current' ? (
                           <span
                             className="text-xs font-semibold whitespace-nowrap shrink-0"
-                            style={{ color: '#f97316' }}
+                            style={{ color: '#ff6a00' }}
                           >
                             Now
                           </span>
@@ -403,9 +400,7 @@ export default function BookingTrackPage() {
                 <div className="flex gap-4 mt-1">
                   <div className="flex flex-col items-center">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center bg-red-500 text-white shrink-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      <X className="w-4 h-4" strokeWidth={2.5} />
                     </div>
                   </div>
                   <div className="flex-1 pb-0">
@@ -499,11 +494,9 @@ function StepNode({ state, icon }: { state: StepState; icon: React.ReactNode }) 
     return (
       <div
         className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
-        style={{ backgroundColor: '#f97316' }}
+        style={{ backgroundColor: '#ff6a00' }}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-        </svg>
+        <Check className="w-4 h-4" strokeWidth={2.5} />
       </div>
     );
   }
@@ -512,7 +505,7 @@ function StepNode({ state, icon }: { state: StepState; icon: React.ReactNode }) 
     return (
       <div
         className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 ring-4 ring-indigo-100"
-        style={{ backgroundColor: '#0f2044' }}
+        style={{ backgroundColor: '#0b103a' }}
       >
         {icon}
       </div>

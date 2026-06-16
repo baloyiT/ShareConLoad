@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 
+import { ExternalLink, FileText } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Dispute = {
@@ -49,7 +50,7 @@ const TYPE_LABELS: Record<string, string> = {
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   submitted:          { label: 'Submitted',        color: '#f59e0b', bg: '#fffbeb' },
   under_review:       { label: 'Under Review',     color: '#3b82f6', bg: '#eff6ff' },
-  awaiting_evidence:  { label: 'Awaiting Evidence',color: '#f97316', bg: '#fff7ed' },
+  awaiting_evidence:  { label: 'Awaiting Evidence',color: '#ff6a00', bg: '#fff7ed' },
   resolved_customer:  { label: 'Resolved',         color: '#22c55e', bg: '#f0fdf4' },
   resolved_operator:  { label: 'Resolved',         color: '#22c55e', bg: '#f0fdf4' },
   closed:             { label: 'Closed',           color: '#6b7280', bg: '#f9fafb' },
@@ -182,7 +183,7 @@ export default function DisputeDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -191,7 +192,7 @@ export default function DisputeDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 text-center px-4">
         <p className="text-gray-500">{error ?? 'Dispute not found.'}</p>
-        <Link href="/bookings" className="btn btn-sm text-white" style={{ backgroundColor: '#0f2044' }}>
+        <Link href="/bookings" className="btn btn-sm text-white" style={{ backgroundColor: '#0b103a' }}>
           ← My Bookings
         </Link>
       </div>
@@ -214,7 +215,7 @@ export default function DisputeDetailPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/bookings" className="text-sm text-gray-500 hover:text-gray-800">← My Bookings</Link>
@@ -311,18 +312,14 @@ export default function DisputeDetailPage() {
                   className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors group"
                 >
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#f0f4ff' }}>
-                    <svg className="w-4 h-4" style={{ color: '#0f2044' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                    <FileText className="w-4 h-4" style={{ color: '#0b103a' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600">{ev.file_name}</p>
                     {ev.description && <p className="text-xs text-gray-400 truncate">{ev.description}</p>}
                     <p className="text-xs text-gray-300">{fmt(ev.created_at)}</p>
                   </div>
-                  <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
+                  <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" />
                 </a>
               ))}
             </div>
@@ -379,7 +376,7 @@ export default function DisputeDetailPage() {
                 type="submit"
                 disabled={!uploadFile || uploading}
                 className="btn text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60 self-start"
-                style={{ backgroundColor: '#0f2044' }}
+                style={{ backgroundColor: '#0b103a' }}
               >
                 {uploading
                   ? <span className="loading loading-spinner loading-sm" />

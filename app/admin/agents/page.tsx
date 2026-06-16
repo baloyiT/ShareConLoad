@@ -24,7 +24,7 @@ type AgentRow = {
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   draft:          { bg: '#f3f4f6', color: '#6b7280' },
-  pending_review: { bg: '#fff7ed', color: '#f97316' },
+  pending_review: { bg: '#fff7ed', color: '#ff6a00' },
   approved:       { bg: '#f0fdf4', color: '#16a34a' },
   rejected:       { bg: '#fef2f2', color: '#ef4444' },
 };
@@ -75,7 +75,7 @@ export default function AdminAgentsPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} /></div>
+          <div className="flex justify-center py-16"><span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} /></div>
         ) : (
           <div className="flex flex-col gap-3">
             {agents.length === 0 && (

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 
+import { Check } from 'lucide-react';
 const STEPS = [
   { number: 1, label: 'Business Profile', href: '/operator/compliance/profile' },
   { number: 2, label: 'Contact Details',  href: '/operator/compliance/contact' },
@@ -22,19 +23,17 @@ export default function ComplianceStepper({ current }: { current: number }) {
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
                 style={{
-                  backgroundColor: done ? '#22c55e' : active ? '#0f2044' : '#e5e7eb',
+                  backgroundColor: done ? '#22c55e' : active ? '#0b103a' : '#e5e7eb',
                   color: done || active ? '#ffffff' : '#9ca3af',
                 }}
               >
                 {done ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check className="w-4 h-4" strokeWidth={3} />
                 ) : step.number}
               </div>
               <span
                 className="text-xs font-medium text-center hidden sm:block w-16 leading-tight"
-                style={{ color: active ? '#0f2044' : done ? '#22c55e' : '#9ca3af' }}
+                style={{ color: active ? '#0b103a' : done ? '#22c55e' : '#9ca3af' }}
               >
                 {step.label}
               </span>

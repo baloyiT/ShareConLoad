@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 
+import { Check, X } from 'lucide-react';
 // ─── Inner component (uses useSearchParams) ───────────────────────────────────
 
 function CallbackHandler() {
@@ -56,7 +57,7 @@ function CallbackHandler() {
 
         {status === 'verifying' && (
           <>
-            <span className="loading loading-spinner loading-lg mb-5" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg mb-5" style={{ color: '#ff6a00' }} />
             <h2 className="text-xl font-bold text-gray-800">Verifying payment…</h2>
             <p className="text-sm text-gray-400 mt-1">Please wait while we confirm your payment with Paystack.</p>
           </>
@@ -65,9 +66,7 @@ function CallbackHandler() {
         {status === 'success' && (
           <>
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: '#f0fdf4' }}>
-              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
+              <Check className="w-8 h-8 text-green-500" strokeWidth={2.5} />
             </div>
             <h2 className="text-xl font-extrabold text-gray-800 mb-1">Payment Confirmed!</h2>
             <p className="text-sm text-gray-500 mb-1">Your payment has been successfully verified.</p>
@@ -77,7 +76,7 @@ function CallbackHandler() {
               <Link
                 href={`/payments/${bookingId}`}
                 className="btn mt-4 text-white font-bold rounded-xl hover:opacity-90 w-full"
-                style={{ backgroundColor: '#0f2044' }}
+                style={{ backgroundColor: '#0b103a' }}
               >
                 Go to Payment Page
               </Link>
@@ -88,14 +87,12 @@ function CallbackHandler() {
         {status === 'failed' && (
           <>
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-red-50">
-              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-8 h-8 text-red-400" />
             </div>
             <h2 className="text-xl font-extrabold text-gray-800 mb-1">Payment Failed</h2>
             <p className="text-sm text-gray-500 mb-6">{message}</p>
             <div className="flex flex-col gap-2">
-              <Link href="/bookings" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#0f2044' }}>
+              <Link href="/bookings" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#0b103a' }}>
                 My Bookings
               </Link>
               <Link href="/support/new" className="btn btn-ghost rounded-xl text-gray-500 text-sm">
@@ -121,7 +118,7 @@ export default function PaymentCallbackPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
         </div>
@@ -129,7 +126,7 @@ export default function PaymentCallbackPage() {
 
       <Suspense fallback={
         <div className="flex-1 flex items-center justify-center">
-          <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+          <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
         </div>
       }>
         <CallbackHandler />

@@ -27,7 +27,7 @@ type Agent = {
 };
 
 const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
-  pending_payment: { bg: '#fff7ed', color: '#f97316', label: 'Pending Payment'    },
+  pending_payment: { bg: '#fff7ed', color: '#ff6a00', label: 'Pending Payment'    },
   paid:            { bg: '#fefce8', color: '#ca8a04', label: 'Paid — Needs Agent' },
   assigned:        { bg: '#eff6ff', color: '#2563eb', label: 'Assigned'           },
   in_progress:     { bg: '#f5f3ff', color: '#7c3aed', label: 'In Progress'        },
@@ -114,7 +114,7 @@ export default function AdminMeasurementJobsPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-16 text-gray-400">No measurement jobs yet.</div>
@@ -162,7 +162,7 @@ export default function AdminMeasurementJobsPage() {
                             <button
                               onClick={() => { setAssigningId(isAssigning ? null : job.id); setError(null); }}
                               className="btn btn-xs text-white font-bold"
-                              style={{ backgroundColor: '#f97316' }}
+                              style={{ backgroundColor: '#ff6a00' }}
                             >
                               {isAssigning ? 'Cancel' : 'Assign Agent'}
                             </button>

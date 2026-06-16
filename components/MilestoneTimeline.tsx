@@ -1,5 +1,7 @@
 'use client';
 
+import { AlertTriangle, Check } from 'lucide-react';
+
 type Milestone = {
   id: string;
   milestone: string;
@@ -57,7 +59,7 @@ export default function MilestoneTimeline({ milestones }: Props) {
                   color: done ? '#fff' : '#9ca3af',
                 }}
               >
-                {done ? (isHold ? '!' : '✓') : i + 1}
+                {done ? (isHold ? <AlertTriangle className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" strokeWidth={3} />) : i + 1}
               </div>
               {!isLast && (
                 <div

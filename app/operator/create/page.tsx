@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -8,6 +8,7 @@ import LocationAutocomplete from '@/components/LocationAutocomplete';
 import PageHero from '@/components/PageHero';
 import type { Location } from '@/services/locations';
 
+import { AlertCircle, ArrowRight, Check, Info, Lock } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ContainerForm = {
@@ -209,7 +210,7 @@ export default function CreateContainerPage() {
   if (compliance === 'loading') {
     return (
       <div className="flex items-center justify-center py-24 min-h-[60vh]">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -218,17 +219,14 @@ export default function CreateContainerPage() {
   if (compliance === 'blocked') {
     return (
       <div className="bg-[#f8fafc] min-h-screen">
-        <PageHero showMap label="Operator Portal" title="Create a Container" />
+        <PageHero showMap title="Create a Container" />
         <div className="max-w-md mx-auto px-4 py-16">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
               style={{ backgroundColor: '#fff7ed' }}
             >
-              <svg className="w-8 h-8" style={{ color: '#f97316' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-6V7m0 0a5 5 0 00-5 5v1H5a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2h-2v-1a5 5 0 00-5-5z" />
-              </svg>
+              <Lock className="w-8 h-8" style={{ color: '#ff6a00' }} />
             </div>
             <h2 className="text-xl font-extrabold text-gray-800 mb-2">Compliance Required</h2>
             <p className="text-gray-500 text-sm mb-1">
@@ -240,7 +238,7 @@ export default function CreateContainerPage() {
             <Link
               href="/operator/compliance/profile"
               className="btn text-white font-bold rounded-xl w-full hover:opacity-90"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Go to Compliance →
             </Link>
@@ -262,9 +260,7 @@ export default function CreateContainerPage() {
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
             style={{ backgroundColor: '#f0fdf4' }}
           >
-            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-            </svg>
+            <Check className="w-8 h-8 text-green-500" strokeWidth={2.5} />
           </div>
 
           <h1 className="text-2xl font-extrabold text-gray-800 mb-1">Container Created!</h1>
@@ -289,7 +285,7 @@ export default function CreateContainerPage() {
             <Link
               href={`/container/${createdId}`}
               className="w-full btn text-white font-bold rounded-xl text-sm hover:opacity-90"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               View Container
             </Link>
@@ -312,7 +308,7 @@ export default function CreateContainerPage() {
   return (
     <div className="bg-[#f8fafc]">
 
-      <PageHero showMap label="Operator Portal" title="Create a Container" description="List your available container space for customers to book." />
+      <PageHero showMap title="Create a Container" description="List your available container space for customers to book." />
 
       {/* Form */}
       <form onSubmit={handleSubmit} noValidate>
@@ -321,9 +317,7 @@ export default function CreateContainerPage() {
           {/* Global error */}
           {errors.submit && (
             <div className="alert alert-error text-sm">
-              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-              </svg>
+              <AlertCircle className="w-5 h-5 shrink-0" />
               {errors.submit}
             </div>
           )}
@@ -364,9 +358,7 @@ export default function CreateContainerPage() {
             {(form.origin_city || form.destination_city) && (
               <div className="mt-4 flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm">
                 <span className="font-semibold text-gray-700">{form.origin_city || '-'}</span>
-                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
+                <ArrowRight className="w-4 h-4 text-gray-400 shrink-0" />
                 <span className="font-semibold text-gray-700">{form.destination_city || '-'}</span>
                 {form.origin_country && form.destination_country && (
                   <span className="text-gray-400 ml-auto text-xs">
@@ -506,7 +498,7 @@ export default function CreateContainerPage() {
               type="submit"
               disabled={submitting}
               className="btn text-white font-bold px-10 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-60"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               {submitting ? (
                 <span className="loading loading-spinner loading-sm" />
@@ -538,7 +530,7 @@ function Section({
       <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
         <span
           className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0"
-          style={{ backgroundColor: '#0f2044' }}
+          style={{ backgroundColor: '#0b103a' }}
         >
           {step}
         </span>
@@ -574,9 +566,7 @@ function Field({
       {children}
       {error && (
         <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1" data-error="true">
-          <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
+          <Info className="w-3 h-3 shrink-0" />
           {error}
         </p>
       )}

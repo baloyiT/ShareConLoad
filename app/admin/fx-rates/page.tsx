@@ -60,7 +60,7 @@ export default function FxRatesPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : (
           <form action={formAction} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
@@ -89,7 +89,7 @@ export default function FxRatesPage() {
                 type="submit"
                 disabled={isPending}
                 className="btn text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: '#0f2044' }}
+                style={{ backgroundColor: '#0b103a' }}
               >
                 {isPending ? <span className="loading loading-spinner loading-sm" /> : 'Save Rates'}
               </button>

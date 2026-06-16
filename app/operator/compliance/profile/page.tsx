@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -83,7 +83,7 @@ export default function ComplianceProfilePage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} /></div>;
+    return <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} /></div>;
   }
 
   return (
@@ -156,7 +156,7 @@ export default function ComplianceProfilePage() {
           type="submit"
           disabled={saving}
           className="btn text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60 mt-2"
-          style={{ backgroundColor: '#0f2044' }}
+          style={{ backgroundColor: '#0b103a' }}
         >
           {saving ? <span className="loading loading-spinner loading-sm" /> : 'Save & Continue →'}
         </button>

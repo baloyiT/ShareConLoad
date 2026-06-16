@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 
+import { AlertCircle } from 'lucide-react';
 type BookingOption = {
   id: string;
   route: string;
@@ -101,7 +102,7 @@ function NewDisputeForm() {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
       {loading && (
         <div className="flex justify-center py-24">
-          <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+          <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
         </div>
       )}
 
@@ -110,9 +111,7 @@ function NewDisputeForm() {
 
           {error && (
             <div className="alert alert-error text-sm">
-              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-              </svg>
+              <AlertCircle className="w-5 h-5 shrink-0" />
               {error}
             </div>
           )}
@@ -150,7 +149,7 @@ function NewDisputeForm() {
                   key={dt.value}
                   className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
                   style={disputeType === dt.value
-                    ? { borderColor: '#0f2044', backgroundColor: '#f0f4ff' }
+                    ? { borderColor: '#0b103a', backgroundColor: '#f0f4ff' }
                     : { borderColor: '#e5e7eb', backgroundColor: '#fff' }}
                 >
                   <input
@@ -190,7 +189,7 @@ function NewDisputeForm() {
               type="submit"
               disabled={submitting || bookings.length === 0}
               className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-60"
-              style={{ backgroundColor: '#0f2044' }}
+              style={{ backgroundColor: '#0b103a' }}
             >
               {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Submit Dispute'}
             </button>
@@ -213,7 +212,7 @@ export default function NewDisputePage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link href="/bookings" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
@@ -226,7 +225,7 @@ export default function NewDisputePage() {
 
       <Suspense fallback={
         <div className="flex justify-center py-24">
-          <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+          <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
         </div>
       }>
         <NewDisputeForm />

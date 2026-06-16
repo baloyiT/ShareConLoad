@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Globe, Mail } from 'lucide-react';
 const COUNTRIES = [
   'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda',
   'Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain',
@@ -106,15 +107,13 @@ export default function ContactPage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Header */}
-      <div className="py-12 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+      <div className="py-12 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
         <div className="max-w-2xl mx-auto">
           <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white transition-colors mb-6">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 5l-7 7 7 7"/>
-            </svg>
+            <ArrowLeft size={14} strokeWidth={2.5} />
             Back to Home
           </Link>
-          <p className="text-xs font-extrabold uppercase tracking-widest mb-2" style={{ color: '#f97316' }}>
+          <p className="text-xs font-extrabold uppercase tracking-widest mb-2" style={{ color: '#ff6a00' }}>
             Get in Touch
           </p>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">Contact Us</h1>
@@ -128,7 +127,7 @@ export default function ContactPage() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         {submitted ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
-            <div className="text-5xl mb-4">✅</div>
+            <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-500" />
             <h2 className="text-xl font-extrabold text-gray-900 mb-2">Message Received!</h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-6">
               Thank you for reaching out. We&apos;ll get back to you within 24 hours.
@@ -136,7 +135,7 @@ export default function ContactPage() {
             <Link
               href="/"
               className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl text-white"
-              style={{ backgroundColor: '#f97316' }}
+              style={{ backgroundColor: '#ff6a00' }}
             >
               Back to Home
             </Link>
@@ -157,8 +156,8 @@ export default function ContactPage() {
                     required
                     placeholder="Jane Smith"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-transparent"
-                    style={{ '--tw-ring-color': '#f97316' } as React.CSSProperties}
-                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #f97316'}
+                    style={{ '--tw-ring-color': '#ff6a00' } as React.CSSProperties}
+                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #ff6a00'}
                     onBlur={e => e.target.style.boxShadow = ''}
                   />
                 </div>
@@ -172,7 +171,7 @@ export default function ContactPage() {
                     required
                     placeholder="jane@example.com"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
-                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #f97316'}
+                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #ff6a00'}
                     onBlur={e => e.target.style.boxShadow = ''}
                   />
                 </div>
@@ -189,7 +188,7 @@ export default function ContactPage() {
                     name="phone"
                     placeholder="+27 82 000 0000"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
-                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #f97316'}
+                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #ff6a00'}
                     onBlur={e => e.target.style.boxShadow = ''}
                   />
                 </div>
@@ -202,7 +201,7 @@ export default function ContactPage() {
                     required
                     defaultValue=""
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none bg-white"
-                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #f97316'}
+                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #ff6a00'}
                     onBlur={e => e.target.style.boxShadow = ''}
                   >
                     <option value="" disabled>Select a subject</option>
@@ -228,7 +227,7 @@ export default function ContactPage() {
                   onBlur={e => e.target.style.boxShadow = ''}
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none ${countryError ? 'border-red-400' : 'border-gray-200'}`}
                   style={{}}
-                  onFocusCapture={e => (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px #f97316'}
+                  onFocusCapture={e => (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px #ff6a00'}
                 />
                 <input type="hidden" name="country" value={countryValue} />
                 {countryError && <p className="text-red-400 text-xs mt-1">Please select a country</p>}
@@ -258,7 +257,7 @@ export default function ContactPage() {
                   rows={5}
                   placeholder="Tell us how we can help..."
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none resize-none"
-                  onFocus={e => e.target.style.boxShadow = '0 0 0 2px #f97316'}
+                  onFocus={e => e.target.style.boxShadow = '0 0 0 2px #ff6a00'}
                   onBlur={e => e.target.style.boxShadow = ''}
                 />
               </div>
@@ -271,16 +270,14 @@ export default function ContactPage() {
                 type="submit"
                 disabled={submitting}
                 className="w-full py-3 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 {submitting ? (
                   <span className="loading loading-spinner loading-xs" />
                 ) : (
                   <>
                     Send Message
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
+                    <ArrowRight size={16} strokeWidth={2.5} />
                   </>
                 )}
               </button>
@@ -292,12 +289,12 @@ export default function ContactPage() {
         {/* Info cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
           {[
-            { icon: '📧', label: 'Email', value: 'support@shareconload.com' },
-            { icon: '⏱️', label: 'Response Time', value: 'Within 24 hours' },
-            { icon: '🌍', label: 'Coverage', value: 'Global' },
-          ].map(({ icon, label, value }) => (
+            { icon: Mail, label: 'Email', value: 'support@shareconload.com' },
+            { icon: Clock, label: 'Response Time', value: 'Within 24 hours' },
+            { icon: Globe, label: 'Coverage', value: 'Global' },
+          ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
-              <div className="text-2xl mb-2">{icon}</div>
+              <div className="flex justify-center mb-2"><Icon className="w-6 h-6 text-gray-500" /></div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{label}</p>
               <p className="text-sm font-semibold text-gray-700">{value}</p>
             </div>

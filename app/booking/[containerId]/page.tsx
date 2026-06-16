@@ -9,6 +9,7 @@ import { notify } from '@/services/notificationService';
 import { Container } from '@/components/ContainerCard';
 import PageHero from '@/components/PageHero';
 
+import { AlertCircle, ArrowRight, Check, Circle, IdCard, Info, Package, Plus, Search } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ItemForm = {
@@ -436,7 +437,7 @@ export default function BookingPage() {
   if (loadingContainer || kycLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+        <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     );
   }
@@ -446,7 +447,7 @@ export default function BookingPage() {
     const isPending = kycStatus === 'pending_review';
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-gray-50 px-4 text-center">
-        <div className="text-5xl">{isPending ? '🔍' : '🪪'}</div>
+        <div>{isPending ? <Search className="w-12 h-12 text-gray-400" /> : <IdCard className="w-12 h-12 text-gray-400" />}</div>
         <div className="max-w-sm">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
             {isPending ? 'Verification In Progress' : 'Identity Verification Required'}
@@ -458,14 +459,14 @@ export default function BookingPage() {
           </p>
           {isPending ? (
             <div className="flex flex-col gap-3">
-              <Link href="/onboarding/customer/status" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#f97316' }}>
+              <Link href="/onboarding/customer/status" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#ff6a00' }}>
                 Check Verification Status
               </Link>
               <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Browse Containers</Link>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <Link href="/onboarding/customer" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#f97316' }}>
+              <Link href="/onboarding/customer" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#ff6a00' }}>
                 {kycStatus === 'rejected' ? 'Resubmit Verification' : 'Verify My Identity'}
               </Link>
               <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Browse Containers</Link>
@@ -480,12 +481,12 @@ export default function BookingPage() {
   if (containerError || !container) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 text-center px-4">
-        <div className="text-6xl">📦</div>
+        <Package className="w-16 h-16 text-gray-300" />
         <h1 className="text-2xl font-bold text-gray-800">Container not found</h1>
         <p className="text-gray-400 text-sm max-w-xs">
           This container may no longer be available.
         </p>
-        <Link href="/" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0f2044' }}>
+        <Link href="/" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0b103a' }}>
           ← Back to listings
         </Link>
       </div>
@@ -502,7 +503,7 @@ export default function BookingPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
             <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
+              <span style={{ color: '#0b103a' }}>Share</span><span style={{ color: '#ff6a00' }}>Con</span><span style={{ color: '#0b103a' }}>Load</span>
             </span>
           </Link>
           <Link
@@ -525,9 +526,7 @@ export default function BookingPage() {
       {errors.submit && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
           <div className="alert alert-error text-sm">
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-            </svg>
+            <AlertCircle className="w-5 h-5 shrink-0" />
             {errors.submit}
           </div>
         </div>
@@ -543,7 +542,7 @@ export default function BookingPage() {
             {/* ── SECTION 1: Container Summary ─────────────────────────────── */}
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>1</span>
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>1</span>
                 <h2 className="font-bold text-gray-800">Container Summary</h2>
               </div>
               <div className="p-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -564,7 +563,7 @@ export default function BookingPage() {
             {/* ── SECTION 2: CBM Declaration ───────────────────────────────── */}
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>2</span>
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>2</span>
                 <h2 className="font-bold text-gray-800">CBM Declaration</h2>
               </div>
               <div className="p-6">
@@ -574,7 +573,7 @@ export default function BookingPage() {
                     <input type="radio" name="cbmType" value="self_declared"
                       checked={cbmDeclarationType === 'self_declared'}
                       onChange={() => setCbmDeclarationType('self_declared')}
-                      className="radio radio-sm" style={{ accentColor: '#f97316' }} />
+                      className="radio radio-sm" style={{ accentColor: '#ff6a00' }} />
                     <div>
                       <p className="text-sm font-semibold text-gray-800">I know my dimensions (self-declare)</p>
                       <p className="text-xs text-gray-400">I will provide my own CBM estimate</p>
@@ -584,7 +583,7 @@ export default function BookingPage() {
                     <input type="radio" name="cbmType" value="measurement_verified"
                       checked={cbmDeclarationType === 'measurement_verified'}
                       onChange={() => setCbmDeclarationType('measurement_verified')}
-                      className="radio radio-sm" style={{ accentColor: '#f97316' }} />
+                      className="radio radio-sm" style={{ accentColor: '#ff6a00' }} />
                     <div>
                       <p className="text-sm font-semibold text-gray-800">I have an official measurement report</p>
                       <p className="text-xs text-gray-400">My CBM was verified by a ShareConLoad measurement agent</p>
@@ -604,7 +603,7 @@ export default function BookingPage() {
                     data-error={errors.cbm_step1 ? 'true' : undefined}>
                     <input type="checkbox" checked={cbmStep1Ack}
                       onChange={(e) => { setCbmStep1Ack(e.target.checked); setErrors((prev) => ({ ...prev, cbm_step1: undefined })); }}
-                      className="checkbox checkbox-sm mt-0.5 shrink-0" style={{ accentColor: '#f97316' }} />
+                      className="checkbox checkbox-sm mt-0.5 shrink-0" style={{ accentColor: '#ff6a00' }} />
                     <span className="text-xs text-amber-800 leading-relaxed">
                       I understand that my CBM declaration affects my booking price and may be verified at loading. A ±5% variance is allowed; overages will be billed and underages credited.
                     </span>
@@ -619,7 +618,7 @@ export default function BookingPage() {
             {/* ── SECTION 3: Booking Input ──────────────────────────────────── */}
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>3</span>
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>3</span>
                 <h2 className="font-bold text-gray-800">Booking Details</h2>
               </div>
               <div className="p-6">
@@ -646,7 +645,7 @@ export default function BookingPage() {
                   />
                   <span className="text-gray-500 text-sm">CBM</span>
                   {cbmValue > 0 && container && (
-                    <span className="text-sm font-semibold ml-2" style={{ color: '#f97316' }}>
+                    <span className="text-sm font-semibold ml-2" style={{ color: '#ff6a00' }}>
                       = R{(cbmValue * container.price_per_cbm).toFixed(2)}
                     </span>
                   )}
@@ -690,7 +689,7 @@ export default function BookingPage() {
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>4</span>
+                  <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>4</span>
                   <h2 className="font-bold text-gray-800">Shipment Items</h2>
                   <span className="badge badge-sm bg-gray-100 text-gray-600 border-none">{items.length}</span>
                 </div>
@@ -698,11 +697,9 @@ export default function BookingPage() {
                   type="button"
                   onClick={addItem}
                   className="btn btn-sm text-white gap-1 text-xs"
-                  style={{ backgroundColor: '#0f2044' }}
+                  style={{ backgroundColor: '#0b103a' }}
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
+                  <Plus className="w-3.5 h-3.5" />
                   Add Item
                 </button>
               </div>
@@ -894,9 +891,7 @@ export default function BookingPage() {
                             }
                             className="btn btn-xs btn-outline border-gray-300 text-gray-600 hover:border-orange-400 hover:text-orange-500 gap-1"
                           >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
+                            <Plus className="w-3 h-3" />
                             Add Photo
                           </button>
                         )}
@@ -960,7 +955,7 @@ export default function BookingPage() {
               data-error={errors.agreed_terms ? 'true' : undefined}
             >
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0f2044' }}>5</span>
+                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>5</span>
                 <h2 className="font-bold text-gray-800">Goods Declaration</h2>
                 <span className="badge badge-sm badge-error text-white border-none ml-1">Required</span>
               </div>
@@ -983,7 +978,7 @@ export default function BookingPage() {
                       setErrors((prev) => ({ ...prev, agreed_terms: undefined }));
                     }}
                     className="checkbox checkbox-sm mt-0.5 shrink-0"
-                    style={{ accentColor: '#f97316' }}
+                    style={{ accentColor: '#ff6a00' }}
                   />
                   <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors leading-relaxed">
                     I confirm that all information provided is accurate, complete, and that the shipment
@@ -995,9 +990,7 @@ export default function BookingPage() {
 
                 {errors.agreed_terms && (
                   <p className="text-red-500 text-xs mt-3 flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
+                    <Info className="w-3.5 h-3.5 shrink-0" />
                     {errors.agreed_terms}
                   </p>
                 )}
@@ -1013,9 +1006,7 @@ export default function BookingPage() {
               {/* Route */}
               <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-4">
                 <span>{container.origin_city}</span>
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
+                <ArrowRight className="w-4 h-4 text-gray-400" />
                 <span>{container.destination_city}</span>
               </div>
 
@@ -1036,7 +1027,7 @@ export default function BookingPage() {
                 <div className="divider my-0" />
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-gray-800">Estimated Total</span>
-                  <span className="text-xl font-extrabold" style={{ color: '#f97316' }}>
+                  <span className="text-xl font-extrabold" style={{ color: '#ff6a00' }}>
                     {estimatedTotal > 0 ? `R${estimatedTotal.toFixed(2)}` : '—'}
                   </span>
                 </div>
@@ -1054,7 +1045,7 @@ export default function BookingPage() {
                 type="submit"
                 disabled={submitting}
                 className="w-full btn text-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 {submitting ? (
                   <span className="loading loading-spinner loading-sm" />
@@ -1086,7 +1077,7 @@ export default function BookingPage() {
               <button
                 onClick={async () => { setShowCbmModal(false); await performSubmit(); }}
                 className="btn flex-1 text-white font-bold rounded-xl"
-                style={{ backgroundColor: '#f97316' }}>
+                style={{ backgroundColor: '#ff6a00' }}>
                 I Confirm
               </button>
             </div>
@@ -1134,13 +1125,9 @@ function StatusRow({ ok, label }: { ok: boolean; label: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       {ok ? (
-        <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
+        <Check className="w-4 h-4 text-green-500 shrink-0" />
       ) : (
-        <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9" strokeWidth={2} />
-        </svg>
+        <Circle className="w-4 h-4 text-gray-300 shrink-0" />
       )}
       <span className={ok ? 'text-gray-700' : 'text-gray-400'}>{label}</span>
     </div>

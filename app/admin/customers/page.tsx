@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 import { approveCustomerKyc, rejectCustomerKyc } from '@/actions/adminCustomerActions';
+import { Check, FileText, X } from 'lucide-react';
 
 async function getSignedUrl(storedUrl: string | null, bucket: string): Promise<string | null> {
   if (!storedUrl) return null;
@@ -32,7 +33,7 @@ type KycRow = {
 };
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  pending_review: { bg: '#fff7ed', color: '#f97316', label: 'Pending Review' },
+  pending_review: { bg: '#fff7ed', color: '#ff6a00', label: 'Pending Review' },
   verified:       { bg: '#f0fdf4', color: '#16a34a', label: 'Verified'       },
   rejected:       { bg: '#fef2f2', color: '#ef4444', label: 'Rejected'       },
 };
@@ -98,7 +99,7 @@ export default function AdminCustomersPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : records.length === 0 ? (
           <div className="text-center py-16 text-gray-400">No KYC submissions yet.</div>
@@ -187,7 +188,7 @@ export default function AdminCustomersPage() {
                 signedIdDocUrl ? (
                   <a href={signedIdDocUrl} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                    📄 Identity Document
+                    <FileText className="w-4 h-4" /> Identity Document
                   </a>
                 ) : (
                   <p className="text-sm text-gray-400">Loading document link…</p>
@@ -199,7 +200,7 @@ export default function AdminCustomersPage() {
                 signedProofUrl ? (
                   <a href={signedProofUrl} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                    📄 Proof of Address
+                    <FileText className="w-4 h-4" /> Proof of Address
                   </a>
                 ) : (
                   <p className="text-sm text-gray-400">Loading document link…</p>
@@ -241,7 +242,7 @@ export default function AdminCustomersPage() {
                     className="btn flex-1 text-white font-bold rounded-xl disabled:opacity-60"
                     style={{ backgroundColor: '#16a34a' }}
                   >
-                    {actionLoading ? <span className="loading loading-spinner loading-sm" /> : '✓ Approve'}
+                    {actionLoading ? <span className="loading loading-spinner loading-sm" /> : <><Check className="w-4 h-4" /> Approve</>}
                   </button>
                   <button
                     onClick={() => handleReject(selected.id)}
@@ -249,7 +250,7 @@ export default function AdminCustomersPage() {
                     className="btn flex-1 font-bold rounded-xl disabled:opacity-60"
                     style={{ backgroundColor: '#fef2f2', color: '#ef4444' }}
                   >
-                    ✕ Reject
+                    <X className="w-4 h-4" /> Reject
                   </button>
                 </div>
               </>

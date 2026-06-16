@@ -17,8 +17,8 @@ export default function PageHero({
   rightSlot, children,
 }: Props) {
   const bg = gradient
-    ? 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)'
-    : '#0f2044';
+    ? 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)'
+    : '#0b103a';
 
   return (
     <div

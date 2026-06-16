@@ -23,7 +23,7 @@ type TransporterRow = {
 type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected' | 'suspended';
 
 const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
-  pending:   { bg: '#fff7ed', color: '#f97316', label: 'Pending'   },
+  pending:   { bg: '#fff7ed', color: '#ff6a00', label: 'Pending'   },
   approved:  { bg: '#f0fdf4', color: '#16a34a', label: 'Approved'  },
   rejected:  { bg: '#fef2f2', color: '#ef4444', label: 'Rejected'  },
   suspended: { bg: '#f3f4f6', color: '#6b7280', label: 'Suspended' },
@@ -149,7 +149,7 @@ export default function AdminTransportersPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400">No transporters found.</div>

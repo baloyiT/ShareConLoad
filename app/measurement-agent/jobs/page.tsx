@@ -84,7 +84,7 @@ export default function AgentJobsPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-16 text-gray-400">No jobs assigned yet.</div>

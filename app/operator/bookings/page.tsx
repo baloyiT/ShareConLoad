@@ -1,13 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
-import {
-  Calendar, Package, Banknote, User, Hash,
-  MessageCircle, AlertTriangle, AlertCircle,
-  MapPin, XCircle, ClipboardCheck, CheckCircle, Ship, PackageCheck, CheckCircle2,
-} from 'lucide-react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { AlertCircle, AlertTriangle, ArrowRight, Banknote, Bell, Calendar, Check, CheckCircle, CheckCircle2, Circle, ClipboardCheck, ClipboardList, Hash, Hourglass, MapPin, MessageCircle, Package, PackageCheck, Ship, User, X, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import { notify, markAsRead } from '@/services/notificationService';
@@ -109,7 +103,7 @@ type StatusFilter = 'all' | 'pending' | 'confirmed' | 'goods_received' | 'loaded
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending:         { label: 'Pending',        color: '#f97316', bg: '#fff7ed' },
+  pending:         { label: 'Pending',        color: '#ff6a00', bg: '#fff7ed' },
   confirmed:       { label: 'Confirmed',      color: '#3b82f6', bg: '#eff6ff' },
   goods_received:  { label: 'Goods Received', color: '#0891b2', bg: '#ecfeff' },
   loaded:          { label: 'Loaded',         color: '#8b5cf6', bg: '#f5f3ff' },
@@ -134,26 +128,26 @@ const ACTION_CONFIG: Record<string, { label: string; icon: ReactNode; color: str
   confirmed: {
     label:       'Confirm Booking',
     icon:        <CheckCircle className="w-4 h-4" />,
-    color:       '#f97316',
+    color:       '#ff6a00',
     description: 'Accept this booking and notify the customer.',
   },
   // goods_received is handled by the receipt modal, not here
   loaded: {
     label:       'Mark as Loaded',
     icon:        <PackageCheck className="w-4 h-4" />,
-    color:       '#f97316',
+    color:       '#ff6a00',
     description: 'Confirm that goods have been loaded into the container.',
   },
   in_transit: {
     label:       'Mark In Transit',
     icon:        <Ship className="w-4 h-4" />,
-    color:       '#f97316',
+    color:       '#ff6a00',
     description: 'The container has departed and is on its way.',
   },
   delivered: {
     label:       'Mark Delivered',
     icon:        <CheckCircle2 className="w-4 h-4" />,
-    color:       '#f97316',
+    color:       '#ff6a00',
     description: 'Confirm that goods have arrived at the destination.',
   },
 };
@@ -211,8 +205,6 @@ export default function OperatorBookingsPage() {
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
-  const [userName, setUserName]         = useState('');
-  const [userInitials, setUserInitials] = useState('');
 
   // Confirmation modal state
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
@@ -258,14 +250,7 @@ export default function OperatorBookingsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.replace('/auth/login?next=/operator/bookings'); return; }
 
-    const name = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? '';
-    setUserName(name);
-    setUserInitials(
-      name.includes(' ')
-        ? name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
-        : name[0]?.toUpperCase() ?? '',
-    );
-    if (user) setCurrentUserId(user.id);
+    setCurrentUserId(user.id);
 
     const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single();
     if (profile) setOperatorProfileId(profile.id);
@@ -649,96 +634,67 @@ export default function OperatorBookingsPage() {
   return (
     <div className="bg-[#f8fafc]">
 
-      {/* ── Navbar ──────────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-        <div className="w-full px-6 sm:px-10 flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo1.png" alt="" width={40} height={40} className="h-9 w-auto" />
-            <span className="text-xl font-extrabold tracking-tight">
-              <span style={{ color: '#0f2044' }}>Share</span><span style={{ color: '#f97316' }}>Con</span><span style={{ color: '#0f2044' }}>Load</span>
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            {/* Notification bell */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setNotifOpen(v => !v)}
-                className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-lg"
-              >
-                🔔
-                {unreadNotifs.length > 0 && (
-                  <span
-                    className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
-                    style={{ backgroundColor: '#f97316' }}
-                  >
-                    {unreadNotifs.length > 9 ? '9+' : unreadNotifs.length}
-                  </span>
-                )}
-              </button>
-
-              {notifOpen && (
-                <div className="absolute right-0 top-11 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-800">New Messages</span>
-                    <button type="button" onClick={() => setNotifOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
-                  </div>
-                  {unreadNotifs.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-gray-400 text-sm">No new messages</div>
-                  ) : (
-                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
-                      {unreadNotifs.map(notif => (
-                        <button
-                          key={notif.id}
-                          type="button"
-                          onClick={() => openFromNotification(notif)}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
-                        >
-                          <p className="text-sm font-semibold text-gray-800">{notif.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {new Date(notif.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+      {/* ── Page utility bar ──────────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+        <div className="w-full px-6 sm:px-10 flex items-center justify-end h-12">
+          {/* Notification bell */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setNotifOpen(v => !v)}
+              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <Bell className="w-5 h-5 text-gray-600" />
+              {unreadNotifs.length > 0 && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
+                  style={{ backgroundColor: '#ff6a00' }}
+                >
+                  {unreadNotifs.length > 9 ? '9+' : unreadNotifs.length}
+                </span>
               )}
-            </div>
+            </button>
 
-            {/* User info */}
-            {userName && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#0f2044' }}>
-                  {userInitials}
+            {notifOpen && (
+              <div className="absolute right-0 top-11 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-sm font-bold text-gray-800">New Messages</span>
+                  <button type="button" onClick={() => setNotifOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-3.5 h-3.5" /></button>
                 </div>
-                <div className="hidden sm:flex flex-col leading-tight">
-                  <span className="text-sm font-medium text-gray-700 max-w-[130px] truncate">{userName}</span>
-                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full w-fit mt-0.5" style={{ backgroundColor: '#e8eef8', color: '#0f2044' }}>
-                    🚢 Operator
-                  </span>
-                </div>
+                {unreadNotifs.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-400 text-sm">No new messages</div>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                    {unreadNotifs.map(notif => (
+                      <button
+                        key={notif.id}
+                        type="button"
+                        onClick={() => openFromNotification(notif)}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+                      >
+                        <p className="text-sm font-semibold text-gray-800">{notif.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(notif.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-
-            <Link href="/operator" className="text-sm font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-              ← Operator Hub
-            </Link>
           </div>
         </div>
-      </nav>
+      </div>
 
       <PageHero
         showMap
-        label="Operator Portal"
         title="Manage Bookings"
         description="Review and update shipment statuses for your containers."
       >
         {!loading && pendingCount > 0 && (
           <div className="mt-5 flex items-center gap-3 bg-orange-500/20 border border-orange-400/30 rounded-xl px-4 py-3">
-            <span className="text-2xl">⏳</span>
+            <Hourglass className="w-6 h-6 text-white shrink-0" />
             <div>
               <p className="text-white font-bold text-sm">
                 {pendingCount} booking{pendingCount !== 1 ? 's' : ''} awaiting your confirmation
@@ -773,7 +729,7 @@ export default function OperatorBookingsPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border"
                 style={
                   active
-                    ? { backgroundColor: '#0f2044', color: '#fff', borderColor: '#0f2044' }
+                    ? { backgroundColor: '#0b103a', color: '#fff', borderColor: '#0b103a' }
                     : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }
                 }
               >
@@ -785,7 +741,7 @@ export default function OperatorBookingsPage() {
                       active
                         ? { backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }
                         : isPending
-                          ? { backgroundColor: '#fff7ed', color: '#f97316' }
+                          ? { backgroundColor: '#fff7ed', color: '#ff6a00' }
                           : { backgroundColor: '#f3f4f6', color: '#374151' }
                     }
                   >
@@ -800,7 +756,7 @@ export default function OperatorBookingsPage() {
         {/* Loading */}
         {loading && (
           <div className="flex justify-center py-24">
-            <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+            <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
           </div>
         )}
 
@@ -812,7 +768,7 @@ export default function OperatorBookingsPage() {
         {/* Empty */}
         {!loading && !error && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="text-5xl mb-4">📋</div>
+            <ClipboardList className="w-12 h-12 mb-4 text-gray-300" />
             <h2 className="text-xl font-bold text-gray-700 mb-2">
               {statusFilter === 'all' ? 'No bookings yet' : `No ${STATUS_CONFIG[statusFilter]?.label ?? ''} bookings`}
             </h2>
@@ -863,7 +819,7 @@ export default function OperatorBookingsPage() {
                     : `Booking #${shortId(receiptModal.booking.id)}`}
                 </p>
               </div>
-              <button onClick={() => setReceiptModal(null)} className="btn btn-ghost btn-sm btn-circle text-gray-400">✕</button>
+              <button onClick={() => setReceiptModal(null)} className="btn btn-ghost btn-sm btn-circle text-gray-400"><X className="w-4 h-4" /></button>
             </div>
 
             {receiptModal.step === 'input' && (
@@ -909,7 +865,7 @@ export default function OperatorBookingsPage() {
               <>
                 <div className="px-6 py-5 space-y-4">
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm space-y-2">
-                    <p className="font-bold text-amber-800">⚠️ Excess CBM Detected</p>
+                    <p className="font-bold text-amber-800 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> Excess CBM Detected</p>
                     <div className="flex justify-between text-amber-700"><span>Booked</span><span className="font-bold">{receiptModal.booking.total_cbm} m³</span></div>
                     <div className="flex justify-between text-amber-700"><span>Actual received</span><span className="font-bold">{receiptModal.actualCbm} m³</span></div>
                     <div className="flex justify-between text-amber-700"><span>Excess</span><span className="font-bold">+{receiptModal.excessCbm.toFixed(2)} m³ ({receiptModal.variance.toFixed(1)}%)</span></div>
@@ -979,7 +935,7 @@ export default function OperatorBookingsPage() {
                     : `Booking #${shortId(milestoneModal.booking.id)}`}
                 </p>
               </div>
-              <button onClick={() => setMilestoneModal(null)} className="btn btn-ghost btn-sm btn-circle text-gray-400">✕</button>
+              <button onClick={() => setMilestoneModal(null)} className="btn btn-ghost btn-sm btn-circle text-gray-400"><X className="w-4 h-4" /></button>
             </div>
 
             <div className="px-6 py-4 flex flex-col gap-4">
@@ -1019,7 +975,7 @@ export default function OperatorBookingsPage() {
                 onClick={recordMilestone}
                 disabled={recordingMilestone}
                 className="btn flex-1 text-white font-bold rounded-xl hover:opacity-90"
-                style={{ backgroundColor: '#f97316' }}
+                style={{ backgroundColor: '#ff6a00' }}
               >
                 {recordingMilestone ? <span className="loading loading-spinner loading-sm" /> : 'Record'}
               </button>
@@ -1036,7 +992,7 @@ export default function OperatorBookingsPage() {
               <h3 className="font-bold text-base">
                 Messages, {messageBooking.id.slice(0, 8).toUpperCase()}
               </h3>
-              <button type="button" className="btn btn-ghost btn-xs" onClick={() => setMessageBooking(null)}>✕</button>
+              <button type="button" className="btn btn-ghost btn-xs" onClick={() => setMessageBooking(null)}><X className="w-3.5 h-3.5" /></button>
             </div>
             <MessageThread
               bookingId={messageBooking.id}
@@ -1112,9 +1068,9 @@ export default function OperatorBookingsPage() {
                     </span>
                   </div>
                   <div className="flex gap-4 text-xs text-gray-500">
-                    <span>📦 {pendingAction.booking.total_cbm} CBM</span>
-                    <span>💵 R{pendingAction.booking.total_price.toFixed(2)}</span>
-                    <span>📅 Departs {fmt(pendingAction.booking.container.departure_date)}</span>
+                    <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5" /> {pendingAction.booking.total_cbm} CBM</span>
+                    <span className="flex items-center gap-1"><Banknote className="w-3.5 h-3.5" /> R{pendingAction.booking.total_price.toFixed(2)}</span>
+                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Departs {fmt(pendingAction.booking.container.departure_date)}</span>
                   </div>
                 </>
               ) : (
@@ -1125,9 +1081,7 @@ export default function OperatorBookingsPage() {
             {/* Status arrow */}
             <div className="px-6 py-3 flex items-center gap-3">
               <StatusBadge status={pendingAction.booking.status} />
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+              <ArrowRight className="w-4 h-4 text-gray-400" />
               <StatusBadge status={pendingAction.newStatus} />
             </div>
 
@@ -1154,7 +1108,7 @@ export default function OperatorBookingsPage() {
                 style={{
                   backgroundColor: pendingAction.newStatus === 'cancelled'
                     ? '#ef4444'
-                    : ACTION_CONFIG[pendingAction.newStatus]?.color ?? '#0f2044',
+                    : ACTION_CONFIG[pendingAction.newStatus]?.color ?? '#0b103a',
                 }}
               >
                 {updating
@@ -1225,7 +1179,7 @@ function BookingCard({
     <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${isUrgent ? 'border-orange-200' : 'border-gray-100'}`}>
       {/* Top colour bar — clipped separately so dropdowns inside aren't hidden */}
       <div className="rounded-t-2xl overflow-hidden">
-        <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#f97316' : cfg.color }} />
+        <div className="h-1 w-full" style={{ backgroundColor: isUrgent ? '#ff6a00' : cfg.color }} />
       </div>
 
       <div className="p-5 sm:p-6">
@@ -1240,9 +1194,7 @@ function BookingCard({
                 {c ? (
                   <>
                     <span className="text-lg font-extrabold text-gray-900">{c.origin_city}</span>
-                    <svg className="w-5 h-5 text-orange-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
+                    <ArrowRight className="w-5 h-5 text-orange-400 shrink-0" strokeWidth={2.5} />
                     <span className="text-lg font-extrabold text-gray-900">{c.destination_city}</span>
                   </>
                 ) : (
@@ -1252,7 +1204,7 @@ function BookingCard({
               {isUrgent && daysLeft !== null && (
                 <span
                   className="shrink-0 text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap"
-                  style={{ backgroundColor: daysLeft <= 3 ? '#fef2f2' : '#fff7ed', color: daysLeft <= 3 ? '#ef4444' : '#f97316' }}
+                  style={{ backgroundColor: daysLeft <= 3 ? '#fef2f2' : '#fff7ed', color: daysLeft <= 3 ? '#ef4444' : '#ff6a00' }}
                 >
                   <span className="inline-flex items-center gap-1">
                     {daysLeft === 0
@@ -1301,11 +1253,11 @@ function BookingCard({
                           status === 'paid'
                             ? { backgroundColor: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }
                             : status === 'pending'
-                            ? { backgroundColor: '#fff7ed', color: '#f97316', borderColor: '#fed7aa' }
+                            ? { backgroundColor: '#fff7ed', color: '#ff6a00', borderColor: '#fed7aa' }
                             : { backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }
                         }
                       >
-                        {status === 'paid' ? '✓' : '○'} {PAYMENT_STAGE_SHORT[stage]}
+                        {status === 'paid' ? <Check className="w-2.5 h-2.5" strokeWidth={3} /> : <Circle className="w-2.5 h-2.5" />} {PAYMENT_STAGE_SHORT[stage]}
                       </span>
                     );
                   })}
@@ -1362,7 +1314,7 @@ function BookingCard({
                 <button
                   onClick={() => onConfirmReceipt(booking)}
                   className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: '#f97316' }}
+                  style={{ backgroundColor: '#ff6a00' }}
                 >
                   <ClipboardCheck className="w-4 h-4" /> Confirm Receipt
                 </button>
@@ -1385,7 +1337,7 @@ function BookingCard({
                   type="button"
                   onClick={onMessage}
                   className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border transition-colors"
-                  style={{ borderColor: '#0f2044', color: '#0f2044' }}
+                  style={{ borderColor: '#0b103a', color: '#0b103a' }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f0f4ff')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
@@ -1394,7 +1346,7 @@ function BookingCard({
                   {messageCount > 0 && (
                     <span
                       className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
-                      style={{ backgroundColor: '#f97316' }}
+                      style={{ backgroundColor: '#ff6a00' }}
                     >
                       {messageCount > 9 ? '9+' : messageCount}
                     </span>
@@ -1406,7 +1358,7 @@ function BookingCard({
               <button
                 onClick={() => onRecordMilestone(booking)}
                 className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border transition-colors"
-                style={{ borderColor: '#0f2044', color: '#0f2044' }}
+                style={{ borderColor: '#0b103a', color: '#0b103a' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f0f4ff')}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >

@@ -1,6 +1,7 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import Image from 'next/image';
 
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 export const metadata = {
   title: 'Operator Verification, ShareConLoad',
   description: 'KYC documents and vetting process required for logistics providers on ShareConLoad.',
@@ -104,24 +105,22 @@ export default function OperatorVerificationPage() {
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
           <span className="text-lg font-extrabold tracking-tight">
-            <span style={{ color: '#0f2044' }}>Share</span>
-            <span style={{ color: '#f97316' }}>Con</span>
-            <span style={{ color: '#0f2044' }}>Load</span>
+            <span style={{ color: '#0b103a' }}>Share</span>
+            <span style={{ color: '#ff6a00' }}>Con</span>
+            <span style={{ color: '#0b103a' }}>Load</span>
           </span>
         </Link>
         <div className="flex-1" />
         <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to Home
         </Link>
       </nav>
 
       {/* Hero */}
-      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%)' }}>
+      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#f97316' }}>Transparency</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#ff6a00' }}>Transparency</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">Operator Verification</h1>
           <p className="text-gray-400 text-sm">
             Every logistics provider (operator) on ShareConLoad undergoes a mandatory identity and compliance check before receiving any payments.
@@ -160,7 +159,7 @@ export default function OperatorVerificationPage() {
                   {/* Step circle */}
                   <div
                     className="relative z-10 flex items-center justify-center w-10 h-10 rounded-full shrink-0 text-sm font-extrabold text-white shadow-sm"
-                    style={{ backgroundColor: '#0f2044' }}
+                    style={{ backgroundColor: '#0b103a' }}
                   >
                     {num}
                   </div>
@@ -210,7 +209,7 @@ export default function OperatorVerificationPage() {
           <p className="text-sm text-amber-700 leading-relaxed">
             Operators cannot receive any payment until all required documents are individually approved by the ShareConLoad compliance team. This check is enforced at the system level, payouts cannot be manually bypassed.{' '}
             See{' '}
-            <Link href="/payment-flow" style={{ color: '#f97316' }} className="font-medium hover:underline">
+            <Link href="/payment-flow" style={{ color: '#ff6a00' }} className="font-medium hover:underline">
               How Payments Work
             </Link>{' '}
             for the full payout eligibility conditions.
@@ -227,9 +226,7 @@ export default function OperatorVerificationPage() {
               <p className="font-semibold text-gray-800">Payment Flow</p>
               <p className="text-xs text-gray-400 mt-0.5">How money moves between customers and operators</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
           <Link
             href="/dispute-resolution"
@@ -239,9 +236,7 @@ export default function OperatorVerificationPage() {
               <p className="font-semibold text-gray-800">Dispute Resolution</p>
               <p className="text-xs text-gray-400 mt-0.5">How customer complaints are handled</p>
             </div>
-            <svg className="w-4 h-4 text-gray-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
           </Link>
         </div>
 

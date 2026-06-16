@@ -4,19 +4,20 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 
+import { Check, ChevronDown, Handshake, Package, Settings, Ship, type LucideIcon } from 'lucide-react';
 type RoleKey = 'customer' | 'operator' | 'agent' | 'admin';
 
 type RoleConfig = {
   label: string;
   href: string;
-  emoji: string;
+  icon: LucideIcon;
 };
 
 const ROLES: Record<RoleKey, RoleConfig> = {
-  customer: { label: 'Shipper',         href: '/bookings', emoji: '📦' },
-  operator: { label: 'Operator Portal', href: '/operator', emoji: '🚢' },
-  agent:    { label: 'Agent Portal',    href: '/agent',    emoji: '🤝' },
-  admin:    { label: 'Admin',           href: '/admin',    emoji: '⚙️' },
+  customer: { label: 'Shipper',         href: '/bookings', icon: Package },
+  operator: { label: 'Operator Portal', href: '/operator', icon: Ship },
+  agent:    { label: 'Agent Portal',    href: '/agent',    icon: Handshake },
+  admin:    { label: 'Admin',           href: '/admin',    icon: Settings },
 };
 
 type Props = {
@@ -75,6 +76,7 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
       <>
         {otherRoles.map((role) => {
           const cfg = ROLES[role];
+          const Icon = cfg.icon;
           return (
             <Link
               key={role}
@@ -82,7 +84,7 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
               onClick={onNavigate}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              {cfg.emoji} Switch to {cfg.label}
+              <Icon className="w-4 h-4" /> Switch to {cfg.label}
             </Link>
           );
         })}
@@ -100,6 +102,7 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
   }
 
   const activeCfg = ROLES[currentRole];
+  const ActiveIcon = activeCfg.icon;
 
   return (
     <div ref={ref} className="relative">
@@ -107,14 +110,9 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-gray-700"
       >
-        <span>{activeCfg.emoji}</span>
+        <ActiveIcon className="w-4 h-4" />
         <span className="hidden sm:inline max-w-[110px] truncate">{activeCfg.label}</span>
-        <svg
-          className={`w-3 h-3 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
@@ -124,6 +122,7 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
           </p>
           {availableRoles.map((role) => {
             const cfg = ROLES[role];
+            const Icon = cfg.icon;
             const isActive = role === currentRole;
             return (
               <Link
@@ -136,12 +135,10 @@ export default function RoleSwitcher({ currentRole = 'customer', variant = 'drop
                     : 'font-medium text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <span>{cfg.emoji}</span>
+                <Icon className="w-4 h-4 shrink-0" />
                 <span>{cfg.label}</span>
                 {isActive && (
-                  <svg className="w-3.5 h-3.5 ml-auto text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check className="w-3.5 h-3.5 ml-auto text-gray-400 shrink-0" strokeWidth={2.5} />
                 )}
               </Link>
             );

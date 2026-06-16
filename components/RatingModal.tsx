@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Star } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
 
 type Props = {
@@ -65,10 +66,13 @@ export default function RatingModal({ bookingId, rateeId, title, onClose, onSubm
               onMouseEnter={() => setHovered(i)}
               onMouseLeave={() => setHovered(0)}
               aria-label={`${i} star${i > 1 ? 's' : ''}`}
-              className="bg-transparent border-0 cursor-pointer p-0 leading-none text-4xl"
-              style={{ color: i <= (hovered || stars) ? '#f59e0b' : '#d1d5db' }}
+              className="bg-transparent border-0 cursor-pointer p-0 leading-none"
             >
-              ★
+              <Star
+                size={32}
+                color={i <= (hovered || stars) ? '#f59e0b' : '#d1d5db'}
+                fill={i <= (hovered || stars) ? '#f59e0b' : 'none'}
+              />
             </button>
           ))}
         </div>
@@ -90,7 +94,8 @@ export default function RatingModal({ bookingId, rateeId, title, onClose, onSubm
           </button>
           <button
             type="button"
-            className="btn btn-sm border-0 bg-amber-400 text-white"
+            className="btn btn-sm border-0 text-white"
+            style={{ backgroundColor: '#ff6a00' }}
             disabled={loading || stars === 0}
             onClick={handleSubmit}
           >

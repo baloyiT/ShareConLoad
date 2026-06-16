@@ -34,7 +34,7 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <span className="loading loading-spinner loading-lg" style={{ color: '#f97316' }} />
+      <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
     </div>
   );
 }
