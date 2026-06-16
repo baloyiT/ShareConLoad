@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
+import { formatCountdown } from '@/components/PayoutOverrideModal';
 
 type OperatorProfile = {
   legal_name:              string | null;
@@ -26,6 +27,7 @@ type Payout = {
   failure_reason:          string | null;
   completed_at:            string | null;
   created_at:              string;
+  metadata:                { overridden?: boolean; override_reason?: string } | null;
   operator_profile:        OperatorProfile | null;
   booking:                 { containers: { origin_city: string; destination_city: string } | null } | null;
 };
@@ -47,14 +49,20 @@ function ZAR(n: number) {
   return `R ${n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function eligibilityReason(op: OperatorProfile | null, eligibleAfter: string | null): string | null {
-  if (!op) return 'No operator profile';
-  if (!op.paystack_recipient_code) return 'No bank account registered';
-  if (!op.payout_enabled) return 'Payouts disabled by admin';
-  if (op.payout_hold) return 'Operator on payout hold';
-  if (eligibleAfter && new Date(eligibleAfter) > new Date()) {
-    const hoursLeft = Math.ceil((new Date(eligibleAfter).getTime() - Date.now()) / (1000 * 60 * 60));
-    return `In 48h refund window, eligible in ${hoursLeft}h`;
+type BlockReason =
+  | { type: 'no_profile' | 'no_bank' | 'payout_disabled' | 'on_hold'; message: string }
+  | { type: 'refund_window'; message: string; msRemaining: number };
+
+function getBlockReason(op: OperatorProfile | null, eligibleAfter: string | null, now: number): BlockReason | null {
+  if (!op) return { type: 'no_profile', message: 'No operator profile' };
+  if (!op.paystack_recipient_code) return { type: 'no_bank', message: 'No bank account registered' };
+  if (!op.payout_enabled) return { type: 'payout_disabled', message: 'Payouts disabled by admin' };
+  if (op.payout_hold) return { type: 'on_hold', message: 'Operator on payout hold' };
+  if (eligibleAfter) {
+    const msRemaining = new Date(eligibleAfter).getTime() - now;
+    if (msRemaining > 0) {
+      return { type: 'refund_window', message: `Eligible in ${formatCountdown(msRemaining)}`, msRemaining };
+    }
   }
   return null;
 }
@@ -66,6 +74,12 @@ export default function AdminPayoutsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [triggering,   setTriggering]   = useState<string | null>(null);
   const [triggerError, setTriggerError] = useState<Record<string, string>>({});
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     async function fetchPayouts() {
@@ -76,7 +90,7 @@ export default function AdminPayoutsPage() {
           id, booking_id, operator_id,
           gross_amount, net_amount, commission_amount,
           status, eligible_after, paystack_transfer_code, failure_reason,
-          completed_at, created_at,
+          completed_at, created_at, metadata,
           booking:bookings(containers(origin_city, destination_city))
         `)
         .order('created_at', { ascending: false });
@@ -242,7 +256,7 @@ export default function AdminPayoutsPage() {
                     const route     = p.booking?.containers
                       ? `${p.booking.containers.origin_city} → ${p.booking.containers.destination_city}`
                       : '-';
-                    const blockReason = p.status === 'pending' ? eligibilityReason(p.operator_profile, p.eligible_after) : null;
+                    const blockReason = p.status === 'pending' ? getBlockReason(p.operator_profile, p.eligible_after, now) : null;
                     const isTriggering = triggering === p.id;
 
                     return (
