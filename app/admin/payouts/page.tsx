@@ -9,6 +9,7 @@ import PayoutOverrideModal, { formatCountdown } from '@/components/PayoutOverrid
 
 type OperatorProfile = {
   legal_name:              string | null;
+  status:                  string;
   payout_enabled:          boolean;
   payout_hold:             boolean;
   paystack_recipient_code: string | null;
@@ -29,6 +30,7 @@ type Payout = {
   created_at:              string;
   metadata:                { overridden?: boolean; override_reason?: string } | null;
   operator_profile:        OperatorProfile | null;
+  has_active_dispute:      boolean;
   booking:                 { containers: { origin_city: string; destination_city: string } | null } | null;
 };
 
@@ -50,14 +52,16 @@ function ZAR(n: number) {
 }
 
 type BlockReason =
-  | { type: 'no_profile' | 'no_bank' | 'payout_disabled' | 'on_hold'; message: string }
+  | { type: 'no_profile' | 'no_bank' | 'compliance_not_approved' | 'payout_disabled' | 'on_hold' | 'active_dispute'; message: string }
   | { type: 'refund_window'; message: string; msRemaining: number };
 
-function getBlockReason(op: OperatorProfile | null, eligibleAfter: string | null, now: number): BlockReason | null {
+function getBlockReason(op: OperatorProfile | null, hasActiveDispute: boolean, eligibleAfter: string | null, now: number): BlockReason | null {
   if (!op) return { type: 'no_profile', message: 'No operator profile' };
   if (!op.paystack_recipient_code) return { type: 'no_bank', message: 'No bank account registered' };
+  if (!['active', 'trusted'].includes(op.status)) return { type: 'compliance_not_approved', message: 'Operator compliance is not approved' };
   if (!op.payout_enabled) return { type: 'payout_disabled', message: 'Payouts disabled by admin' };
   if (op.payout_hold) return { type: 'on_hold', message: 'Operator on payout hold' };
+  if (hasActiveDispute) return { type: 'active_dispute', message: 'Active dispute on this booking' };
   if (eligibleAfter) {
     const msRemaining = new Date(eligibleAfter).getTime() - now;
     if (msRemaining > 0) {
@@ -122,7 +126,7 @@ export default function AdminPayoutsPage() {
       if (operatorIds.length > 0) {
         const { data: profileRows } = await supabase
           .from('profiles')
-          .select(`user_id, op:operator_profiles!profile_id(legal_name, payout_enabled, payout_hold, paystack_recipient_code)`)
+          .select(`user_id, op:operator_profiles!profile_id(legal_name, status, payout_enabled, payout_hold, paystack_recipient_code)`)
           .in('user_id', operatorIds)
           .eq('role_type', 'operator');
 
@@ -131,10 +135,25 @@ export default function AdminPayoutsPage() {
         );
       }
 
+      // Step 2.5: fetch active disputes for all booking_ids
+      const bookingIds = [...new Set((payoutRows ?? []).map((p) => p.booking_id as string))];
+      let activeDisputeBookingIds = new Set<string>();
+
+      if (bookingIds.length > 0) {
+        const { data: disputeRows } = await supabase
+          .from('disputes')
+          .select('booking_id')
+          .in('booking_id', bookingIds)
+          .not('status', 'in', '("resolved","closed")');
+
+        activeDisputeBookingIds = new Set((disputeRows ?? []).map((d) => d.booking_id as string));
+      }
+
       // Step 3: merge
       const merged = (payoutRows ?? []).map((p) => ({
         ...p,
         operator_profile: profileMap[p.operator_id as string] ?? null,
+        has_active_dispute: activeDisputeBookingIds.has(p.booking_id as string),
       }));
 
       setPayouts(merged as unknown as Payout[]);
@@ -311,7 +330,7 @@ export default function AdminPayoutsPage() {
                     const route     = p.booking?.containers
                       ? `${p.booking.containers.origin_city} → ${p.booking.containers.destination_city}`
                       : '-';
-                    const blockReason = p.status === 'pending' ? getBlockReason(p.operator_profile, p.eligible_after, now) : null;
+                    const blockReason = p.status === 'pending' ? getBlockReason(p.operator_profile, p.has_active_dispute, p.eligible_after, now) : null;
                     const isTriggering = triggering === p.id;
 
                     return (
@@ -378,7 +397,8 @@ export default function AdminPayoutsPage() {
                                 <button
                                   type="button"
                                   onClick={() => setOverrideTarget({ payoutId: p.id, msRemaining: blockReason.msRemaining })}
-                                  className="text-xs text-orange-600 underline mt-1 block"
+                                  disabled={overrideSubmitting}
+                                  className="text-xs text-orange-600 underline mt-1 block disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                                 >
                                   Force trigger
                                 </button>
