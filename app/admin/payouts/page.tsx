@@ -5,9 +5,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
+import PayoutOverrideModal, { formatCountdown } from '@/components/PayoutOverrideModal';
 
 type OperatorProfile = {
   legal_name:              string | null;
+  status:                  string;
   payout_enabled:          boolean;
   payout_hold:             boolean;
   paystack_recipient_code: string | null;
@@ -26,7 +28,9 @@ type Payout = {
   failure_reason:          string | null;
   completed_at:            string | null;
   created_at:              string;
+  metadata:                { overridden?: boolean; override_reason?: string } | null;
   operator_profile:        OperatorProfile | null;
+  has_active_dispute:      boolean;
   booking:                 { containers: { origin_city: string; destination_city: string } | null } | null;
 };
 
@@ -47,14 +51,22 @@ function ZAR(n: number) {
   return `R ${n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function eligibilityReason(op: OperatorProfile | null, eligibleAfter: string | null): string | null {
-  if (!op) return 'No operator profile';
-  if (!op.paystack_recipient_code) return 'No bank account registered';
-  if (!op.payout_enabled) return 'Payouts disabled by admin';
-  if (op.payout_hold) return 'Operator on payout hold';
-  if (eligibleAfter && new Date(eligibleAfter) > new Date()) {
-    const hoursLeft = Math.ceil((new Date(eligibleAfter).getTime() - Date.now()) / (1000 * 60 * 60));
-    return `In 48h refund window, eligible in ${hoursLeft}h`;
+type BlockReason =
+  | { type: 'no_profile' | 'no_bank' | 'compliance_not_approved' | 'payout_disabled' | 'on_hold' | 'active_dispute'; message: string }
+  | { type: 'refund_window'; message: string; msRemaining: number };
+
+function getBlockReason(op: OperatorProfile | null, hasActiveDispute: boolean, eligibleAfter: string | null, now: number): BlockReason | null {
+  if (!op) return { type: 'no_profile', message: 'No operator profile' };
+  if (!op.paystack_recipient_code) return { type: 'no_bank', message: 'No bank account registered' };
+  if (!['active', 'trusted'].includes(op.status)) return { type: 'compliance_not_approved', message: 'Operator compliance is not approved' };
+  if (!op.payout_enabled) return { type: 'payout_disabled', message: 'Payouts disabled by admin' };
+  if (op.payout_hold) return { type: 'on_hold', message: 'Operator on payout hold' };
+  if (hasActiveDispute) return { type: 'active_dispute', message: 'Active dispute on this booking' };
+  if (eligibleAfter) {
+    const msRemaining = new Date(eligibleAfter).getTime() - now;
+    if (msRemaining > 0) {
+      return { type: 'refund_window', message: `Eligible in ${formatCountdown(msRemaining)}`, msRemaining };
+    }
   }
   return null;
 }
@@ -66,6 +78,30 @@ export default function AdminPayoutsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [triggering,   setTriggering]   = useState<string | null>(null);
   const [triggerError, setTriggerError] = useState<Record<string, string>>({});
+  const [now, setNow] = useState(Date.now());
+  const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
+  const [overrideTarget, setOverrideTarget] = useState<{ payoutId: string; msRemaining: number } | null>(null);
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    async function fetchAdminProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile) setAdminProfileId(profile.id);
+    }
+    fetchAdminProfile();
+  }, []);
 
   useEffect(() => {
     async function fetchPayouts() {
@@ -76,7 +112,7 @@ export default function AdminPayoutsPage() {
           id, booking_id, operator_id,
           gross_amount, net_amount, commission_amount,
           status, eligible_after, paystack_transfer_code, failure_reason,
-          completed_at, created_at,
+          completed_at, created_at, metadata,
           booking:bookings(containers(origin_city, destination_city))
         `)
         .order('created_at', { ascending: false });
@@ -90,7 +126,7 @@ export default function AdminPayoutsPage() {
       if (operatorIds.length > 0) {
         const { data: profileRows } = await supabase
           .from('profiles')
-          .select(`user_id, op:operator_profiles!profile_id(legal_name, payout_enabled, payout_hold, paystack_recipient_code)`)
+          .select(`user_id, op:operator_profiles!profile_id(legal_name, status, payout_enabled, payout_hold, paystack_recipient_code)`)
           .in('user_id', operatorIds)
           .eq('role_type', 'operator');
 
@@ -99,10 +135,25 @@ export default function AdminPayoutsPage() {
         );
       }
 
+      // Step 2.5: fetch active disputes for all booking_ids
+      const bookingIds = [...new Set((payoutRows ?? []).map((p) => p.booking_id as string))];
+      let activeDisputeBookingIds = new Set<string>();
+
+      if (bookingIds.length > 0) {
+        const { data: disputeRows } = await supabase
+          .from('disputes')
+          .select('booking_id')
+          .in('booking_id', bookingIds)
+          .not('status', 'in', '("resolved","closed")');
+
+        activeDisputeBookingIds = new Set((disputeRows ?? []).map((d) => d.booking_id as string));
+      }
+
       // Step 3: merge
       const merged = (payoutRows ?? []).map((p) => ({
         ...p,
         operator_profile: profileMap[p.operator_id as string] ?? null,
+        has_active_dispute: activeDisputeBookingIds.has(p.booking_id as string),
       }));
 
       setPayouts(merged as unknown as Payout[]);
@@ -134,6 +185,43 @@ export default function AdminPayoutsPage() {
       )
     );
     setTriggering(null);
+  }
+
+  async function handleOverrideConfirm(reason: string) {
+    if (!overrideTarget) return;
+    setOverrideSubmitting(true);
+    setOverrideError(null);
+
+    const { data, error: fnErr } = await supabase.functions.invoke('trigger-payout', {
+      body: {
+        payoutId:       overrideTarget.payoutId,
+        override:       true,
+        overrideReason: reason,
+        adminProfileId,
+      },
+    });
+
+    if (fnErr || !data?.success) {
+      setOverrideError(data?.error ?? fnErr?.message ?? 'Override trigger failed.');
+      setOverrideSubmitting(false);
+      return;
+    }
+
+    setPayouts((prev) =>
+      prev.map((p) =>
+        p.id === overrideTarget.payoutId
+          ? {
+              ...p,
+              status: 'processing',
+              paystack_transfer_code: data.transferCode ?? p.paystack_transfer_code,
+              net_amount: data.netAmount ?? p.net_amount,
+              metadata: { ...p.metadata, overridden: true, override_reason: reason },
+            }
+          : p
+      )
+    );
+    setOverrideSubmitting(false);
+    setOverrideTarget(null);
   }
 
   const filtered = statusFilter === 'all' ? payouts : payouts.filter((p) => p.status === statusFilter);
@@ -242,7 +330,7 @@ export default function AdminPayoutsPage() {
                     const route     = p.booking?.containers
                       ? `${p.booking.containers.origin_city} → ${p.booking.containers.destination_city}`
                       : '-';
-                    const blockReason = p.status === 'pending' ? eligibilityReason(p.operator_profile, p.eligible_after) : null;
+                    const blockReason = p.status === 'pending' ? getBlockReason(p.operator_profile, p.has_active_dispute, p.eligible_after, now) : null;
                     const isTriggering = triggering === p.id;
 
                     return (
@@ -272,6 +360,14 @@ export default function AdminPayoutsPage() {
                             style={{ backgroundColor: STATUS_COLOURS[p.status] ?? '#6b7280' }}>
                             {p.status}
                           </span>
+                          {p.metadata?.overridden && (
+                            <span
+                              className="badge badge-sm badge-outline ml-1"
+                              title={p.metadata.override_reason ?? undefined}
+                            >
+                              ⚡ Overridden
+                            </span>
+                          )}
                           {p.failure_reason && (
                             <p className="text-xs text-red-400 mt-1 max-w-[140px] truncate">{p.failure_reason}</p>
                           )}
@@ -286,7 +382,7 @@ export default function AdminPayoutsPage() {
                               <button
                                 onClick={() => handleTrigger(p.id)}
                                 disabled={!!blockReason || isTriggering}
-                                title={blockReason ?? undefined}
+                                title={blockReason?.message ?? undefined}
                                 className="btn btn-sm text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-40 whitespace-nowrap"
                                 style={{ backgroundColor: '#0f2044' }}
                               >
@@ -295,7 +391,17 @@ export default function AdminPayoutsPage() {
                                   : 'Trigger →'}
                               </button>
                               {blockReason && (
-                                <p className="text-xs text-amber-600 mt-1 max-w-[120px]">{blockReason}</p>
+                                <p className="text-xs text-amber-600 mt-1 max-w-[120px]">{blockReason.message}</p>
+                              )}
+                              {blockReason?.type === 'refund_window' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setOverrideTarget({ payoutId: p.id, msRemaining: blockReason.msRemaining })}
+                                  disabled={overrideSubmitting}
+                                  className="text-xs text-orange-600 underline mt-1 block disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
+                                >
+                                  Force trigger
+                                </button>
                               )}
                               {triggerError[p.id] && (
                                 <p className="text-xs text-red-500 mt-1 max-w-[120px]">{triggerError[p.id]}</p>
@@ -312,6 +418,16 @@ export default function AdminPayoutsPage() {
           </div>
         )}
       </div>
+
+      {overrideTarget && (
+        <PayoutOverrideModal
+          msRemaining={overrideTarget.msRemaining}
+          onCancel={() => { setOverrideTarget(null); setOverrideError(null); }}
+          onConfirm={handleOverrideConfirm}
+          submitting={overrideSubmitting}
+          error={overrideError}
+        />
+      )}
     </div>
   );
 }
