@@ -58,6 +58,7 @@ export default function PayoutOverrideModal({
         <textarea
           className="textarea textarea-bordered w-full text-sm"
           placeholder={`Justification reason (minimum ${MIN_REASON_LENGTH} characters)`}
+          aria-label="Justification reason"
           rows={3}
           value={reason}
           onChange={e => setReason(e.target.value)}
@@ -71,11 +72,11 @@ export default function PayoutOverrideModal({
           </button>
           <button
             type="button"
-            className="btn btn-sm border-0 bg-amber-400 text-white"
+            className="btn btn-sm btn-error text-white"
             disabled={!canConfirm}
             onClick={handleConfirm}
           >
-            {submitting ? 'Triggering...' : 'Force trigger'}
+            {submitting ? 'Triggering…' : 'Force trigger'}
           </button>
         </div>
       </div>
