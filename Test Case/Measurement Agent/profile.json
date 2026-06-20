@@ -1,0 +1,21 @@
+{
+  "role": "measurement_agent",
+  "email": "measurement.shareconload@gmail.com",
+  "password": "TestMeasure@2026!",
+  "full_name": "Thabo Nkosi",
+  "personal": {
+    "phone_number": "+27 71 234 5678"
+  },
+  "location": {
+    "base_city": "Johannesburg",
+    "base_country": "South Africa"
+  },
+  "quiz_answers": {
+    "note": "Correct answers: B, B, C, B, B — scores 5/5"
+  },
+  "documents": {
+    "id_document": "documents/identity-document.pdf",
+    "selfie": "documents/selfie.pdf",
+    "equipment_photo": "documents/equipment-photo.pdf"
+  }
+}

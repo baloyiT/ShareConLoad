@@ -1,0 +1,24 @@
+{
+  "role": "transporter",
+  "email": "transporter.shareconload@gmail.com",
+  "password": "TestTransport@2026!",
+  "full_name": "Sipho Dlamini",
+  "personal": {
+    "phone_number": "+27 63 987 6543"
+  },
+  "location": {
+    "base_city": "Durban",
+    "base_country": "South Africa"
+  },
+  "vehicle": {
+    "vehicle_type": "small_truck",
+    "vehicle_capacity_kg": 1500,
+    "vehicle_capacity_cbm": 8.5,
+    "vehicle_registration_number": "KZN 456-789"
+  },
+  "documents": {
+    "drivers_licence": "documents/drivers-licence.pdf",
+    "vehicle_ownership": "documents/vehicle-ownership.pdf",
+    "vehicle_photo_1": "documents/vehicle-photo-1.jpg"
+  }
+}
