@@ -28,7 +28,7 @@ type Payout = {
   failure_reason:          string | null;
   completed_at:            string | null;
   created_at:              string;
-  metadata:                { overridden?: boolean; override_reason?: string } | null;
+  metadata:                { overridden?: boolean; override_reason?: string; auto_triggered?: boolean } | null;
   operator_profile:        OperatorProfile | null;
   has_active_dispute:      boolean;
   booking:                 { containers: { origin_city: string; destination_city: string } | null } | null;
@@ -360,6 +360,11 @@ export default function AdminPayoutsPage() {
                             style={{ backgroundColor: STATUS_COLOURS[p.status] ?? '#6b7280' }}>
                             {p.status}
                           </span>
+                          {p.metadata?.auto_triggered && (
+                            <span className="badge badge-sm badge-outline ml-1">
+                              ⚙ Auto
+                            </span>
+                          )}
                           {p.metadata?.overridden && (
                             <span
                               className="badge badge-sm badge-outline ml-1"
