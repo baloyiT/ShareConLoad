@@ -168,7 +168,7 @@ serve(async (req: Request) => {
     const transferCode = paystackData.data.transfer_code;
 
     // ── Update payout record ───────────────────────────────────────────────────
-    await supabase
+    const { error: updateErr } = await supabase
       .from('payouts')
       .update({
         status:                 'processing',
@@ -187,6 +187,28 @@ serve(async (req: Request) => {
         } : {}),
       })
       .eq('id', payoutId);
+
+    if (updateErr) {
+      // Paystack transfer already went through — log prominently for manual reconciliation.
+      console.error('[trigger-payout] DB update failed after successful transfer:', updateErr.message);
+      await supabase.from('audit_logs').insert({
+        action:      'payout.db_sync_failed',
+        target_type: 'payout',
+        target_id:   payoutId,
+        metadata:    {
+          transfer_code: transferCode,
+          reference:     transferRef,
+          net_amount:    netAmount,
+          error:         updateErr.message,
+        },
+      });
+      return json({
+        success:  true,
+        transferCode,
+        netAmount,
+        warning: 'Transfer succeeded but payout record could not be updated — check audit logs',
+      });
+    }
 
     // ── Audit log ──────────────────────────────────────────────────────────────
     await supabase.from('audit_logs').insert({
