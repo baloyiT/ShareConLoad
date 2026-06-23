@@ -55,6 +55,26 @@ type BlockReason =
   | { type: 'no_profile' | 'no_bank' | 'compliance_not_approved' | 'payout_disabled' | 'on_hold' | 'active_dispute'; message: string }
   | { type: 'refund_window'; message: string; msRemaining: number };
 
+// supabase-js returns `data: null` on a non-2xx Edge Function response and puts the real
+// body in `error.context` (a Response). Read it so admins see the actual failure reason
+// instead of the generic "Edge Function returned a non-2xx status code".
+async function extractFnError(fnErr: unknown, data: { error?: string } | null, fallback: string): Promise<string> {
+  if (data?.error) return data.error;
+  const ctx = (fnErr as { context?: { json?: () => Promise<unknown> } } | null)?.context;
+  if (ctx?.json) {
+    try {
+      const body = (await ctx.json()) as { error?: string };
+      if (body?.error) return body.error;
+    } catch {
+      /* response body was not JSON — fall through to message */
+    }
+  }
+  return (fnErr as { message?: string } | null)?.message ?? fallback;
+}
+
+// Block reasons an admin can resolve from the Operators page (vs. the time-based refund window).
+const ADMIN_RESOLVABLE: BlockReason['type'][] = ['no_bank', 'compliance_not_approved', 'payout_disabled', 'on_hold'];
+
 function getBlockReason(op: OperatorProfile | null, hasActiveDispute: boolean, eligibleAfter: string | null, now: number): BlockReason | null {
   if (!op) return { type: 'no_profile', message: 'No operator profile' };
   if (!op.paystack_recipient_code) return { type: 'no_bank', message: 'No bank account registered' };
@@ -171,7 +191,7 @@ export default function AdminPayoutsPage() {
     });
 
     if (fnErr || !data?.success) {
-      const msg = data?.error ?? fnErr?.message ?? 'Payout trigger failed.';
+      const msg = await extractFnError(fnErr, data, 'Payout trigger failed.');
       setTriggerError((prev) => ({ ...prev, [payoutId]: msg }));
       setTriggering(null);
       return;
@@ -202,7 +222,7 @@ export default function AdminPayoutsPage() {
     });
 
     if (fnErr || !data?.success) {
-      setOverrideError(data?.error ?? fnErr?.message ?? 'Override trigger failed.');
+      setOverrideError(await extractFnError(fnErr, data, 'Override trigger failed.'));
       setOverrideSubmitting(false);
       return;
     }
@@ -318,7 +338,7 @@ export default function AdminPayoutsPage() {
               <table className="table w-full">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    {['Operator', 'Route', 'Gross', 'Net (after 5%)', 'Status', 'Transfer Code', 'Date', 'Action'].map((h) => (
+                    {['Operator', 'Route', 'Gross', 'Net (after commission)', 'Status', 'Transfer Code', 'Date', 'Action'].map((h) => (
                       <th key={h} className="py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                         {h}
                       </th>
@@ -352,7 +372,12 @@ export default function AdminPayoutsPage() {
                             <span className="text-gray-400">-</span>
                           )}
                           {p.commission_amount != null && (
-                            <p className="text-xs text-gray-400">commission: {ZAR(p.commission_amount)}</p>
+                            <p className="text-xs text-gray-400">
+                              commission: {ZAR(p.commission_amount)}
+                              {p.gross_amount > 0 && (
+                                <> · {Math.round((p.commission_amount / p.gross_amount) * 100)}%</>
+                              )}
+                            </p>
                           )}
                         </td>
                         <td className="py-3.5 px-4">
@@ -396,7 +421,7 @@ export default function AdminPayoutsPage() {
                                   : 'Trigger →'}
                               </button>
                               {blockReason && (
-                                <p className="text-xs text-amber-600 mt-1 max-w-[120px]">{blockReason.message}</p>
+                                <p className="text-xs text-amber-600 mt-1 max-w-[140px]">{blockReason.message}</p>
                               )}
                               {blockReason?.type === 'refund_window' && (
                                 <button
@@ -407,6 +432,14 @@ export default function AdminPayoutsPage() {
                                 >
                                   Force trigger
                                 </button>
+                              )}
+                              {blockReason && ADMIN_RESOLVABLE.includes(blockReason.type) && (
+                                <Link
+                                  href="/admin/operators"
+                                  className="text-xs text-orange-600 underline mt-1 block"
+                                >
+                                  Manage operator →
+                                </Link>
                               )}
                               {triggerError[p.id] && (
                                 <p className="text-xs text-red-500 mt-1 max-w-[120px]">{triggerError[p.id]}</p>
