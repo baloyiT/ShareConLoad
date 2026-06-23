@@ -560,7 +560,10 @@ export default function BookingPage() {
                 <Stat label="Departure" value={fmt(container.departure_date)} />
                 <Stat label="Arrival Est." value={container.arrival_date ? fmt(container.arrival_date) : 'TBC'} />
                 <Stat label="Available" value={`${container.available_capacity_cbm} CBM`} highlight />
-                <Stat label="Price / CBM" value={`R${container.price_per_cbm}`} highlight />
+                {isFcl
+                  ? <Stat label="Flat Price" value={`${container.currency_code ?? 'ZAR'} ${(container.full_container_price ?? 0).toLocaleString()}`} highlight />
+                  : <Stat label="Price / CBM" value={`R${container.price_per_cbm}`} highlight />
+                }
                 {container.operator_name && (
                   <div className="col-span-2">
                     <Stat label="Operator" value={container.operator_name} />
