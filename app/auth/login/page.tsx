@@ -13,6 +13,11 @@ type FormErrors = {
   submit?: string;
 };
 
+// Shown for both wrong-password and unregistered-email failures. Supabase returns an
+// identical generic error for both on purpose (prevents user enumeration), so we keep
+// the message generic and nudge toward sign-up without confirming the email exists.
+const CREDENTIALS_ERROR = 'Incorrect email or password.';
+
 export default function LoginPage() {
   return (
     <Suspense>
@@ -25,6 +30,9 @@ function LoginContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const nextPath     = searchParams.get('next') ?? '/';
+  const registerHref = nextPath && nextPath !== '/'
+    ? `/auth/register?next=${encodeURIComponent(nextPath)}`
+    : '/auth/register';
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -52,7 +60,7 @@ function LoginContent() {
     if (error) {
       setErrors({
         submit: error.message === 'Invalid login credentials'
-          ? 'Incorrect email or password. Please try again.'
+          ? CREDENTIALS_ERROR
           : error.message,
       });
       setLoading(false);
@@ -122,7 +130,14 @@ function LoginContent() {
             {errors.submit && (
               <div className="alert alert-error text-sm mb-5">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                {errors.submit}
+                <span>
+                  {errors.submit}
+                  {errors.submit === CREDENTIALS_ERROR && (
+                    <> If you don&apos;t have an account yet,{' '}
+                      <Link href={registerHref} className="font-semibold underline">create one</Link>.
+                    </>
+                  )}
+                </span>
               </div>
             )}
 
@@ -182,7 +197,7 @@ function LoginContent() {
             <p className="text-center text-sm text-gray-500">
               Don&apos;t have an account?{' '}
               <Link
-                href={nextPath && nextPath !== '/' ? `/auth/register?next=${encodeURIComponent(nextPath)}` : '/auth/register'}
+                href={registerHref}
                 className="font-semibold hover:underline"
                 style={{ color: '#ff6a00' }}
               >
