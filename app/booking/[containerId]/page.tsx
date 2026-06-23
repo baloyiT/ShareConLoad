@@ -390,14 +390,11 @@ export default function BookingPage() {
       });
       if (declError) throw declError;
 
-      // ── Step 4: Reduce capacity (LCL) or consume whole container (FCL) ──
-      const { error: capacityError } = await supabase
-        .from('containers')
-        .update(isFcl
-          ? { available_capacity_cbm: 0, status: 'full' }
-          : { available_capacity_cbm: container!.available_capacity_cbm - cbmValue })
-        .eq('id', containerId);
-      if (capacityError) throw capacityError;
+      // ── Step 4: Container capacity/status is reserved server-side ─────────
+      // A SECURITY DEFINER trigger (apply_booking_capacity, migration _71) handles
+      // the containers update on booking insert — required because `containers` RLS
+      // forbids customers/agents from updating the row directly. Do NOT update it
+      // from the client here, or operator/admin-initiated bookings would double-count.
 
       // ── Step 5: Fire notification ────────────────────────────────────────
       await notify('booking.created', {
