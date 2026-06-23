@@ -14,7 +14,7 @@ type RoleConfig = {
 };
 
 const ROLES: Record<RoleKey, RoleConfig> = {
-  customer: { label: 'Shipper',         href: '/bookings', icon: Package },
+  customer: { label: 'Shipper Portal',  href: '/bookings', icon: Package },
   operator: { label: 'Operator Portal', href: '/operator', icon: Ship },
   agent:    { label: 'Agent Portal',    href: '/agent',    icon: Handshake },
   admin:    { label: 'Admin',           href: '/admin',    icon: Settings },
