@@ -113,6 +113,14 @@ export default function ContainerDetailsPage() {
               >
                 {container.status.toUpperCase()}
               </span>
+              <span
+                className="badge badge-sm font-semibold px-2 border"
+                style={container.load_type === 'FCL'
+                  ? { backgroundColor: '#e8eef8', color: '#0b103a', borderColor: '#c7d6ef' }
+                  : { backgroundColor: '#fff1e8', color: '#b3470a', borderColor: '#ffd2b3' }}
+              >
+                {container.load_type}
+              </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white flex items-center gap-3 flex-wrap">
               {container.origin_city}
@@ -224,15 +232,28 @@ export default function ContainerDetailsPage() {
               Pricing
             </h2>
 
-            <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-5xl font-extrabold" style={{ color: '#ff6a00' }}>
-                R{container.price_per_cbm}
-              </span>
-              <span className="text-gray-400 text-sm">/ CBM</span>
-            </div>
-            <p className="text-xs text-gray-400 mb-6">
-              e.g. 5 CBM = R{(container.price_per_cbm * 5).toFixed(2)}
-            </p>
+            {container.load_type === 'FCL' ? (
+              <>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-5xl font-extrabold" style={{ color: '#ff6a00' }}>
+                    {container.currency_code ?? 'ZAR'} {(container.full_container_price ?? 0).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mb-6">whole container</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-5xl font-extrabold" style={{ color: '#ff6a00' }}>
+                    {container.currency_code ?? 'ZAR'} {(container.price_per_cbm ?? 0).toLocaleString()}
+                  </span>
+                  <span className="text-gray-400 text-sm">/ CBM</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-6">
+                  e.g. 5 CBM = {container.currency_code ?? 'ZAR'} {(container.price_per_cbm * 5).toFixed(2)}
+                </p>
+              </>
+            )}
 
             <div className="flex flex-col gap-2 text-sm text-gray-600 mb-6">
               {[
