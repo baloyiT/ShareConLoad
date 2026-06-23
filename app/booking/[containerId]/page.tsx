@@ -186,8 +186,13 @@ export default function BookingPage() {
   }, []);
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  const cbmValue = parseFloat(totalCbm) || 0;
-  const estimatedTotal = container ? cbmValue * container.price_per_cbm : 0;
+  const isFcl = container?.load_type === 'FCL';
+  const cbmValue = isFcl
+    ? (container?.total_capacity_cbm ?? 0)
+    : (parseFloat(totalCbm) || 0);
+  const estimatedTotal = isFcl
+    ? (container?.full_container_price ?? 0)
+    : (container ? cbmValue * container.price_per_cbm : 0);
   const totalDeclaredValue = items.reduce(
     (sum, item) => sum + (parseFloat(item.estimated_value) || 0) * (parseInt(item.quantity) || 1),
     0
@@ -263,10 +268,12 @@ export default function BookingPage() {
   function validate(): FormErrors {
     const errs: FormErrors = {};
 
-    if (!totalCbm || cbmValue <= 0) {
-      errs.total_cbm = 'Enter the CBM you need (must be greater than 0).';
-    } else if (container && cbmValue > container.available_capacity_cbm) {
-      errs.total_cbm = `Only ${container.available_capacity_cbm} CBM is available.`;
+    if (!isFcl) {
+      if (!totalCbm || cbmValue <= 0) {
+        errs.total_cbm = 'Enter the CBM you need (must be greater than 0).';
+      } else if (container && cbmValue > container.available_capacity_cbm) {
+        errs.total_cbm = `Only ${container.available_capacity_cbm} CBM is available.`;
+      }
     }
 
     if (items.length === 0) {
@@ -383,10 +390,12 @@ export default function BookingPage() {
       });
       if (declError) throw declError;
 
-      // ── Step 4: Reduce container available capacity ──────────────────────
+      // ── Step 4: Reduce capacity (LCL) or consume whole container (FCL) ──
       const { error: capacityError } = await supabase
         .from('containers')
-        .update({ available_capacity_cbm: container!.available_capacity_cbm - cbmValue })
+        .update(isFcl
+          ? { available_capacity_cbm: 0, status: 'full' }
+          : { available_capacity_cbm: container!.available_capacity_cbm - cbmValue })
         .eq('id', containerId);
       if (capacityError) throw capacityError;
 
@@ -414,7 +423,7 @@ export default function BookingPage() {
     e.preventDefault();
     const errs = validate();
 
-    if (cbmDeclarationType === 'self_declared' && !cbmStep1Ack) {
+    if (!isFcl && cbmDeclarationType === 'self_declared' && !cbmStep1Ack) {
       errs.cbm_step1 = 'You must check the CBM accuracy acknowledgement.';
     }
 
@@ -425,7 +434,7 @@ export default function BookingPage() {
     }
     setErrors({});
 
-    if (cbmDeclarationType === 'self_declared') {
+    if (!isFcl && cbmDeclarationType === 'self_declared') {
       setShowCbmModal(true);
       return;
     }
@@ -560,101 +569,113 @@ export default function BookingPage() {
               </div>
             </section>
 
-            {/* ── SECTION 2: CBM Declaration ───────────────────────────────── */}
-            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>2</span>
-                <h2 className="font-bold text-gray-800">CBM Declaration</h2>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-gray-600 mb-4">How do you know your cargo dimensions?</p>
-                <div className="flex flex-col gap-3">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="radio" name="cbmType" value="self_declared"
-                      checked={cbmDeclarationType === 'self_declared'}
-                      onChange={() => setCbmDeclarationType('self_declared')}
-                      className="radio radio-sm" style={{ accentColor: '#ff6a00' }} />
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">I know my dimensions (self-declare)</p>
-                      <p className="text-xs text-gray-400">I will provide my own CBM estimate</p>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="radio" name="cbmType" value="measurement_verified"
-                      checked={cbmDeclarationType === 'measurement_verified'}
-                      onChange={() => setCbmDeclarationType('measurement_verified')}
-                      className="radio radio-sm" style={{ accentColor: '#ff6a00' }} />
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">I have an official measurement report</p>
-                      <p className="text-xs text-gray-400">My CBM was verified by a ShareConLoad measurement agent</p>
-                    </div>
-                  </label>
-                </div>
-                {cbmDeclarationType === 'measurement_verified' && (
-                  <a href="/measurement-service" target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-orange-500 hover:underline mt-3 block">
-                    → Don&apos;t have a report yet? Request a measurement agent
-                  </a>
-                )}
-
-                {/* Step 1 acknowledgement for self-declared */}
-                {cbmDeclarationType === 'self_declared' && (
-                  <label className="flex items-start gap-3 cursor-pointer mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl"
-                    data-error={errors.cbm_step1 ? 'true' : undefined}>
-                    <input type="checkbox" checked={cbmStep1Ack}
-                      onChange={(e) => { setCbmStep1Ack(e.target.checked); setErrors((prev) => ({ ...prev, cbm_step1: undefined })); }}
-                      className="checkbox checkbox-sm mt-0.5 shrink-0" style={{ accentColor: '#ff6a00' }} />
-                    <span className="text-xs text-amber-800 leading-relaxed">
-                      I understand that my CBM declaration affects my booking price and may be verified at loading. A ±5% variance is allowed; any extra CBM used will be billed and any unused CBM credited.
-                    </span>
-                  </label>
-                )}
-                {errors.cbm_step1 && (
-                  <p className="text-red-500 text-xs mt-2" data-error="true">{errors.cbm_step1}</p>
-                )}
-              </div>
-            </section>
-
-            {/* ── SECTION 3: Booking Input ──────────────────────────────────── */}
-            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>3</span>
-                <h2 className="font-bold text-gray-800">Booking Details</h2>
-              </div>
-              <div className="p-6">
-                <label className="block mb-1 text-sm font-semibold text-gray-700">
-                  CBM Required <span className="text-red-500">*</span>
-                </label>
-                <p className="text-xs text-gray-400 mb-2">
-                  How much container space do you need? Max {container.available_capacity_cbm} CBM available.
+            {isFcl ? (
+              <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="font-bold text-gray-800 mb-1">Full Container Booking</h2>
+                <p className="text-sm text-gray-500">
+                  You are booking the entire container ({container.total_capacity_cbm} CBM) for a flat price of{' '}
+                  {(container.currency_code ?? 'ZAR')} {(container.full_container_price ?? 0).toLocaleString()}.
                 </p>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    placeholder="e.g. 5"
-                    min={0.1}
-                    step={0.1}
-                    max={container.available_capacity_cbm}
-                    value={totalCbm}
-                    onChange={(e) => {
-                      setTotalCbm(e.target.value);
-                      setErrors((prev) => ({ ...prev, total_cbm: undefined }));
-                    }}
-                    className={`input input-bordered w-40 text-sm ${errors.total_cbm ? 'input-error' : ''}`}
-                    data-error={errors.total_cbm ? 'true' : undefined}
-                  />
-                  <span className="text-gray-500 text-sm">CBM</span>
-                  {cbmValue > 0 && container && (
-                    <span className="text-sm font-semibold ml-2" style={{ color: '#ff6a00' }}>
-                      = R{(cbmValue * container.price_per_cbm).toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                {errors.total_cbm && (
-                  <p className="text-red-500 text-xs mt-1.5" data-error="true">{errors.total_cbm}</p>
-                )}
-              </div>
-            </section>
+              </section>
+            ) : (
+              <>
+                {/* ── SECTION 2: CBM Declaration ───────────────────────────────── */}
+                <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>2</span>
+                    <h2 className="font-bold text-gray-800">CBM Declaration</h2>
+                  </div>
+                  <div className="p-6">
+                    <p className="text-sm text-gray-600 mb-4">How do you know your cargo dimensions?</p>
+                    <div className="flex flex-col gap-3">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="radio" name="cbmType" value="self_declared"
+                          checked={cbmDeclarationType === 'self_declared'}
+                          onChange={() => setCbmDeclarationType('self_declared')}
+                          className="radio radio-sm" style={{ accentColor: '#ff6a00' }} />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">I know my dimensions (self-declare)</p>
+                          <p className="text-xs text-gray-400">I will provide my own CBM estimate</p>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="radio" name="cbmType" value="measurement_verified"
+                          checked={cbmDeclarationType === 'measurement_verified'}
+                          onChange={() => setCbmDeclarationType('measurement_verified')}
+                          className="radio radio-sm" style={{ accentColor: '#ff6a00' }} />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">I have an official measurement report</p>
+                          <p className="text-xs text-gray-400">My CBM was verified by a ShareConLoad measurement agent</p>
+                        </div>
+                      </label>
+                    </div>
+                    {cbmDeclarationType === 'measurement_verified' && (
+                      <a href="/measurement-service" target="_blank" rel="noopener noreferrer"
+                        className="text-xs text-orange-500 hover:underline mt-3 block">
+                        → Don&apos;t have a report yet? Request a measurement agent
+                      </a>
+                    )}
+
+                    {/* Step 1 acknowledgement for self-declared */}
+                    {cbmDeclarationType === 'self_declared' && (
+                      <label className="flex items-start gap-3 cursor-pointer mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl"
+                        data-error={errors.cbm_step1 ? 'true' : undefined}>
+                        <input type="checkbox" checked={cbmStep1Ack}
+                          onChange={(e) => { setCbmStep1Ack(e.target.checked); setErrors((prev) => ({ ...prev, cbm_step1: undefined })); }}
+                          className="checkbox checkbox-sm mt-0.5 shrink-0" style={{ accentColor: '#ff6a00' }} />
+                        <span className="text-xs text-amber-800 leading-relaxed">
+                          I understand that my CBM declaration affects my booking price and may be verified at loading. A ±5% variance is allowed; any extra CBM used will be billed and any unused CBM credited.
+                        </span>
+                      </label>
+                    )}
+                    {errors.cbm_step1 && (
+                      <p className="text-red-500 text-xs mt-2" data-error="true">{errors.cbm_step1}</p>
+                    )}
+                  </div>
+                </section>
+
+                {/* ── SECTION 3: Booking Input ──────────────────────────────────── */}
+                <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#0b103a' }}>3</span>
+                    <h2 className="font-bold text-gray-800">Booking Details</h2>
+                  </div>
+                  <div className="p-6">
+                    <label className="block mb-1 text-sm font-semibold text-gray-700">
+                      CBM Required <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-xs text-gray-400 mb-2">
+                      How much container space do you need? Max {container.available_capacity_cbm} CBM available.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        placeholder="e.g. 5"
+                        min={0.1}
+                        step={0.1}
+                        max={container.available_capacity_cbm}
+                        value={totalCbm}
+                        onChange={(e) => {
+                          setTotalCbm(e.target.value);
+                          setErrors((prev) => ({ ...prev, total_cbm: undefined }));
+                        }}
+                        className={`input input-bordered w-40 text-sm ${errors.total_cbm ? 'input-error' : ''}`}
+                        data-error={errors.total_cbm ? 'true' : undefined}
+                      />
+                      <span className="text-gray-500 text-sm">CBM</span>
+                      {cbmValue > 0 && container && (
+                        <span className="text-sm font-semibold ml-2" style={{ color: '#ff6a00' }}>
+                          = R{(cbmValue * container.price_per_cbm).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {errors.total_cbm && (
+                      <p className="text-red-500 text-xs mt-1.5" data-error="true">{errors.total_cbm}</p>
+                    )}
+                  </div>
+                </section>
+              </>
+            )}
 
             {/* ── SECTION 2b: Booking on behalf of (agents only) ─────────────── */}
             {agentProfileId && managedShippers.length > 0 && (
@@ -1021,10 +1042,10 @@ export default function BookingPage() {
               </div>
 
               <div className="flex flex-col gap-3 text-sm mb-5">
-                <SummaryRow label="Price / CBM" value={`R${container.price_per_cbm}`} />
+                {!isFcl && <SummaryRow label="Price / CBM" value={`R${container.price_per_cbm}`} />}
                 <SummaryRow
-                  label="Space requested"
-                  value={cbmValue > 0 ? `${cbmValue} CBM` : '—'}
+                  label={isFcl ? 'Booking' : 'Space requested'}
+                  value={isFcl ? 'Whole container' : (cbmValue > 0 ? `${cbmValue} CBM` : '—')}
                 />
                 <SummaryRow
                   label="Shipment items"
@@ -1046,7 +1067,7 @@ export default function BookingPage() {
 
               {/* Status indicators */}
               <div className="flex flex-col gap-1.5 mb-6">
-                <StatusRow ok={cbmValue > 0} label="CBM entered" />
+                <StatusRow ok={isFcl || cbmValue > 0} label={isFcl ? 'Whole container selected' : 'CBM entered'} />
                 <StatusRow ok={items.some((i) => i.description.trim())} label="Shipment items added" />
                 <StatusRow ok={agreedTerms} label="Declaration confirmed" />
               </div>
