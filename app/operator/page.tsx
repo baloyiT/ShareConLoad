@@ -20,7 +20,10 @@ type Container = {
   arrival_date: string | null;
   total_capacity_cbm: number;
   available_capacity_cbm: number;
-  price_per_cbm: number;
+  load_type: 'FCL' | 'LCL';
+  price_per_cbm: number | null;
+  full_container_price: number | null;
+  currency_code: string | null;
   status: string;
   created_at: string;
   departure_notice_sent_at: string | null;
@@ -394,7 +397,11 @@ export default function OperatorDashboard() {
                           <p className="text-xs text-gray-500 mb-1">{c.available_capacity_cbm} / {c.total_capacity_cbm} CBM free</p>
                           <progress className="progress w-28 h-1.5" style={{ accentColor: pctFull > 80 ? '#ff6a00' : '#0b103a' }} value={pctFull} max={100} />
                         </td>
-                        <td className="py-4 px-4 font-semibold text-sm" style={{ color: '#ff6a00' }}>R{c.price_per_cbm}</td>
+                        <td className="py-4 px-4 font-semibold text-sm" style={{ color: '#ff6a00' }}>
+                          {c.load_type === 'FCL'
+                            ? `${c.currency_code ?? 'ZAR'} ${(c.full_container_price ?? 0).toLocaleString()} (whole)`
+                            : `${c.currency_code ?? 'ZAR'} ${c.price_per_cbm ?? 0}/CBM`}
+                        </td>
                         <td className="py-4 px-4">
                           {c.departure_notice_sent_at ? (
                             <span className="text-xs font-semibold text-green-600 flex items-center gap-1"><Check className="w-3 h-3" strokeWidth={3} /> Sent</span>
@@ -449,8 +456,12 @@ export default function OperatorDashboard() {
                         <p className="font-medium text-gray-700">{fmt(c.departure_date)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Price / CBM</p>
-                        <p className="font-bold" style={{ color: '#ff6a00' }}>R{c.price_per_cbm}</p>
+                        <p className="text-xs text-gray-400">{c.load_type === 'FCL' ? 'Price' : 'Price / CBM'}</p>
+                        <p className="font-bold" style={{ color: '#ff6a00' }}>
+                          {c.load_type === 'FCL'
+                            ? `${c.currency_code ?? 'ZAR'} ${(c.full_container_price ?? 0).toLocaleString()}`
+                            : `${c.currency_code ?? 'ZAR'} ${c.price_per_cbm ?? 0}`}
+                        </p>
                       </div>
                     </div>
                     <div>

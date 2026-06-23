@@ -192,7 +192,7 @@ export default function BookingPage() {
     : (parseFloat(totalCbm) || 0);
   const estimatedTotal = isFcl
     ? (container?.full_container_price ?? 0)
-    : (container ? cbmValue * container.price_per_cbm : 0);
+    : (container ? cbmValue * (container.price_per_cbm ?? 0) : 0);
   const totalDeclaredValue = items.reduce(
     (sum, item) => sum + (parseFloat(item.estimated_value) || 0) * (parseInt(item.quantity) || 1),
     0
@@ -668,7 +668,7 @@ export default function BookingPage() {
                       <span className="text-gray-500 text-sm">CBM</span>
                       {cbmValue > 0 && container && (
                         <span className="text-sm font-semibold ml-2" style={{ color: '#ff6a00' }}>
-                          = R{(cbmValue * container.price_per_cbm).toFixed(2)}
+                          = R{(cbmValue * (container.price_per_cbm ?? 0)).toFixed(2)}
                         </span>
                       )}
                     </div>

@@ -201,7 +201,7 @@ export default function HomePage() {
         c.destination_country,
       );
       const dateMatch = !dateFilter || c.departure_date >= dateFilter;
-      const priceMatch = !maxPrice || (c.price_per_cbm_usd ?? c.price_per_cbm) <= parseFloat(maxPrice);
+      const priceMatch = !maxPrice || (c.price_per_cbm_usd ?? c.price_per_cbm ?? 0) <= parseFloat(maxPrice);
       const loadTypeMatch = loadTypeFilter === 'all' || c.load_type === loadTypeFilter;
       return originMatch && destMatch && dateMatch && priceMatch && loadTypeMatch;
     });

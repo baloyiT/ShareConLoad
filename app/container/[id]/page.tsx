@@ -250,7 +250,7 @@ export default function ContainerDetailsPage() {
                   <span className="text-gray-400 text-sm">/ CBM</span>
                 </div>
                 <p className="text-xs text-gray-400 mb-6">
-                  e.g. 5 CBM = {container.currency_code ?? 'ZAR'} {(container.price_per_cbm * 5).toFixed(2)}
+                  e.g. 5 CBM = {container.currency_code ?? 'ZAR'} {((container.price_per_cbm ?? 0) * 5).toFixed(2)}
                 </p>
               </>
             )}

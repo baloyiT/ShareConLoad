@@ -19,7 +19,10 @@ type BookingContainer = {
   destination_city: string;
   destination_country: string;
   departure_date: string;
-  price_per_cbm: number;
+  load_type: 'FCL' | 'LCL';
+  price_per_cbm: number | null;
+  full_container_price: number | null;
+  currency_code: string | null;
 };
 
 type Booking = {
@@ -270,9 +273,15 @@ export default function BookingTrackPage() {
               <DetailRow label="CBM Booked">
                 <span className="font-semibold">{booking.total_cbm} CBM</span>
               </DetailRow>
-              <DetailRow label="Price / CBM">
-                R{container.price_per_cbm}
-              </DetailRow>
+              {container.load_type === 'FCL' ? (
+                <DetailRow label="Load Type">
+                  Whole container (FCL) — flat price
+                </DetailRow>
+              ) : (
+                <DetailRow label="Price / CBM">
+                  {container.currency_code ?? 'ZAR'} {container.price_per_cbm ?? 0}
+                </DetailRow>
+              )}
               <div className="pt-1 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-gray-500 font-medium">Total Price</span>
                 <span className="text-lg font-extrabold" style={{ color: '#ff6a00' }}>

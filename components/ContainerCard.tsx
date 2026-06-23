@@ -12,7 +12,7 @@ export type Container = {
   arrival_date?: string;
   available_capacity_cbm: number;
   total_capacity_cbm: number;
-  price_per_cbm: number;
+  price_per_cbm: number | null;
   currency_code?: string;
   price_per_cbm_usd?: number;
   load_type: 'FCL' | 'LCL';
