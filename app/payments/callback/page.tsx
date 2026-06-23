@@ -71,14 +71,24 @@ function CallbackHandler() {
             <h2 className="text-xl font-extrabold text-gray-800 mb-1">Payment Confirmed!</h2>
             <p className="text-sm text-gray-500 mb-1">Your payment has been successfully verified.</p>
             <p className="text-xs text-gray-400 font-mono mb-6">Ref: {reference}</p>
-            <p className="text-xs text-gray-400">Redirecting to your payment page…</p>
-            {bookingId && (
+            {bookingId ? (
+              <>
+                <p className="text-xs text-gray-400">Redirecting to your booking…</p>
+                <Link
+                  href={`/payments/${bookingId}`}
+                  className="btn mt-4 text-white font-bold rounded-xl hover:opacity-90 w-full"
+                  style={{ backgroundColor: '#0b103a' }}
+                >
+                  View My Booking
+                </Link>
+              </>
+            ) : (
               <Link
-                href={`/payments/${bookingId}`}
-                className="btn mt-4 text-white font-bold rounded-xl hover:opacity-90 w-full"
+                href="/bookings"
+                className="btn mt-2 text-white font-bold rounded-xl hover:opacity-90 w-full"
                 style={{ backgroundColor: '#0b103a' }}
               >
-                Go to Payment Page
+                View My Bookings
               </Link>
             )}
           </>
