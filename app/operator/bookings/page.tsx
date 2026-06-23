@@ -26,7 +26,9 @@ type ContainerInfo = {
   destination_city: string;
   destination_country: string;
   departure_date: string;
-  price_per_cbm: number;
+  load_type: 'FCL' | 'LCL';
+  price_per_cbm: number | null;
+  full_container_price: number | null;
   available_capacity_cbm: number;
   currency_code: string;
 };
@@ -270,7 +272,7 @@ export default function OperatorBookingsPage() {
     // Step 1: operator's containers
     const { data: containerRows, error: cErr } = await supabase
       .from('containers')
-      .select('id, origin_city, origin_country, destination_city, destination_country, departure_date, price_per_cbm, available_capacity_cbm, currency_code')
+      .select('id, origin_city, origin_country, destination_city, destination_country, departure_date, load_type, price_per_cbm, full_container_price, available_capacity_cbm, currency_code')
       .eq('operator_id', user.id);
 
     if (cErr) { setError('Could not load containers.'); setLoading(false); return; }
@@ -486,6 +488,18 @@ export default function OperatorBookingsPage() {
     const c = booking.container;
     if (!c) { setReceiptError('Container data missing.'); return; }
 
+    // FCL: whole-container booking — no CBM variance/reconciliation applies.
+    // Record actual CBM for reference only and mark as within_threshold.
+    if (c.load_type === 'FCL') {
+      const actualCbm = parseFloat(receiptModal.actualCbm);
+      if (isNaN(actualCbm) || actualCbm <= 0) {
+        setReceiptError('Please enter a valid CBM value.');
+        return;
+      }
+      await finaliseReceipt(booking, actualCbm, 0, 'within_threshold', false);
+      return;
+    }
+
     const actualCbm = parseFloat(receiptModal.actualCbm);
     if (isNaN(actualCbm) || actualCbm <= 0) {
       setReceiptError('Please enter a valid CBM value.');
@@ -509,7 +523,7 @@ export default function OperatorBookingsPage() {
         ...prev,
         step: 'excess_choice',
         variance: variancePct,
-        newTotalPrice: actualCbm * c.price_per_cbm,
+        newTotalPrice: actualCbm * (c.price_per_cbm ?? 0),
         excessCbm,
         capacityAvailable,
       } : null);
@@ -528,7 +542,10 @@ export default function OperatorBookingsPage() {
 
     const c = booking.container!;
     const effectiveCbm = isDeclined ? booking.total_cbm : actualCbm;
-    const newTotalPrice = effectiveCbm * c.price_per_cbm;
+    // FCL: flat price — never recompute from CBM. LCL: price_per_cbm is always set.
+    const newTotalPrice = c.load_type === 'FCL'
+      ? booking.total_price
+      : effectiveCbm * (c.price_per_cbm ?? 0);
     const cbmVarianceAdj = isDeclined ? 0 : newTotalPrice - booking.total_price;
 
     // 1. Update booking
@@ -828,7 +845,11 @@ export default function OperatorBookingsPage() {
                   <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-1">
                     <div className="flex justify-between"><span className="text-gray-500">Booked CBM</span><span className="font-bold">{receiptModal.booking.total_cbm} m³</span></div>
                     <div className="flex justify-between"><span className="text-gray-500">Original price</span><span className="font-bold">R{receiptModal.booking.total_price.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">Price per CBM</span><span className="font-bold">R{receiptModal.booking.container?.price_per_cbm.toFixed(2)}</span></div>
+                    {receiptModal.booking.container?.load_type === 'FCL' ? (
+                      <div className="flex justify-between"><span className="text-gray-500">Load type</span><span className="font-bold">Whole container (FCL) — flat price</span></div>
+                    ) : (
+                      <div className="flex justify-between"><span className="text-gray-500">Price per CBM</span><span className="font-bold">R{(receiptModal.booking.container?.price_per_cbm ?? 0).toFixed(2)}</span></div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Actual CBM Received</label>
@@ -842,7 +863,9 @@ export default function OperatorBookingsPage() {
                       onChange={(e) => setReceiptModal((prev) => prev ? { ...prev, actualCbm: e.target.value } : null)}
                     />
                     <p className="text-xs text-gray-400 mt-1">
-                      Recalculation only applies if variance exceeds ±5%.
+                      {receiptModal.booking.container?.load_type === 'FCL'
+                        ? 'FCL booking — actual CBM recorded for reference only. Price is fixed.'
+                        : 'Recalculation only applies if variance exceeds ±5%.'}
                     </p>
                   </div>
                   {receiptError && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{receiptError}</p>}

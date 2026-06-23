@@ -31,7 +31,10 @@ type Container = {
   departure_date: string;
   total_capacity_cbm: number;
   available_capacity_cbm: number;
-  price_per_cbm: number;
+  load_type: 'FCL' | 'LCL';
+  price_per_cbm: number | null;
+  full_container_price: number | null;
+  currency_code: string | null;
   status: string;
   operator_name: string | null;
   created_at: string;
@@ -355,7 +358,9 @@ export default function AdminDashboard() {
                       </Td>
                       <Td>
                         <span className="font-semibold text-sm" style={{ color: '#ff6a00' }}>
-                          R{c.price_per_cbm}
+                          {c.load_type === 'FCL'
+                            ? `${c.currency_code ?? 'ZAR'} ${(c.full_container_price ?? 0).toLocaleString()} (whole)`
+                            : `${c.currency_code ?? 'ZAR'} ${c.price_per_cbm ?? 0}/CBM`}
                         </span>
                       </Td>
                       <Td>

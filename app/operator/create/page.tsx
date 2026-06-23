@@ -21,6 +21,8 @@ type ContainerForm = {
   total_capacity_cbm: string;
   price_per_cbm: string;
   currency_code: string;
+  load_type: 'FCL' | 'LCL';
+  full_container_price: string;
 };
 
 type FormErrors = Partial<Record<keyof ContainerForm, string>> & { submit?: string };
@@ -49,6 +51,8 @@ const EMPTY_FORM: ContainerForm = {
   total_capacity_cbm: '',
   price_per_cbm: '',
   currency_code: 'ZAR',
+  load_type: 'LCL',
+  full_container_price: '',
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -147,8 +151,15 @@ export default function CreateContainerPage() {
       errs.total_capacity_cbm = 'Enter a valid capacity greater than 0.';
     }
 
-    if (!form.price_per_cbm || isNaN(price) || price <= 0) {
-      errs.price_per_cbm = 'Enter a valid price greater than 0.';
+    if (form.load_type === 'LCL') {
+      if (!form.price_per_cbm || isNaN(price) || price <= 0) {
+        errs.price_per_cbm = 'Enter a valid price greater than 0.';
+      }
+    } else {
+      const fullPrice = parseFloat(form.full_container_price);
+      if (!form.full_container_price || isNaN(fullPrice) || fullPrice <= 0) {
+        errs.full_container_price = 'Enter a valid full-container price greater than 0.';
+      }
     }
 
     return errs;
@@ -169,7 +180,11 @@ export default function CreateContainerPage() {
 
     const cbm = parseFloat(form.total_capacity_cbm);
     const rate = fxRates[form.currency_code] ?? null;
-    const priceUsd = rate ? parseFloat((parseFloat(form.price_per_cbm) * rate).toFixed(2)) : null;
+    const isFcl = form.load_type === 'FCL';
+    const priceUsd = rate && !isFcl
+      ? parseFloat((parseFloat(form.price_per_cbm) * rate).toFixed(2)) : null;
+    const fullPriceUsd = rate && isFcl
+      ? parseFloat((parseFloat(form.full_container_price) * rate).toFixed(2)) : null;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -187,9 +202,12 @@ export default function CreateContainerPage() {
           arrival_date: form.arrival_date || null,
           total_capacity_cbm: cbm,
           available_capacity_cbm: cbm,           // always equals total on creation
-          price_per_cbm: parseFloat(form.price_per_cbm),
-          currency_code: form.currency_code,
+          load_type: form.load_type,
+          price_per_cbm: isFcl ? null : parseFloat(form.price_per_cbm),
           price_per_cbm_usd: priceUsd,
+          full_container_price: isFcl ? parseFloat(form.full_container_price) : null,
+          full_container_price_usd: fullPriceUsd,
+          currency_code: form.currency_code,
           status: 'open',
         })
         .select('id')
@@ -274,7 +292,9 @@ export default function CreateContainerPage() {
             <Row label="Countries" value={`${form.origin_country} → ${form.destination_country}`} />
             <Row label="Departure" value={new Date(form.departure_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} />
             <Row label="Capacity"  value={`${form.total_capacity_cbm} CBM`} />
-            <Row label="Price"     value={`${form.currency_code} ${parseFloat(form.price_per_cbm).toFixed(2)} / CBM`} />
+            <Row label="Price"     value={form.load_type === 'FCL'
+              ? `${form.currency_code} ${parseFloat(form.full_container_price).toFixed(2)} (whole container)`
+              : `${form.currency_code} ${parseFloat(form.price_per_cbm).toFixed(2)} / CBM`} />
             <div className="flex items-center justify-between">
               <span className="text-gray-500">Status</span>
               <span className="badge badge-sm text-white" style={{ backgroundColor: '#22c55e' }}>Open</span>
@@ -406,6 +426,21 @@ export default function CreateContainerPage() {
 
           {/* ── SECTION 3: Capacity & Pricing ────────────────────────────── */}
           <Section step="3" title="Capacity &amp; Pricing">
+            <div className="mb-5">
+              <label className="block mb-1 text-sm font-semibold text-gray-700">Load Type <span className="text-red-500">*</span></label>
+              <p className="text-xs text-gray-400 mb-2">Offering both? List a separate container for each type.</p>
+              <div className="flex gap-2">
+                {(['LCL','FCL'] as const).map((lt) => (
+                  <button key={lt} type="button" onClick={() => update('load_type', lt)}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors"
+                    style={form.load_type === lt
+                      ? { backgroundColor: '#0b103a', color: '#fff', borderColor: '#0b103a' }
+                      : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }}>
+                    {lt === 'FCL' ? 'Full Container (FCL)' : 'Shared / Per-CBM (LCL)'}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <Field
                 label="Total Capacity (CBM)"
@@ -442,33 +477,55 @@ export default function CreateContainerPage() {
                 </select>
               </Field>
 
-              <Field
-                label={`Price per CBM (${form.currency_code})`}
-                required
-                error={errors.price_per_cbm}
-              >
-                <div className="relative">
-                  <input
-                    type="number"
-                    placeholder="e.g. 150"
-                    min={0.01}
-                    step={0.01}
-                    value={form.price_per_cbm}
-                    onChange={(e) => update('price_per_cbm', e.target.value)}
-                    className={`input input-bordered w-full ${errors.price_per_cbm ? 'input-error' : ''}`}
-                    data-error={errors.price_per_cbm ? 'true' : undefined}
-                  />
-                </div>
-                {form.price_per_cbm && fxRates[form.currency_code] && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    ≈ USD {(parseFloat(form.price_per_cbm) * fxRates[form.currency_code]).toFixed(2)} / CBM
-                  </p>
-                )}
-              </Field>
+              {form.load_type === 'LCL' && (
+                <Field
+                  label={`Price per CBM (${form.currency_code})`}
+                  required
+                  error={errors.price_per_cbm}
+                >
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder="e.g. 150"
+                      min={0.01}
+                      step={0.01}
+                      value={form.price_per_cbm}
+                      onChange={(e) => update('price_per_cbm', e.target.value)}
+                      className={`input input-bordered w-full ${errors.price_per_cbm ? 'input-error' : ''}`}
+                      data-error={errors.price_per_cbm ? 'true' : undefined}
+                    />
+                  </div>
+                  {form.price_per_cbm && fxRates[form.currency_code] && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      ≈ USD {(parseFloat(form.price_per_cbm) * fxRates[form.currency_code]).toFixed(2)} / CBM
+                    </p>
+                  )}
+                </Field>
+              )}
+              {form.load_type === 'FCL' && (
+                <Field label="Full Container Price" required error={errors.full_container_price}>
+                  <div className="relative">
+                    <input type="number" placeholder="e.g. 25000" min={0.01} step={0.01}
+                      value={form.full_container_price}
+                      onChange={(e) => update('full_container_price', e.target.value)}
+                      className={`input input-bordered w-full pr-16 ${errors.full_container_price ? 'input-error' : ''}`}
+                      data-error={errors.full_container_price ? 'true' : undefined} />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
+                      {form.currency_code}
+                    </span>
+                  </div>
+                  {form.full_container_price && fxRates[form.currency_code] && form.currency_code !== 'USD' && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      ≈ USD {(parseFloat(form.full_container_price) * fxRates[form.currency_code]).toFixed(2)} total
+                    </p>
+                  )}
+                </Field>
+              )}
             </div>
 
             {/* Pricing preview */}
-            {form.total_capacity_cbm && form.price_per_cbm &&
+            {form.load_type === 'LCL' &&
+              form.total_capacity_cbm && form.price_per_cbm &&
               parseFloat(form.total_capacity_cbm) > 0 &&
               parseFloat(form.price_per_cbm) > 0 && (
                 <div className="mt-4 grid grid-cols-3 gap-3">
@@ -485,6 +542,23 @@ export default function CreateContainerPage() {
                     label="Max revenue"
                     value={`${form.currency_code} ${(parseFloat(form.total_capacity_cbm) * parseFloat(form.price_per_cbm)).toFixed(2)}`}
                   />
+                </div>
+              )}
+            {form.load_type === 'FCL' &&
+              form.full_container_price &&
+              parseFloat(form.full_container_price) > 0 && (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <PricingPreviewTile
+                    label="Full container price"
+                    value={`${form.currency_code} ${parseFloat(form.full_container_price).toFixed(2)}`}
+                    highlight
+                  />
+                  {fxRates[form.currency_code] && (
+                    <PricingPreviewTile
+                      label="≈ USD"
+                      value={(parseFloat(form.full_container_price) * fxRates[form.currency_code]).toFixed(2)}
+                    />
+                  )}
                 </div>
               )}
           </Section>

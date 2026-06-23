@@ -12,9 +12,12 @@ export type Container = {
   arrival_date?: string;
   available_capacity_cbm: number;
   total_capacity_cbm: number;
-  price_per_cbm: number;
+  price_per_cbm: number | null;
   currency_code?: string;
   price_per_cbm_usd?: number;
+  load_type: 'FCL' | 'LCL';
+  full_container_price?: number | null;
+  full_container_price_usd?: number | null;
   status: string;
   operator_name?: string;
   operator_id?: string;
@@ -50,6 +53,12 @@ export default function ContainerCard({ container }: ContainerCardProps) {
             <span className="badge badge-sm text-white font-semibold px-2" style={{ backgroundColor: '#22c55e' }}>
               LIVE
             </span>
+            <span className="badge badge-sm font-semibold px-2 border"
+              style={container.load_type === 'FCL'
+                ? { backgroundColor: '#e8eef8', color: '#0b103a', borderColor: '#c7d6ef' }
+                : { backgroundColor: '#fff1e8', color: '#b3470a', borderColor: '#ffd2b3' }}>
+              {container.load_type}
+            </span>
             {(container.origin_country === 'Test Country' || container.destination_country === 'Test Country') && (
               <span className="badge badge-sm font-semibold px-2 border" style={{ backgroundColor: '#fef9c3', color: '#854d0e', borderColor: '#fde047' }}>
                 TEST
@@ -57,12 +66,26 @@ export default function ContainerCard({ container }: ContainerCardProps) {
             )}
           </div>
           <div className="text-right">
-            <span className="text-2xl font-bold" style={{ color: '#ff6a00' }}>
-              {container.currency_code ?? 'ZAR'} {container.price_per_cbm.toLocaleString()}
-            </span>
-            <span className="text-xs text-gray-400 block">/CBM</span>
-            {container.price_per_cbm_usd != null && (container.currency_code ?? 'ZAR') !== 'USD' && (
-              <span className="text-xs text-gray-400">≈ USD {container.price_per_cbm_usd.toFixed(2)}</span>
+            {container.load_type === 'FCL' ? (
+              <>
+                <span className="text-2xl font-bold" style={{ color: '#ff6a00' }}>
+                  {container.currency_code ?? 'ZAR'} {(container.full_container_price ?? 0).toLocaleString()}
+                </span>
+                <span className="text-xs text-gray-400 block">whole container</span>
+                {container.full_container_price_usd != null && (container.currency_code ?? 'ZAR') !== 'USD' && (
+                  <span className="text-xs text-gray-400">≈ USD {container.full_container_price_usd.toFixed(2)}</span>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="text-2xl font-bold" style={{ color: '#ff6a00' }}>
+                  {container.currency_code ?? 'ZAR'} {(container.price_per_cbm ?? 0).toLocaleString()}
+                </span>
+                <span className="text-xs text-gray-400 block">/CBM</span>
+                {container.price_per_cbm_usd != null && (container.currency_code ?? 'ZAR') !== 'USD' && (
+                  <span className="text-xs text-gray-400">≈ USD {container.price_per_cbm_usd.toFixed(2)}</span>
+                )}
+              </>
             )}
           </div>
         </div>
