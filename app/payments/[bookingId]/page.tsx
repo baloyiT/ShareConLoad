@@ -263,7 +263,7 @@ export default function PaymentPage() {
               : 'bg-green-50 border-green-200 text-green-800'
           }`}>
             <p className="font-semibold mb-1">
-              {booking.cbm_variance_adjustment > 0 ? 'CBM Overage Surcharge' : 'CBM Underage Credit'}
+              {booking.cbm_variance_adjustment > 0 ? 'Extra CBM Used — Surcharge' : 'Unused CBM — Credit'}
             </p>
             <p className="text-xs leading-relaxed">
               Your actual cargo measured {booking.cbm_variance_adjustment > 0 ? 'more' : 'less'} than declared.

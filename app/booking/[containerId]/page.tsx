@@ -290,7 +290,7 @@ export default function BookingPage() {
   }
 
   // ── CBM disclaimer constant ────────────────────────────────────────────────
-  const CBM_DISCLAIMER = 'I confirm my declared CBM is accurate. A ±5% variance is allowed. Overages will be billed; underages will be credited against Stage 2 payment.';
+  const CBM_DISCLAIMER = 'I confirm my declared CBM is accurate. A ±5% variance is allowed. Any extra CBM used will be billed; any unused CBM will be credited against your Stage 2 payment.';
 
   // ── Perform submit (core booking logic) ────────────────────────────────────
   async function performSubmit() {
@@ -605,7 +605,7 @@ export default function BookingPage() {
                       onChange={(e) => { setCbmStep1Ack(e.target.checked); setErrors((prev) => ({ ...prev, cbm_step1: undefined })); }}
                       className="checkbox checkbox-sm mt-0.5 shrink-0" style={{ accentColor: '#ff6a00' }} />
                     <span className="text-xs text-amber-800 leading-relaxed">
-                      I understand that my CBM declaration affects my booking price and may be verified at loading. A ±5% variance is allowed; overages will be billed and underages credited.
+                      I understand that my CBM declaration affects my booking price and may be verified at loading. A ±5% variance is allowed; any extra CBM used will be billed and any unused CBM credited.
                     </span>
                   </label>
                 )}
@@ -996,6 +996,16 @@ export default function BookingPage() {
                 )}
               </div>
             </section>
+
+            {/* Inline submit CTA — desktop only (mobile reaches the sidebar button right below) */}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="hidden lg:flex items-center justify-center w-full btn text-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+              style={{ backgroundColor: '#ff6a00' }}
+            >
+              {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Submit Booking'}
+            </button>
           </div>
 
           {/* ── Right column: Order Summary ─────────────────────────────────── */}
