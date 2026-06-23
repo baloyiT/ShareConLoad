@@ -292,7 +292,9 @@ export default function CreateContainerPage() {
             <Row label="Countries" value={`${form.origin_country} → ${form.destination_country}`} />
             <Row label="Departure" value={new Date(form.departure_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} />
             <Row label="Capacity"  value={`${form.total_capacity_cbm} CBM`} />
-            <Row label="Price"     value={`${form.currency_code} ${parseFloat(form.price_per_cbm).toFixed(2)} / CBM`} />
+            <Row label="Price"     value={form.load_type === 'FCL'
+              ? `${form.currency_code} ${parseFloat(form.full_container_price).toFixed(2)} (whole container)`
+              : `${form.currency_code} ${parseFloat(form.price_per_cbm).toFixed(2)} / CBM`} />
             <div className="flex items-center justify-between">
               <span className="text-gray-500">Status</span>
               <span className="badge badge-sm text-white" style={{ backgroundColor: '#22c55e' }}>Open</span>
@@ -512,12 +514,18 @@ export default function CreateContainerPage() {
                       {form.currency_code}
                     </span>
                   </div>
+                  {form.full_container_price && fxRates[form.currency_code] && form.currency_code !== 'USD' && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      ≈ USD {(parseFloat(form.full_container_price) * fxRates[form.currency_code]).toFixed(2)} total
+                    </p>
+                  )}
                 </Field>
               )}
             </div>
 
             {/* Pricing preview */}
-            {form.total_capacity_cbm && form.price_per_cbm &&
+            {form.load_type === 'LCL' &&
+              form.total_capacity_cbm && form.price_per_cbm &&
               parseFloat(form.total_capacity_cbm) > 0 &&
               parseFloat(form.price_per_cbm) > 0 && (
                 <div className="mt-4 grid grid-cols-3 gap-3">
@@ -534,6 +542,23 @@ export default function CreateContainerPage() {
                     label="Max revenue"
                     value={`${form.currency_code} ${(parseFloat(form.total_capacity_cbm) * parseFloat(form.price_per_cbm)).toFixed(2)}`}
                   />
+                </div>
+              )}
+            {form.load_type === 'FCL' &&
+              form.full_container_price &&
+              parseFloat(form.full_container_price) > 0 && (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <PricingPreviewTile
+                    label="Full container price"
+                    value={`${form.currency_code} ${parseFloat(form.full_container_price).toFixed(2)}`}
+                    highlight
+                  />
+                  {fxRates[form.currency_code] && (
+                    <PricingPreviewTile
+                      label="≈ USD"
+                      value={(parseFloat(form.full_container_price) * fxRates[form.currency_code]).toFixed(2)}
+                    />
+                  )}
                 </div>
               )}
           </Section>
