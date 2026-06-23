@@ -92,6 +92,7 @@ export default function HomePage() {
   const [destinationFilter, setDestinationFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [loadTypeFilter, setLoadTypeFilter] = useState<'all' | 'FCL' | 'LCL'>('all');
   const [searched, setSearched] = useState(false);
 
   // ── Auth ───────────────────────────────────────────────────────────────────
@@ -201,7 +202,8 @@ export default function HomePage() {
       );
       const dateMatch = !dateFilter || c.departure_date >= dateFilter;
       const priceMatch = !maxPrice || (c.price_per_cbm_usd ?? c.price_per_cbm) <= parseFloat(maxPrice);
-      return originMatch && destMatch && dateMatch && priceMatch;
+      const loadTypeMatch = loadTypeFilter === 'all' || c.load_type === loadTypeFilter;
+      return originMatch && destMatch && dateMatch && priceMatch && loadTypeMatch;
     });
   }, [
     containers,
@@ -209,6 +211,7 @@ export default function HomePage() {
     destinationFilter,
     dateFilter,
     maxPrice,
+    loadTypeFilter,
     searched,
   ]);
 
@@ -221,6 +224,7 @@ export default function HomePage() {
     setDestinationFilter("");
     setDateFilter("");
     setMaxPrice("");
+    setLoadTypeFilter('all');
     setSearched(false);
   }
 
@@ -611,6 +615,20 @@ export default function HomePage() {
                 className="input input-bordered w-full text-sm"
                 min={0}
               />
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Load Type</label>
+            <div className="flex gap-2">
+              {(['all','FCL','LCL'] as const).map((lt) => (
+                <button key={lt} type="button" onClick={() => setLoadTypeFilter(lt)}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold border transition-colors"
+                  style={loadTypeFilter === lt
+                    ? { backgroundColor: '#0b103a', color: '#fff', borderColor: '#0b103a' }
+                    : { backgroundColor: '#fff', color: '#6b7280', borderColor: '#e5e7eb' }}>
+                  {lt === 'all' ? 'All' : lt}
+                </button>
+              ))}
             </div>
           </div>
           <div className="flex items-center justify-between flex-wrap gap-2">
