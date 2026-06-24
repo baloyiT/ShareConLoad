@@ -12,14 +12,27 @@ function json(data: unknown, status = 200) {
 }
 
 // Wrap text to a max width (in chars) for simple PDF layout.
+// Words longer than `max` chars are hard-split into max-length chunks
+// so they can never overflow the PDF page.
 function wrap(text: string, max: number): string[] {
   const out: string[] = [];
   for (const para of text.split('\n')) {
     if (para === '') { out.push(''); continue; }
     let line = '';
-    for (const word of para.split(' ')) {
-      if ((line + word).length > max) { out.push(line.trimEnd()); line = ''; }
-      line += word + ' ';
+    for (const rawWord of para.split(' ')) {
+      // I3: hard-split any word that exceeds max chars
+      const chunks: string[] = [];
+      let w = rawWord;
+      while (w.length > max) {
+        chunks.push(w.slice(0, max));
+        w = w.slice(max);
+      }
+      if (w.length > 0) chunks.push(w);
+
+      for (const word of chunks) {
+        if ((line + word).length > max) { out.push(line.trimEnd()); line = ''; }
+        line += word + ' ';
+      }
     }
     out.push(line.trimEnd());
   }
@@ -29,20 +42,27 @@ function wrap(text: string, max: number): string[] {
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   try {
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
-    const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const ANON = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    // I2: guard missing env vars before constructing clients
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const ANON = Deno.env.get('SUPABASE_ANON_KEY');
+    if (!SUPABASE_URL || !SERVICE_ROLE || !ANON) {
+      return json({ error: 'Server misconfigured' }, 500);
+    }
 
-    const { version, agreementText } = await req.json();
-    if (!version || !agreementText) return json({ error: 'version and agreementText are required' }, 400);
+    // I1: auth check BEFORE body parse — reject early if unauthenticated
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) return json({ error: 'Not authenticated' }, 401);
 
-    // User-scoped client to identify the caller; service client for writes.
     const userClient = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: authHeader } } });
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: 'Not authenticated' }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+    // Body parse happens after auth is confirmed
+    const { version, agreementText } = await req.json();
+    if (!version || !agreementText) return json({ error: 'version and agreementText are required' }, 400);
 
     const { data: profile } = await admin.from('profiles')
       .select('id').eq('user_id', user.id).eq('role_type', 'operator').maybeSingle();
@@ -107,7 +127,8 @@ serve(async (req: Request) => {
     if (docErr || !doc) return json({ error: docErr?.message ?? 'Failed to record document' }, 500);
 
     // ── Acceptance provenance ────────────────────────────────────────────────
-    await admin.from('agreement_acceptances').insert({
+    // C1: capture and check the insert error; a failed provenance write must not return success
+    const { error: accErr } = await admin.from('agreement_acceptances').insert({
       operator_profile_id: op.id,
       user_id: user.id,
       agreement_type: 'operator_service_agreement',
@@ -119,13 +140,16 @@ serve(async (req: Request) => {
       pdf_path: pdfPath,
       compliance_document_id: doc.id,
     });
+    if (accErr) return json({ error: `Failed to record acceptance: ${accErr.message}` }, 500);
 
     // ── Operator profile transition (same as the old client flow) ────────────
-    await admin.from('operator_profiles').update({
+    // C1: capture and check the update error
+    const { error: opUpdErr } = await admin.from('operator_profiles').update({
       service_agreement_signed_at: acceptedAt.toISOString(),
       service_agreement_version: version,
       status: 'pending_verification',
     }).eq('id', op.id);
+    if (opUpdErr) return json({ error: `Failed to update operator profile: ${opUpdErr.message}` }, 500);
 
     return json({ success: true, compliance_document_id: doc.id, pdf_path: pdfPath });
   } catch (err) {
