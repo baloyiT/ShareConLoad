@@ -85,12 +85,32 @@ export default function OperatorOnboardingPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
         router.replace('/auth/login?next=/onboarding/operator');
-      } else {
-        setAuthChecked(true);
+        return;
       }
+      // Already an operator? Skip onboarding — send them straight to their dashboard,
+      // where "Create Container" lives. (Mirrors the createOperatorProfile idempotency
+      // check, but routes forward on load instead of after a redundant form submit.)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', data.user.id)
+        .eq('role_type', 'operator')
+        .maybeSingle();
+      if (profile) {
+        const { data: op } = await supabase
+          .from('operator_profiles')
+          .select('id')
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+        if (op) {
+          router.replace('/operator');
+          return;
+        }
+      }
+      setAuthChecked(true);
     });
   }, [router]);
 
