@@ -144,12 +144,11 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
         const { data: docs } = await supabase
           .from('compliance_documents')
           .select('doc_type, status')
-          .eq('operator_profile_id', op.id)
-          .eq('status', 'approved');
+          .eq('operator_profile_id', op.id);
 
         const required = requiredDocTypes(op.entity_type);
-        const approvedTypes = new Set((docs ?? []).map((d) => d.doc_type));
-        documentsComplete = required.every((t) => approvedTypes.has(t));
+        const uploadedTypes = new Set((docs ?? []).map((d) => d.doc_type));
+        documentsComplete = required.every((t) => uploadedTypes.has(t));
       }
 
       setInfo({
