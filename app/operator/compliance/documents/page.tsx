@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 import ComplianceStepper from '@/components/ComplianceStepper';
+import { requiredDocTypes, docLabelOverride } from '@/services/operatorCompliance';
 
 type DocStatus = 'under_review' | 'approved' | 'rejected';
 
@@ -64,6 +65,7 @@ export default function ComplianceDocumentsPage() {
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [operatorProfileId, setOperatorProfileId] = useState<string | null>(null);
+  const [entityType, setEntityType] = useState<string>('company');
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
   const [slots, setSlots] = useState<DocSlot[]>(
@@ -81,11 +83,12 @@ export default function ComplianceDocumentsPage() {
       if (!profile) { setPageError('Operator profile not found.'); setLoading(false); return; }
 
       const { data: op } = await supabase
-        .from('operator_profiles').select('id')
+        .from('operator_profiles').select('id, entity_type')
         .eq('profile_id', profile.id).single();
       if (!op) { setPageError('Operator details not found.'); setLoading(false); return; }
 
       setOperatorProfileId(op.id);
+      setEntityType(op.entity_type ?? 'company');
 
       const { data: docs } = await supabase
         .from('compliance_documents')
@@ -95,7 +98,16 @@ export default function ComplianceDocumentsPage() {
       const recordMap: Record<string, DocRecord> = {};
       for (const d of (docs ?? []) as DocRecord[]) recordMap[d.doc_type] = d;
 
-      setSlots(DOC_DEFS.map((d) => ({
+      const entityVal = op.entity_type ?? 'company';
+      const required = requiredDocTypes(entityVal);
+      const visibleDefs = DOC_DEFS
+        .filter((d) => required.includes(d.type) || d.optional)
+        .map((d) => {
+          const o = docLabelOverride(d.type, entityVal);
+          return { ...d, label: o.label ?? d.label, desc: o.desc ?? d.desc };
+        });
+
+      setSlots(visibleDefs.map((d) => ({
         ...d,
         optional: d.optional ?? false,
         record: recordMap[d.type] ?? null,
@@ -170,13 +182,8 @@ export default function ComplianceDocumentsPage() {
     );
   }
 
-  const REQUIRED_TYPES = [
-    'identity',
-    'business_registration',
-    'proof_of_warehouse_address',
-    'tax_clearance',
-    'banking_confirmation',
-  ];
+  const REQUIRED_TYPES = requiredDocTypes(entityType);
+  const requiredCount = REQUIRED_TYPES.length;
   const uploadedCount = slots.filter((s) => REQUIRED_TYPES.includes(s.type) && s.record !== null).length;
 
   return (
@@ -191,11 +198,11 @@ export default function ComplianceDocumentsPage() {
 
       {/* Progress summary */}
       <div className="mb-4">
-        <p className="text-xs text-gray-400 mb-1.5">{uploadedCount} of 5 required documents uploaded</p>
+        <p className="text-xs text-gray-400 mb-1.5">{uploadedCount} of {requiredCount} required documents uploaded</p>
         <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${(uploadedCount / 5) * 100}%`, backgroundColor: '#ff6a00' }}
+            style={{ width: `${(uploadedCount / requiredCount) * 100}%`, backgroundColor: '#ff6a00' }}
           />
         </div>
       </div>
@@ -284,7 +291,7 @@ export default function ComplianceDocumentsPage() {
         })}
       </div>
 
-      {uploadedCount >= 5 && (
+      {uploadedCount >= requiredCount && (
         <div className="mt-6">
           <Link
             href="/operator/compliance/agreement"

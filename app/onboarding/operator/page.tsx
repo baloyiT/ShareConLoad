@@ -9,6 +9,7 @@ import { supabase } from '@/services/supabaseClient';
 import { createOperatorProfile } from '@/actions/operatorActions';
 
 import { AlertCircle, Check, Info } from 'lucide-react';
+import { ID_TYPES } from '@/services/operatorCompliance';
 const COUNTRY_CODES: Record<string, string> = {
   'South Africa': '+27', 'Afghanistan': '+93', 'Albania': '+355', 'Algeria': '+213',
   'Angola': '+244', 'Argentina': '+54', 'Australia': '+61', 'Austria': '+43',
@@ -79,6 +80,8 @@ export default function OperatorOnboardingPage() {
   const [state, formAction, isPending] = useActionState(createOperatorProfile, null);
 
   const [authChecked, setAuthChecked] = useState(false);
+  const [entityType, setEntityType]   = useState('individual');
+  const isIndividual = entityType === 'individual';
   const [country, setCountry]         = useState('South Africa');
   const [phone, setPhone]             = useState('+27 ');
   const [phoneError, setPhoneError]   = useState<string | null>(null);
@@ -135,6 +138,14 @@ export default function OperatorOnboardingPage() {
 
     const legalName = (form.elements.namedItem('legal_name') as HTMLInputElement)?.value?.trim();
     if (!legalName) errors.legal_name = 'Legal name is required.';
+
+    if (entityType === 'company') {
+      const reg = (form.elements.namedItem('registration_number') as HTMLInputElement)?.value?.trim();
+      if (!reg) errors.registration_number = 'Registration number is required for companies.';
+    } else {
+      const idNum = (form.elements.namedItem('id_number') as HTMLInputElement)?.value?.trim();
+      if (!idNum) errors.id_number = 'ID number is required.';
+    }
 
     if (!country.trim() || !COUNTRIES.includes(country)) errors.country = 'Please select a valid country.';
 
@@ -204,7 +215,9 @@ export default function OperatorOnboardingPage() {
 
               {/* Entity type */}
               <Field label="Entity Type">
-                <select name="entity_type" className="select select-bordered w-full">
+                <select name="entity_type" value={entityType}
+                  onChange={(e) => { setEntityType(e.target.value); setFieldErrors({}); }}
+                  className="select select-bordered w-full">
                   <option value="individual">Individual</option>
                   <option value="company">Company</option>
                 </select>
@@ -221,25 +234,37 @@ export default function OperatorOnboardingPage() {
                 />
               </Field>
 
-              {/* Registration number */}
-              <Field label="Registration Number" hint="optional">
-                <input
-                  type="text"
-                  name="registration_number"
-                  placeholder="Company registration number"
-                  className="input input-bordered w-full"
-                />
-              </Field>
+              {/* Company-only: registration + VAT */}
+              {!isIndividual && (
+                <>
+                  <Field label="Registration Number" required error={fieldErrors.registration_number}>
+                    <input type="text" name="registration_number"
+                      placeholder="Company registration number"
+                      className={`input input-bordered w-full ${fieldErrors.registration_number ? 'input-error' : ''}`}
+                      onChange={() => setFieldErrors((p) => ({ ...p, registration_number: '' }))} />
+                  </Field>
+                  <Field label="VAT Number" hint="optional">
+                    <input type="text" name="vat_number" placeholder="VAT number"
+                      className="input input-bordered w-full" />
+                  </Field>
+                </>
+              )}
 
-              {/* VAT number */}
-              <Field label="VAT Number" hint="optional">
-                <input
-                  type="text"
-                  name="vat_number"
-                  placeholder="VAT number"
-                  className="input input-bordered w-full"
-                />
-              </Field>
+              {/* Individual-only: ID type + number */}
+              {isIndividual && (
+                <>
+                  <Field label="ID Type" required>
+                    <select name="id_type" className="select select-bordered w-full">
+                      {ID_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="ID Number" required error={fieldErrors.id_number}>
+                    <input type="text" name="id_number" placeholder="Your ID or passport number"
+                      className={`input input-bordered w-full ${fieldErrors.id_number ? 'input-error' : ''}`}
+                      onChange={() => setFieldErrors((p) => ({ ...p, id_number: '' }))} />
+                  </Field>
+                </>
+              )}
 
               {/* Country */}
               <Field label="Country" required error={fieldErrors.country}>
@@ -257,15 +282,17 @@ export default function OperatorOnboardingPage() {
                 </datalist>
               </Field>
 
-              {/* Contact person */}
-              <Field label="Contact Person">
-                <input
-                  type="text"
-                  name="contact_person"
-                  placeholder="Full name of primary contact"
-                  className="input input-bordered w-full"
-                />
-              </Field>
+              {/* Contact person — company only */}
+              {!isIndividual && (
+                <Field label="Contact Person">
+                  <input
+                    type="text"
+                    name="contact_person"
+                    placeholder="Full name of primary contact"
+                    className="input input-bordered w-full"
+                  />
+                </Field>
+              )}
 
               {/* Phone number */}
               <Field label="Phone Number" error={fieldErrors.phone_number || phoneError || undefined}>

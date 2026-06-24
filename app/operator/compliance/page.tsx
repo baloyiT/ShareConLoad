@@ -4,25 +4,18 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
+import { requiredDocTypes } from '@/services/operatorCompliance';
 
 import { Check } from 'lucide-react';
 type DocRecord = { doc_type: string; status: string };
 
 type StepState = 'done' | 'in_progress' | 'not_started';
 
-const REQUIRED_DOC_TYPES = [
-  'identity',
-  'business_registration',
-  'proof_of_warehouse_address',
-  'tax_clearance',
-  'banking_confirmation',
-];
-
 const STEP_DEFS = [
   { number: 1, label: 'Business Profile',  desc: 'Your legal entity name, registration number, and entity type.',     href: '/operator/compliance/profile' },
   { number: 2, label: 'Contact Details',   desc: 'Primary contact person, phone number, and business address.',        href: '/operator/compliance/contact' },
   { number: 3, label: 'Bank Account',      desc: 'Payout bank account for receiving transfer payments.',               href: '/operator/bank' },
-  { number: 4, label: 'Documents',         desc: 'KYC documents including identity, registration, and tax clearance.', href: '/operator/compliance/documents' },
+  { number: 4, label: 'Documents',         desc: 'KYC documents required for your entity type and payout eligibility.', href: '/operator/compliance/documents' },
   { number: 5, label: 'Service Agreement', desc: 'Read and sign the ShareConLoad Operator Service Agreement.',         href: '/operator/compliance/agreement' },
 ];
 
@@ -49,7 +42,7 @@ export default function ComplianceHubPage() {
 
       const { data: op, error: opErr } = await supabase
         .from('operator_profiles')
-        .select('id, legal_name, phone_number, bank_account_name, service_agreement_signed_at, status')
+        .select('id, legal_name, phone_number, bank_account_name, service_agreement_signed_at, status, entity_type')
         .eq('profile_id', profile.id)
         .single();
 
@@ -60,8 +53,9 @@ export default function ComplianceHubPage() {
         .select('doc_type, status')
         .eq('operator_profile_id', op.id);
 
+      const required = requiredDocTypes(op.entity_type);
       const uploadedTypes = new Set((docs ?? []).map((d: DocRecord) => d.doc_type));
-      const allDocsUploaded = REQUIRED_DOC_TYPES.every((t) => uploadedTypes.has(t));
+      const allDocsUploaded = required.every((t) => uploadedTypes.has(t));
 
       setStepsDone([
         !!op.legal_name,

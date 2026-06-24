@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 
 import { ArrowLeft, Check, ClipboardList, CreditCard, Package, Plus } from 'lucide-react';
+import { requiredDocTypes } from '@/services/operatorCompliance';
 type CompletionStatus = {
   profile:   boolean;
   contact:   boolean;
@@ -134,28 +135,20 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
 
       const { data: op } = await supabase
         .from('operator_profiles')
-        .select('id, legal_name, phone_number, paystack_recipient_code, service_agreement_signed_at')
+        .select('id, legal_name, phone_number, paystack_recipient_code, service_agreement_signed_at, entity_type')
         .eq('profile_id', profile.id)
         .single();
-
-      const REQUIRED_DOCS = [
-        'identity',
-        'business_registration',
-        'proof_of_warehouse_address',
-        'tax_clearance',
-        'banking_confirmation',
-      ] as const;
 
       let documentsComplete = false;
       if (op?.id) {
         const { data: docs } = await supabase
           .from('compliance_documents')
           .select('doc_type, status')
-          .eq('operator_profile_id', op.id)
-          .eq('status', 'approved');
+          .eq('operator_profile_id', op.id);
 
-        const approvedTypes = new Set((docs ?? []).map((d) => d.doc_type));
-        documentsComplete = REQUIRED_DOCS.every((t) => approvedTypes.has(t));
+        const required = requiredDocTypes(op.entity_type);
+        const uploadedTypes = new Set((docs ?? []).map((d) => d.doc_type));
+        documentsComplete = required.every((t) => uploadedTypes.has(t));
       }
 
       setInfo({
