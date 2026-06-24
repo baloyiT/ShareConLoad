@@ -8,7 +8,7 @@ import { notify } from '@/services/notificationService';
 import ComplianceStepper from '@/components/ComplianceStepper';
 
 import { Check } from 'lucide-react';
-const AGREEMENT_VERSION = '1.0';
+const AGREEMENT_VERSION = '1.1';
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -114,7 +114,7 @@ export default function ComplianceAgreementPage() {
 
         <p><strong>1. Platform Access.</strong> ShareConLoad grants you a non-exclusive, non-transferable licence to list container space on the platform and accept bookings from customers.</p>
 
-        <p><strong>2. Fees &amp; Commission.</strong> ShareConLoad charges a platform commission of <strong>5%</strong> on each gross payout amount. The net amount (gross minus commission) is transferred to your registered bank account via Paystack.</p>
+        <p><strong>2. Fees &amp; Commission.</strong> ShareConLoad charges a <strong>tiered platform commission</strong> on each gross payout, based on the total booking value (normalised to USD): <strong>12%</strong> on bookings up to USD&nbsp;500; <strong>10%</strong> from USD&nbsp;501 to 2,000; <strong>8%</strong> from USD&nbsp;2,001 to 5,000; and <strong>6%</strong> above USD&nbsp;5,000. The commission is deducted from the gross payout and the net amount is transferred to your registered bank account via Paystack. ShareConLoad may update these rates from time to time; the rates in effect at the time of each booking apply.</p>
 
         <p><strong>3. Payout Conditions.</strong> Payouts are released subject to: (a) the corresponding customer payment being confirmed as &apos;paid&apos;; (b) no active dispute on the booking; (c) payout account being verified and in good standing; and (d) expiry of the applicable refund window.</p>
 
@@ -130,7 +130,7 @@ export default function ComplianceAgreementPage() {
 
         <p><strong>9. Governing Law.</strong> This agreement is governed by the laws of the Republic of South Africa.</p>
 
-        <p className="text-xs text-gray-400 mt-4">Last updated: 2026-05-12 · Version {AGREEMENT_VERSION}</p>
+        <p className="text-xs text-gray-400 mt-4">Last updated: 2026-06-24 · Version {AGREEMENT_VERSION}</p>
       </div>
 
       {signedAt ? (
