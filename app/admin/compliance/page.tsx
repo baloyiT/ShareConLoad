@@ -58,6 +58,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   banking_confirmation:       'Banking Confirmation',
   cargo_insurance:            'Cargo Insurance Certificate',
   freight_forwarding_license: 'Freight Forwarding License',
+  service_agreement:          'Service Agreement',
 };
 
 function fmt(d: string) {
