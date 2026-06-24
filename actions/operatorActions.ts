@@ -57,16 +57,30 @@ export async function createOperatorProfile(
     return { error: 'Failed to create operator profile. Please try again.' };
   }
 
-  // Step 2 — create the operator detail row
+  // Step 2 — create the operator detail row (entity-aware)
+  const entityType = (formData.get('entity_type') as string) || 'individual';
+  const individual = entityType === 'individual';
+
+  if (individual && !(formData.get('id_number') as string)?.trim()) {
+    await supabase.from('profiles').delete().eq('id', profile.id);
+    return { error: 'ID number is required for individual operators.' };
+  }
+  if (!individual && !(formData.get('registration_number') as string)?.trim()) {
+    await supabase.from('profiles').delete().eq('id', profile.id);
+    return { error: 'Registration number is required for companies.' };
+  }
+
   const { error: opError } = await supabase.from('operator_profiles').insert({
     profile_id:          profile.id,
-    entity_type:         formData.get('entity_type')         as string,
-    legal_name:          formData.get('legal_name')          as string,
-    registration_number: (formData.get('registration_number') as string) || null,
-    vat_number:          (formData.get('vat_number')          as string) || null,
-    country:             (formData.get('country')             as string) || 'South Africa',
-    contact_person:      (formData.get('contact_person')      as string) || null,
-    phone_number:        (formData.get('phone_number')        as string) || null,
+    entity_type:         entityType,
+    legal_name:          formData.get('legal_name') as string,
+    registration_number: individual ? null : ((formData.get('registration_number') as string) || null),
+    vat_number:          individual ? null : ((formData.get('vat_number') as string) || null),
+    contact_person:      individual ? null : ((formData.get('contact_person') as string) || null),
+    id_type:             individual ? ((formData.get('id_type') as string) || null) : null,
+    id_number:           individual ? ((formData.get('id_number') as string) || null) : null,
+    country:             (formData.get('country') as string) || 'South Africa',
+    phone_number:        (formData.get('phone_number') as string) || null,
     status:              'draft',
   });
 
