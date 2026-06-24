@@ -220,11 +220,11 @@ export default function OperatorBankPage() {
             )}
             <div className="flex flex-col gap-2 mt-6">
               <Link
-                href="/operator/compliance/agreement"
+                href="/operator/compliance/documents"
                 className="btn text-white font-bold rounded-xl hover:opacity-90"
                 style={{ backgroundColor: '#0b103a' }}
               >
-                Next, Service Agreement →
+                Next, Upload Documents →
               </Link>
               <button
                 onClick={() => setSuccess(false)}
