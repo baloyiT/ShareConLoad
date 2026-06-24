@@ -15,7 +15,7 @@ const STEP_DEFS = [
   { number: 1, label: 'Business Profile',  desc: 'Your legal entity name, registration number, and entity type.',     href: '/operator/compliance/profile' },
   { number: 2, label: 'Contact Details',   desc: 'Primary contact person, phone number, and business address.',        href: '/operator/compliance/contact' },
   { number: 3, label: 'Bank Account',      desc: 'Payout bank account for receiving transfer payments.',               href: '/operator/bank' },
-  { number: 4, label: 'Documents',         desc: 'KYC documents including identity, registration, and tax clearance.', href: '/operator/compliance/documents' },
+  { number: 4, label: 'Documents',         desc: 'KYC documents required for your entity type and payout eligibility.', href: '/operator/compliance/documents' },
   { number: 5, label: 'Service Agreement', desc: 'Read and sign the ShareConLoad Operator Service Agreement.',         href: '/operator/compliance/agreement' },
 ];
 
