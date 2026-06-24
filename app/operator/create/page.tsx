@@ -8,7 +8,7 @@ import LocationAutocomplete from '@/components/LocationAutocomplete';
 import PageHero from '@/components/PageHero';
 import type { Location } from '@/services/locations';
 
-import { AlertCircle, ArrowRight, Check, Info, Lock } from 'lucide-react';
+import { AlertCircle, ArrowRight, Check, Clock, Info, Lock } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ContainerForm = {
@@ -65,7 +65,7 @@ export default function CreateContainerPage() {
   const [submitting, setSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
 
-  const [compliance, setCompliance] = useState<'loading' | 'ok' | 'blocked'>('loading');
+  const [compliance, setCompliance] = useState<'loading' | 'ok' | 'pending' | 'blocked'>('loading');
 
   const [fxRates, setFxRates] = useState<Record<string, number>>({});
 
@@ -100,7 +100,7 @@ export default function CreateContainerPage() {
 
       const { data: op } = await supabase
         .from('operator_profiles')
-        .select('id, legal_name, phone_number, paystack_recipient_code, service_agreement_signed_at')
+        .select('id, legal_name, phone_number, paystack_recipient_code, service_agreement_signed_at, status')
         .eq('profile_id', profile.id)
         .single();
 
@@ -120,7 +120,15 @@ export default function CreateContainerPage() {
         !!op.service_agreement_signed_at &&
         (count ?? 0) === 5;
 
-      setCompliance(compliant ? 'ok' : 'blocked');
+      // Distinguish "submitted, awaiting admin review" (pending_verification) from
+      // "not yet submitted/incomplete" so the gate shows an accurate message.
+      if (compliant) {
+        setCompliance('ok');
+      } else if (op.status === 'pending_verification') {
+        setCompliance('pending');
+      } else {
+        setCompliance('blocked');
+      }
     }
     checkCompliance();
   }, [router]);
@@ -229,6 +237,42 @@ export default function CreateContainerPage() {
     return (
       <div className="flex items-center justify-center py-24 min-h-[60vh]">
         <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
+      </div>
+    );
+  }
+
+  // ── Compliance pending review ───────────────────────────────────────────────
+  if (compliance === 'pending') {
+    return (
+      <div className="bg-[#f8fafc] min-h-screen">
+        <PageHero showMap title="Create a Container" />
+        <div className="max-w-md mx-auto px-4 py-16">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+              style={{ backgroundColor: '#eff6ff' }}
+            >
+              <Clock className="w-8 h-8" style={{ color: '#2563eb' }} />
+            </div>
+            <h2 className="text-xl font-extrabold text-gray-800 mb-2">Your documents are under review</h2>
+            <p className="text-gray-500 text-sm mb-1">
+              We&apos;ve received your compliance documents and our team is reviewing them.
+            </p>
+            <p className="text-xs text-gray-400 mb-6">
+              You&apos;ll be notified once you&apos;re approved — usually within 1–2 business days. You can list containers as soon as your review is complete.
+            </p>
+            <Link
+              href="/operator/compliance"
+              className="btn text-white font-bold rounded-xl w-full hover:opacity-90"
+              style={{ backgroundColor: '#ff6a00' }}
+            >
+              View Compliance Status →
+            </Link>
+            <Link href="/operator" className="btn btn-ghost text-gray-400 rounded-xl w-full mt-2 text-sm">
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
