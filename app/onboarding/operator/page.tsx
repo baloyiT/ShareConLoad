@@ -216,7 +216,7 @@ export default function OperatorOnboardingPage() {
               {/* Entity type */}
               <Field label="Entity Type">
                 <select name="entity_type" value={entityType}
-                  onChange={(e) => setEntityType(e.target.value)}
+                  onChange={(e) => { setEntityType(e.target.value); setFieldErrors({}); }}
                   className="select select-bordered w-full">
                   <option value="individual">Individual</option>
                   <option value="company">Company</option>
