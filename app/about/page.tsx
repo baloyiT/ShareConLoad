@@ -6,7 +6,7 @@ import { CircleDollarSign, ClipboardList, Info, Lock, PackageX, ShieldOff } from
 export const metadata: Metadata = {
   title: 'About ShareConLoad – The Container Sharing Marketplace',
   description:
-    'Learn how ShareConLoad connects operators, shippers, and agents to eliminate empty container space and unlock global trade for everyone.',
+    'Learn how ShareConLoad connects operators, shippers, agents, measurement agents, and transporters to eliminate empty container space and unlock global trade for everyone.',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -94,6 +94,18 @@ const WHO_CARDS: WhoCard[] = [
     badgeClass: 'bg-blue-50 text-blue-500 border border-blue-200',
     title: 'You connect both worlds',
     desc: 'Freight forwarders and clearing agents operate on both sides of the marketplace. One platform replaces the chaos of dozens of conversations, and your commission is structured, transparent, and protected.',
+  },
+  {
+    badgeLabel: 'Measurement Agent',
+    badgeClass: 'bg-green-50 text-green-600 border border-green-200',
+    title: 'You verify the cargo',
+    desc: 'Measure and certify cargo dimensions on the ground, giving shippers and operators a trusted, accurate CBM for fair pricing and space allocation. Get matched to measurement jobs and earn on every verified report.',
+  },
+  {
+    badgeLabel: 'Transporter',
+    badgeClass: 'bg-purple-50 text-purple-600 border border-purple-200',
+    title: 'You move it first & last mile',
+    desc: 'Handle pickup and delivery between the shipper\'s door and the container. Get matched to transport jobs on your routes, and get paid for every completed leg.',
   },
 ];
 
@@ -259,7 +271,8 @@ export default function AboutPage() {
           </h2>
           <p className="text-sm leading-relaxed" style={{ color: 'rgba(251,191,36,0.6)' }}>
             ShareConLoad is a live digital container load-sharing marketplace, the first platform purpose-built to
-            connect Operators, Shippers, and Agents in one verified, payments-protected ecosystem.
+            connect Operators, Shippers, Agents, Measurement Agents, and Transporters in one verified,
+            payments-protected ecosystem.
           </p>
         </div>
       </section>
@@ -271,14 +284,14 @@ export default function AboutPage() {
             The solution
           </p>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-4 leading-snug">
-            One platform. Three powerful roles. Zero wasted space.
+            One platform. Five powerful roles. Zero wasted space.
           </h2>
           <p className="text-sm text-gray-500 leading-relaxed mb-8">
-            ShareConLoad is a two-sided marketplace with three distinct user types, each solving a different piece of
+            ShareConLoad is a multi-sided marketplace with five distinct user types, each solving a different piece of
             the same broken puzzle. Every role benefits directly from the others being on the platform.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {WHO_CARDS.map((card) => (
               <div
                 key={card.badgeLabel}
