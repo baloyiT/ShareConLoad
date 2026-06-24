@@ -4,19 +4,22 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import ComplianceStepper from '@/components/ComplianceStepper';
+import { ID_TYPES } from '@/services/operatorCompliance';
 
 type ProfileForm = {
   entity_type:         string;
   legal_name:          string;
   registration_number: string;
   vat_number:          string;
+  id_type:             string;
+  id_number:           string;
 };
 
 export default function ComplianceProfilePage() {
   const router = useRouter();
 
   const [profileId,  setProfileId]  = useState<string | null>(null);
-  const [form,       setForm]       = useState<ProfileForm>({ entity_type: 'company', legal_name: '', registration_number: '', vat_number: '' });
+  const [form,       setForm]       = useState<ProfileForm>({ entity_type: 'company', legal_name: '', registration_number: '', vat_number: '', id_type: 'passport', id_number: '' });
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState<string | null>(null);
@@ -38,7 +41,7 @@ export default function ComplianceProfilePage() {
 
       const { data: op } = await supabase
         .from('operator_profiles')
-        .select('entity_type, legal_name, registration_number, vat_number')
+        .select('entity_type, legal_name, registration_number, vat_number, id_type, id_number')
         .eq('profile_id', profile.id)
         .single();
 
@@ -48,6 +51,8 @@ export default function ComplianceProfilePage() {
           legal_name:          op.legal_name          ?? '',
           registration_number: op.registration_number ?? '',
           vat_number:          op.vat_number          ?? '',
+          id_type:             op.id_type             ?? 'passport',
+          id_number:           op.id_number           ?? '',
         });
       }
       setLoading(false);
@@ -62,6 +67,8 @@ export default function ComplianceProfilePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.legal_name.trim()) { setError('Legal name is required.'); return; }
+    if (form.entity_type === 'individual' && !form.id_number.trim()) { setError('ID number is required.'); return; }
+    if (form.entity_type !== 'individual' && !form.registration_number.trim()) { setError('Registration number is required for companies.'); return; }
     if (!profileId) return;
 
     setSaving(true);
@@ -72,8 +79,10 @@ export default function ComplianceProfilePage() {
       .update({
         entity_type:         form.entity_type,
         legal_name:          form.legal_name.trim(),
-        registration_number: form.registration_number.trim() || null,
-        vat_number:          form.vat_number.trim() || null,
+        registration_number: form.entity_type === 'individual' ? null : (form.registration_number.trim() || null),
+        vat_number:          form.entity_type === 'individual' ? null : (form.vat_number.trim() || null),
+        id_type:             form.entity_type === 'individual' ? form.id_type : null,
+        id_number:           form.entity_type === 'individual' ? (form.id_number.trim() || null) : null,
       })
       .eq('profile_id', profileId);
 
@@ -81,6 +90,8 @@ export default function ComplianceProfilePage() {
     // Navigate to next step, sidebar re-fetches on pathname change
     router.push('/operator/compliance/contact');
   }
+
+  const isIndividual = form.entity_type === 'individual';
 
   if (loading) {
     return <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} /></div>;
@@ -126,31 +137,51 @@ export default function ComplianceProfilePage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Registration Number <span className="text-gray-400 font-normal">(optional)</span>
-          </label>
-          <input
-            type="text"
-            value={form.registration_number}
-            onChange={(e) => update('registration_number', e.target.value)}
-            placeholder="e.g. 2018/123456/07"
-            className="input input-bordered w-full"
-          />
-        </div>
+        {isIndividual && (
+          <>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">ID Type <span className="text-red-500">*</span></label>
+              <select value={form.id_type} onChange={(e) => update('id_type', e.target.value)} className="select select-bordered w-full">
+                {ID_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">ID Number <span className="text-red-500">*</span></label>
+              <input type="text" value={form.id_number} onChange={(e) => update('id_number', e.target.value)}
+                placeholder="Your ID or passport number" className="input input-bordered w-full" />
+            </div>
+          </>
+        )}
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
-            VAT Number <span className="text-gray-400 font-normal">(optional)</span>
-          </label>
-          <input
-            type="text"
-            value={form.vat_number}
-            onChange={(e) => update('vat_number', e.target.value)}
-            placeholder="e.g. 4120123456"
-            className="input input-bordered w-full"
-          />
-        </div>
+        {!isIndividual && (
+          <>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Registration Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.registration_number}
+                onChange={(e) => update('registration_number', e.target.value)}
+                placeholder="e.g. 2018/123456/07"
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                VAT Number <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={form.vat_number}
+                onChange={(e) => update('vat_number', e.target.value)}
+                placeholder="e.g. 4120123456"
+                className="input input-bordered w-full"
+              />
+            </div>
+          </>
+        )}
 
         <button
           type="submit"
