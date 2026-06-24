@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
+import { requiredDocTypes } from '@/services/operatorCompliance';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 import PageHero from '@/components/PageHero';
 import type { Location } from '@/services/locations';
@@ -100,17 +101,18 @@ export default function CreateContainerPage() {
 
       const { data: op } = await supabase
         .from('operator_profiles')
-        .select('id, legal_name, phone_number, paystack_recipient_code, service_agreement_signed_at, status')
+        .select('id, legal_name, phone_number, paystack_recipient_code, service_agreement_signed_at, status, entity_type')
         .eq('profile_id', profile.id)
         .single();
 
       if (!op) { setCompliance('blocked'); return; }
 
+      const required = requiredDocTypes(op.entity_type);
       const { count } = await supabase
         .from('compliance_documents')
         .select('id', { count: 'exact', head: true })
         .eq('operator_profile_id', op.id)
-        .in('doc_type', ['identity', 'business_registration', 'proof_of_warehouse_address', 'tax_clearance', 'banking_confirmation'])
+        .in('doc_type', required)
         .eq('status', 'approved');
 
       const compliant =
@@ -118,7 +120,7 @@ export default function CreateContainerPage() {
         !!op.phone_number &&
         !!op.paystack_recipient_code &&
         !!op.service_agreement_signed_at &&
-        (count ?? 0) === 5;
+        (count ?? 0) === required.length;
 
       // Distinguish "submitted, awaiting admin review" (pending_verification) from
       // "not yet submitted/incomplete" so the gate shows an accurate message.
