@@ -297,7 +297,7 @@ export default function CreateContainerPage() {
               You must complete your compliance profile before listing containers.
             </p>
             <p className="text-xs text-gray-400 mb-6">
-              All five steps must be approved: Profile, Contact, Account, Documents, and Service Agreement.
+              Complete your business profile, upload the documents required for your entity type, and sign the Service Agreement.
             </p>
             <Link
               href="/operator/compliance/profile"
