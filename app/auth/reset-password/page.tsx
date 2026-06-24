@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -19,18 +19,57 @@ export default function ResetPasswordPage() {
   const [loading,  setLoading]  = useState(false);
   const [done,     setDone]     = useState(false);
 
+  const readyRef = useRef(false);
+
   useEffect(() => {
-    // Supabase exchanges the token from the URL and fires PASSWORD_RECOVERY
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true);
+    let cancelled = false;
+
+    const markReady = () => {
+      if (cancelled) return;
+      readyRef.current = true;
+      setReady(true);
+      setInvalid(false);
+    };
+    const markInvalid = () => {
+      if (!cancelled && !readyRef.current) setInvalid(true);
+    };
+
+    // Catch the recovery event in case the client exchanges the token before/after mount.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN')) markReady();
     });
 
-    // If the page loads with no recovery token (direct navigation), mark invalid
-    const timer = setTimeout(() => {
-      setInvalid((prev) => !prev && !ready);
-    }, 3000);
+    (async () => {
+      const qs   = new URLSearchParams(window.location.search);
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
 
-    return () => { subscription.unsubscribe(); clearTimeout(timer); };
+      // 1) Supabase appends an explicit error when the token is expired/used/invalid.
+      if (qs.get('error') || qs.get('error_code') || hash.get('error') || hash.get('error_code')) {
+        markInvalid();
+        return;
+      }
+
+      // 2) A session may already exist (auto-detected code exchange ran before mount).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) { markReady(); return; }
+
+      // 3) PKCE flow: exchange the ?code= from the recovery link for a session.
+      const code = qs.get('code');
+      if (code) {
+        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+        if (!exErr) { markReady(); return; }
+        // The code may have already been consumed by the client's auto-detect — re-check.
+        const { data: { session: s2 } } = await supabase.auth.getSession();
+        if (s2) markReady(); else markInvalid();
+        return;
+      }
+
+      // 4) Implicit/hash flow: supabase-js fires PASSWORD_RECOVERY via the listener above.
+      //    If nothing arrives shortly, the link is missing or invalid.
+      setTimeout(markInvalid, 5000);
+    })();
+
+    return () => { cancelled = true; subscription.unsubscribe(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
