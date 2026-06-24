@@ -23,15 +23,16 @@ function fmt(d: string) {
 export default function ComplianceAgreementPage() {
   const router = useRouter();
 
-  const [profileId,  setProfileId]  = useState<string | null>(null);
-  const [userId,     setUserId]     = useState<string | null>(null);
-  const [legalName,  setLegalName]  = useState<string>('');
-  const [signedAt,   setSignedAt]   = useState<string | null>(null);
-  const [pdfPath,    setPdfPath]    = useState<string | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [confirmed,  setConfirmed]  = useState(false);
-  const [signing,    setSigning]    = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
+  const [profileId,    setProfileId]    = useState<string | null>(null);
+  const [opProfileId,  setOpProfileId]  = useState<string | null>(null);
+  const [userId,       setUserId]       = useState<string | null>(null);
+  const [legalName,    setLegalName]    = useState<string>('');
+  const [signedAt,     setSignedAt]     = useState<string | null>(null);
+  const [pdfPath,      setPdfPath]      = useState<string | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [confirmed,    setConfirmed]    = useState(false);
+  const [signing,      setSigning]      = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -59,6 +60,7 @@ export default function ComplianceAgreementPage() {
       setLegalName(op?.legal_name ?? '');
 
       if (op?.id) {
+        setOpProfileId(op.id);
         const { data: agDoc } = await supabase
           .from('compliance_documents')
           .select('file_url')
@@ -145,8 +147,10 @@ export default function ComplianceAgreementPage() {
               onClick={async () => {
                 let path = pdfPath;
                 if (!path) {
+                  if (!opProfileId) return;
                   const { data: doc } = await supabase.from('compliance_documents')
                     .select('file_url')
+                    .eq('operator_profile_id', opProfileId)
                     .eq('doc_type', 'service_agreement')
                     .order('uploaded_at', { ascending: false }).limit(1).maybeSingle();
                   path = doc?.file_url ?? null;
