@@ -68,6 +68,7 @@ export default function ComplianceDocumentsPage() {
   const [entityType, setEntityType] = useState<string>('company');
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [agreementUrlPath, setAgreementUrlPath] = useState<string | null>(null);
   const [slots, setSlots] = useState<DocSlot[]>(
     DOC_DEFS.map((d) => ({ ...d, optional: d.optional ?? false, record: null, uploading: false, error: null }))
   );
@@ -98,6 +99,8 @@ export default function ComplianceDocumentsPage() {
       const recordMap: Record<string, DocRecord> = {};
       for (const d of (docs ?? []) as DocRecord[]) recordMap[d.doc_type] = d;
 
+      setAgreementUrlPath(recordMap['service_agreement']?.file_url ?? null);
+
       const entityVal = op.entity_type ?? 'company';
       const required = requiredDocTypes(entityVal);
       const visibleDefs = DOC_DEFS
@@ -121,6 +124,12 @@ export default function ComplianceDocumentsPage() {
 
   function setSlot(type: DocType, patch: Partial<DocSlot>) {
     setSlots((prev) => prev.map((s) => s.type === type ? { ...s, ...patch } : s));
+  }
+
+  async function openAgreement() {
+    if (!agreementUrlPath) return;
+    const { data } = await supabase.storage.from('compliance-documents').createSignedUrl(agreementUrlPath, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
   }
 
   async function handleFile(docType: DocType, file: File) {
@@ -290,6 +299,19 @@ export default function ComplianceDocumentsPage() {
           );
         })}
       </div>
+
+      {agreementUrlPath && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center justify-between mt-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">Service Agreement</p>
+            <p className="text-xs text-gray-400 mt-0.5">Your signed agreement, generated on acceptance.</p>
+          </div>
+          <button onClick={openAgreement}
+            className="btn btn-sm rounded-xl text-xs font-semibold text-white" style={{ backgroundColor: '#0b103a' }}>
+            Download PDF
+          </button>
+        </div>
+      )}
 
       {uploadedCount >= requiredCount && (
         <div className="mt-6">
