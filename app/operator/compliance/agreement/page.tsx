@@ -6,9 +6,15 @@ import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 import { notify } from '@/services/notificationService';
 import ComplianceStepper from '@/components/ComplianceStepper';
+import {
+  OPERATOR_AGREEMENT_VERSION,
+  OPERATOR_AGREEMENT_TITLE,
+  OPERATOR_AGREEMENT_CLAUSES,
+  operatorAgreementPlainText,
+} from '@/services/agreementContent';
 
 import { Check } from 'lucide-react';
-const AGREEMENT_VERSION = '1.1';
+const AGREEMENT_VERSION = OPERATOR_AGREEMENT_VERSION;
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -21,6 +27,7 @@ export default function ComplianceAgreementPage() {
   const [userId,     setUserId]     = useState<string | null>(null);
   const [legalName,  setLegalName]  = useState<string>('');
   const [signedAt,   setSignedAt]   = useState<string | null>(null);
+  const [pdfPath,    setPdfPath]    = useState<string | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [confirmed,  setConfirmed]  = useState(false);
   const [signing,    setSigning]    = useState(false);
@@ -44,12 +51,23 @@ export default function ComplianceAgreementPage() {
 
       const { data: op } = await supabase
         .from('operator_profiles')
-        .select('service_agreement_signed_at, legal_name')
+        .select('id, service_agreement_signed_at, legal_name')
         .eq('profile_id', profile.id)
         .single();
 
       setSignedAt(op?.service_agreement_signed_at ?? null);
       setLegalName(op?.legal_name ?? '');
+
+      if (op?.id) {
+        const { data: agDoc } = await supabase
+          .from('compliance_documents')
+          .select('file_url')
+          .eq('operator_profile_id', op.id)
+          .eq('doc_type', 'service_agreement')
+          .maybeSingle();
+        if (agDoc?.file_url) setPdfPath(agDoc.file_url);
+      }
+
       setLoading(false);
     }
     load();
@@ -61,25 +79,21 @@ export default function ComplianceAgreementPage() {
     setError(null);
 
     const now = new Date().toISOString();
-    const { error: updateErr } = await supabase
-      .from('operator_profiles')
-      .update({
-        service_agreement_signed_at: now,
-        service_agreement_version:   AGREEMENT_VERSION,
-        status:                      'pending_verification',
-      })
-      .eq('profile_id', profileId);
-
-    if (updateErr) {
-      setError(updateErr.message);
-    } else {
-      setSignedAt(now);
-      if (userId) {
-        await notify('operator.compliance_submitted', {
-          recipientId: userId,
-          legalName,
-        });
-      }
+    const { data, error: fnErr } = await supabase.functions.invoke('generate-agreement-pdf', {
+      body: { version: AGREEMENT_VERSION, agreementText: operatorAgreementPlainText() },
+    });
+    if (fnErr || !data?.success) {
+      let msg = (data?.error as string | undefined) ?? fnErr?.message ?? 'Could not record agreement.';
+      const ctx = (fnErr as { context?: { json?: () => Promise<unknown> } } | null)?.context;
+      if (!data?.error && ctx?.json) { try { const b = await ctx.json() as { error?: string }; if (b?.error) msg = b.error; } catch { /* */ } }
+      setError(msg);
+      setSigning(false);
+      return;
+    }
+    setSignedAt(now);
+    setPdfPath((data.pdf_path as string | undefined) ?? null);
+    if (userId) {
+      await notify('operator.compliance_submitted', { recipientId: userId, legalName });
     }
     setSigning(false);
   }
@@ -110,26 +124,10 @@ export default function ComplianceAgreementPage() {
 
       {/* Agreement text */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5 prose prose-sm max-w-none text-gray-700 text-sm leading-relaxed">
-        <h2 className="text-base font-bold text-gray-800 mb-3">ShareConLoad Operator Service Agreement</h2>
-
-        <p><strong>1. Platform Access.</strong> ShareConLoad grants you a non-exclusive, non-transferable licence to list container space on the platform and accept bookings from customers.</p>
-
-        <p><strong>2. Fees &amp; Commission.</strong> ShareConLoad charges a <strong>tiered platform commission</strong> on each gross payout, based on the total booking value (normalised to USD): <strong>12%</strong> on bookings up to USD&nbsp;500; <strong>10%</strong> from USD&nbsp;501 to 2,000; <strong>8%</strong> from USD&nbsp;2,001 to 5,000; and <strong>6%</strong> above USD&nbsp;5,000. The commission is deducted from the gross payout and the net amount is transferred to your registered bank account via Paystack. ShareConLoad may update these rates from time to time; the rates in effect at the time of each booking apply.</p>
-
-        <p><strong>3. Payout Conditions.</strong> Payouts are released subject to: (a) the corresponding customer payment being confirmed as &apos;paid&apos;; (b) no active dispute on the booking; (c) payout account being verified and in good standing; and (d) expiry of the applicable refund window.</p>
-
-        <p><strong>4. Operator Obligations.</strong> You must: (a) list only container space you have lawful authority to offer; (b) maintain accurate capacity and departure information; (c) honour confirmed bookings; (d) comply with all applicable customs, import, and export regulations.</p>
-
-        <p><strong>5. Prohibited Goods.</strong> You must not facilitate the shipment of prohibited, restricted, or hazardous goods as defined by applicable law and international shipping conventions.</p>
-
-        <p><strong>6. Dispute Resolution.</strong> In the event of a dispute raised by a customer, ShareConLoad reserves the right to place a payout hold pending investigation. You agree to co-operate fully with any such review.</p>
-
-        <p><strong>7. Termination.</strong> ShareConLoad may suspend or terminate your account for breach of this agreement, fraudulent activity, or repeated customer complaints, with or without notice.</p>
-
-        <p><strong>8. Limitation of Liability.</strong> ShareConLoad&apos;s liability to you in connection with any booking shall not exceed the net payout amount for that booking.</p>
-
-        <p><strong>9. Governing Law.</strong> This agreement is governed by the laws of the Republic of South Africa.</p>
-
+        <h2 className="text-base font-bold text-gray-800 mb-3">{OPERATOR_AGREEMENT_TITLE}</h2>
+        {OPERATOR_AGREEMENT_CLAUSES.map((c) => (
+          <p key={c.n}><strong>{c.n}. {c.heading}.</strong> {c.body}</p>
+        ))}
         <p className="text-xs text-gray-400 mt-4">Last updated: 2026-06-24 · Version {AGREEMENT_VERSION}</p>
       </div>
 
@@ -142,6 +140,26 @@ export default function ComplianceAgreementPage() {
             <Link href="/operator/compliance" className="btn flex-1 font-bold rounded-xl text-white" style={{ backgroundColor: '#0b103a' }}>
               View Compliance Status
             </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                let path = pdfPath;
+                if (!path) {
+                  const { data: doc } = await supabase.from('compliance_documents')
+                    .select('file_url')
+                    .eq('doc_type', 'service_agreement')
+                    .order('uploaded_at', { ascending: false }).limit(1).maybeSingle();
+                  path = doc?.file_url ?? null;
+                }
+                if (!path) return;
+                const { data } = await supabase.storage.from('compliance-documents').createSignedUrl(path, 60);
+                if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+              }}
+              className="btn flex-1 font-bold rounded-xl text-white hover:opacity-90"
+              style={{ backgroundColor: '#ff6a00' }}
+            >
+              Download signed agreement (PDF)
+            </button>
             <Link href="/operator" className="btn flex-1 btn-ghost rounded-xl font-semibold text-gray-600">
               Go to Dashboard
             </Link>
