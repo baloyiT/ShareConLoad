@@ -223,12 +223,17 @@ export default function OperatorOnboardingPage() {
                 </select>
               </Field>
 
-              {/* Legal name */}
-              <Field label="Legal Name" required error={fieldErrors.legal_name}>
+              {/* Legal name — wording adapts to entity type */}
+              <Field
+                label={isIndividual ? 'Full Legal Name' : 'Registered Company Name'}
+                hint={isIndividual ? 'exactly as it appears on your ID' : 'your registered legal entity name'}
+                required
+                error={fieldErrors.legal_name}
+              >
                 <input
                   type="text"
                   name="legal_name"
-                  placeholder="Your full legal name or company name"
+                  placeholder={isIndividual ? 'e.g. Thabo Mokoena' : 'e.g. Acme Logistics (Pty) Ltd'}
                   className={`input input-bordered w-full ${fieldErrors.legal_name ? 'input-error' : ''}`}
                   onChange={() => setFieldErrors((p) => ({ ...p, legal_name: '' }))}
                 />

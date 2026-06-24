@@ -124,14 +124,16 @@ export default function ComplianceProfilePage() {
 
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Legal Name <span className="text-red-500">*</span>
+            {isIndividual ? 'Full Legal Name' : 'Registered Company Name'} <span className="text-red-500">*</span>
           </label>
-          <p className="text-xs text-gray-400 mb-1.5">Your full legal name or registered company name.</p>
+          <p className="text-xs text-gray-400 mb-1.5">
+            {isIndividual ? 'Your full name exactly as it appears on your ID.' : 'Your registered legal entity name.'}
+          </p>
           <input
             type="text"
             value={form.legal_name}
             onChange={(e) => update('legal_name', e.target.value)}
-            placeholder="e.g. Acme Logistics (Pty) Ltd"
+            placeholder={isIndividual ? 'e.g. Thabo Mokoena' : 'e.g. Acme Logistics (Pty) Ltd'}
             className="input input-bordered w-full"
             required
           />
