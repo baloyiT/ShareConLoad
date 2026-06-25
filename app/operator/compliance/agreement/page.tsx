@@ -130,7 +130,7 @@ export default function ComplianceAgreementPage() {
         {OPERATOR_AGREEMENT_CLAUSES.map((c) => (
           <p key={c.n}><strong>{c.n}. {c.heading}.</strong> {c.body}</p>
         ))}
-        <p className="text-xs text-gray-400 mt-4">Last updated: 2026-06-24 · Version {AGREEMENT_VERSION}</p>
+        <p className="text-xs text-gray-400 mt-4">Last updated: 2026-06-25 · Version {AGREEMENT_VERSION}</p>
       </div>
 
       {signedAt ? (
