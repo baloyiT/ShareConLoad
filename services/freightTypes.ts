@@ -1,0 +1,27 @@
+export type TransportMode = 'sea' | 'air' | 'road' | 'rail';
+
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  slug: string;
+  transport_mode: TransportMode | null;
+  parent_id: string | null;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export interface OperatorService {
+  id: string;
+  operator_profile_id: string;
+  service_category_id: string;
+}
+
+export interface OperatorCoverage {
+  id: string;
+  operator_profile_id: string;
+  origin_country: string;
+  origin_city: string | null;
+  destination_country: string;
+  destination_city: string | null;
+  transport_mode: TransportMode | null;
+}
