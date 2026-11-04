@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { requireUser } from '../_shared/auth.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,6 +17,9 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
+    const auth = await requireUser(req);
+    if (auth.error) return auth.error;
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -27,6 +31,21 @@ serve(async (req: Request) => {
     if (!operatorProfileId || !bankAccountName || !bankCountry) {
       return json({ error: 'operatorProfileId, bankAccountName, and bankCountry are required' }, 400);
     }
+
+    // ── The operator record must be the caller's own ───────────────────────────
+    const { data: ownProfiles } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', auth.user.id);
+
+    const { data: ownOperator } = await supabase
+      .from('operator_profiles')
+      .select('id')
+      .eq('id', operatorProfileId)
+      .in('profile_id', (ownProfiles ?? []).map((p: { id: string }) => p.id))
+      .maybeSingle();
+
+    if (!ownOperator) return json({ error: 'Access denied' }, 403);
 
     const paystackConfig = PAYSTACK_CONFIG[bankCountry];
     const isManual = !paystackConfig;
@@ -81,6 +100,7 @@ serve(async (req: Request) => {
       action:      'operator.bank_account_registered',
       target_type: 'operator_profile',
       target_id:   operatorProfileId,
+      actor_id:    auth.user.id,
       metadata:    { bank_country: bankCountry, payout_method: isManual ? 'manual' : 'paystack', recipient_code: recipientCode },
     });
 

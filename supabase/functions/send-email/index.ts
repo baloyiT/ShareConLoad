@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { decideEmail, emailCaller, escapeHtml, SUPPORT_EMAIL } from '../_shared/auth.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -55,6 +56,8 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
+    const caller = await emailCaller(req);
+
     const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
     if (!RESEND_KEY) {
       console.warn('[send-email] RESEND_API_KEY not set — skipping email');
@@ -66,17 +69,23 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Accepts: { recipientId?, to?, subject, html?, title?, body?, text? }
-    // html takes priority; if absent, title+body auto-generates HTML
+    // Service-role and admin callers: { recipientId?, to?, subject, html?, title?, body?, text? }
+    // html takes priority; if absent, title+body auto-generates HTML.
+    // Anyone else: title and body only, escaped, to support or, when signed in, to recipientId.
     const { recipientId, to: directTo, subject, html: rawHtml, title, body, text } = await req.json();
 
     if (!subject || (!recipientId && !directTo)) {
       return json({ error: 'subject and either recipientId or to are required' }, 400);
     }
 
+    const decision = decideEmail({ caller, to: directTo, recipientId, html: rawHtml });
+    if (!decision.ok) return json({ error: decision.error }, decision.status);
+
+    const privileged = caller === 'privileged';
+
     let to: string;
     if (directTo) {
-      to = directTo;
+      to = privileged ? directTo : SUPPORT_EMAIL;
     } else {
       const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(recipientId);
       if (userErr || !userData?.user?.email) {
@@ -87,7 +96,9 @@ serve(async (req: Request) => {
     }
 
     // Build HTML: use provided html, or auto-generate from title+body
-    const html = rawHtml ?? buildEmailHtml(title ?? subject, body ?? text ?? '');
+    const html = privileged
+      ? rawHtml ?? buildEmailHtml(title ?? subject, body ?? text ?? '')
+      : buildEmailHtml(escapeHtml(String(title ?? subject)), escapeHtml(String(body ?? '')));
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -100,7 +111,7 @@ serve(async (req: Request) => {
         to:      [to],
         subject,
         html,
-        ...(text ? { text } : {}),
+        ...(privileged && text ? { text } : {}),
       }),
     });
 

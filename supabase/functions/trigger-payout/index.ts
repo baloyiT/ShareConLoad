@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { requireAdmin } from '../_shared/auth.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -56,13 +57,16 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
+    const auth = await requireAdmin(req);
+    if (auth.error) return auth.error;
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
     const PAYSTACK_SECRET = Deno.env.get('PAYSTACK_SECRET_KEY') ?? '';
 
-    const { payoutId, override, overrideReason, adminProfileId } = await req.json();
+    const { payoutId, override, overrideReason } = await req.json();
     if (!payoutId) return json({ error: 'payoutId is required' }, 400);
     if (override && !overrideReason?.trim()) {
       return json({ error: 'Override reason is required' }, 400);
@@ -181,7 +185,7 @@ serve(async (req: Request) => {
           metadata: {
             overridden:      true,
             override_reason: overrideReason.trim(),
-            overridden_by:   adminProfileId ?? null,
+            overridden_by:   auth.user.id,
             overridden_at:   new Date().toISOString(),
           },
         } : {}),
@@ -215,6 +219,7 @@ serve(async (req: Request) => {
       action:      'payout.triggered',
       target_type: 'payout',
       target_id:   payoutId,
+      actor_id:    auth.user.id,
       metadata:    {
         gross_amount:  grossAmount,
         commission:    commissionAmount,
@@ -229,7 +234,7 @@ serve(async (req: Request) => {
         action:      'payout.eligibility_overridden',
         target_type: 'payout',
         target_id:   payoutId,
-        actor_id:    adminProfileId ?? null,
+        actor_id:    auth.user.id,
         metadata:    {
           reason:         overrideReason.trim(),
           ms_remaining:   msRemainingAtOverride,

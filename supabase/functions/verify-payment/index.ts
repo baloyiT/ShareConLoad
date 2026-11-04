@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { requireUser } from '../_shared/auth.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -66,6 +67,9 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
+    const auth = await requireUser(req);
+    if (auth.error) return auth.error;
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -74,6 +78,32 @@ serve(async (req: Request) => {
 
     const { reference } = await req.json();
     if (!reference) return json({ error: 'reference is required' }, 400);
+
+    // ── The caller must own the booking this reference belongs to ──────────────
+    // A reference replaced by a later attempt finds nothing here. The webhook still
+    // records a payment made on it.
+    const { data: ownedPayment } = await supabase
+      .from('payments')
+      .select('id, booking_id')
+      .eq('paystack_reference', reference)
+      .maybeSingle();
+
+    if (!ownedPayment) {
+      return json({
+        success: false,
+        message: 'We could not match this payment yet. If you paid, your booking will update shortly.',
+      });
+    }
+
+    const { data: ownedBooking } = await supabase
+      .from('bookings')
+      .select('customer_id')
+      .eq('id', ownedPayment.booking_id)
+      .single();
+
+    if (ownedBooking?.customer_id !== auth.user.id) {
+      return json({ error: 'Access denied' }, 403);
+    }
 
     // ── Fetch commission config ────────────────────────────────────────────────
     const { data: commConfig } = await supabase
@@ -101,6 +131,7 @@ serve(async (req: Request) => {
     const stage     = meta.stage;
 
     if (!paymentId) return json({ error: 'Payment metadata missing' }, 400);
+    if (paymentId !== ownedPayment.id) return json({ error: 'Access denied' }, 403);
 
     // ── Load payment record ────────────────────────────────────────────────────
     const { data: payment } = await supabase

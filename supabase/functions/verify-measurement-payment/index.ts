@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { requireUser } from '../_shared/auth.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,9 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
+    const auth = await requireUser(req);
+    if (auth.error) return auth.error;
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -18,6 +22,24 @@ serve(async (req: Request) => {
 
     const { reference } = await req.json();
     if (!reference) return json({ error: 'reference is required' }, 400);
+
+    const { data: job } = await supabase
+      .from('measurement_jobs')
+      .select('id, shipper_profile_id')
+      .eq('payment_ref', reference)
+      .single();
+
+    if (!job) return json({ error: 'Job not found for this reference' }, 404);
+
+    // Verify caller is the shipper
+    const { data: shipperProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', job.shipper_profile_id)
+      .eq('user_id', auth.user.id)
+      .single();
+
+    if (!shipperProfile) return json({ error: 'Access denied' }, 403);
 
     // Verify with Paystack
     const paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
@@ -31,6 +53,7 @@ serve(async (req: Request) => {
 
     const jobId = paystackData.data.metadata?.job_id;
     if (!jobId) return json({ error: 'Missing job_id in payment metadata' }, 400);
+    if (jobId !== job.id) return json({ error: 'Access denied' }, 403);
 
     // Update payment record
     await supabase

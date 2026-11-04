@@ -3,7 +3,6 @@
 import { redirect } from 'next/navigation';
 import { createServerActionClient } from '@/services/supabaseServer';
 import { setActiveSession } from '@/services/session';
-import { buildEmailHtml } from '@/services/emailTemplates';
 
 // ── createOperatorProfile ─────────────────────────────────────────────────────
 // Called from the operator onboarding form via useActionState.
@@ -108,8 +107,8 @@ export async function createOperatorProfile(
     body: {
       recipientId: user.id,
       subject:     notifTitle,
-      html:        buildEmailHtml(notifTitle, notifBody),
-      text:        notifBody,
+      title:       notifTitle,
+      body:        notifBody,
     },
   });
 

@@ -26,6 +26,24 @@ serve(async (req: Request) => {
     const { reference } = await req.json();
     if (!reference) return json({ error: 'reference is required' }, 400);
 
+    const { data: job } = await supabase
+      .from('pickup_jobs')
+      .select('id, transporter_profile_id, shipper_profile_id')
+      .eq('payment_ref', reference)
+      .single();
+
+    if (!job) return json({ error: 'Job not found for this reference' }, 404);
+
+    // Verify caller is the shipper who owns this job
+    const { data: shipperProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', job.shipper_profile_id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!shipperProfile) return json({ error: 'Forbidden' }, 403);
+
     // Verify payment with Paystack server-side
     const paystackRes = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
@@ -39,13 +57,9 @@ serve(async (req: Request) => {
       return json({ error: 'Payment not successful' }, 400);
     }
 
-    const { data: job } = await supabase
-      .from('pickup_jobs')
-      .select('id, transporter_profile_id')
-      .eq('payment_ref', reference)
-      .single();
-
-    if (!job) return json({ error: 'Job not found for this reference' }, 404);
+    if (paystackData.data.metadata?.job_id !== job.id) {
+      return json({ error: 'Forbidden' }, 403);
+    }
 
     // Mark payment as paid
     await supabase

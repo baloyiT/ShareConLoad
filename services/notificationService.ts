@@ -1,5 +1,4 @@
 import { supabase } from './supabaseClient';
-import { buildEmailHtml } from './emailTemplates';
 
 // ─── Event catalogue ──────────────────────────────────────────────────────────
 // Add new event keys here as the platform grows.
@@ -300,9 +299,8 @@ const emailChannel: NotificationChannel = {
   name: 'email',
   async send(event, payload) {
     const { title, body } = buildMessage(event, payload);
-    const html = buildEmailHtml(title, body);
     const { error } = await supabase.functions.invoke('send-email', {
-      body: { recipientId: payload.recipientId, subject: title, html, text: body },
+      body: { recipientId: payload.recipientId, subject: title, title, body },
     });
     if (error) {
       console.error(`[Notification] email channel failed for ${event}:`, error.message);
