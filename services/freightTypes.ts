@@ -1,3 +1,5 @@
+import type { VerificationLevel } from './operatorCompliance';
+
 export type TransportMode = 'sea' | 'air' | 'road' | 'rail';
 
 export interface ServiceCategory {
@@ -24,4 +26,13 @@ export interface OperatorCoverage {
   destination_country: string;
   destination_city: string | null;
   transport_mode: TransportMode | null;
+}
+
+export interface DirectoryOperator {
+  id: string;
+  display_name: string;
+  public_description: string | null;
+  verification_level: VerificationLevel;
+  services: string[];
+  coverage: OperatorCoverage[];
 }
