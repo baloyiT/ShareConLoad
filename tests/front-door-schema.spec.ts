@@ -1,21 +1,26 @@
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import { createTestUser, deleteTestUser, TestUser } from './helpers/frontDoorUsers';
 
-const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '';
+const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const OPERATOR_EMAIL = process.env.TEST_OPERATOR_EMAIL    ?? 'mercy.affulbaloyi@gmail.com';
-const OPERATOR_PASS  = process.env.TEST_OPERATOR_PASSWORD ?? 'TestOperator@2026!';
 
 const anon = () => createClient(SUPABASE_URL, SUPABASE_ANON);
 
-async function signIn(email: string, password: string) {
-  const client = anon();
-  const { data, error } = await client.auth.signInWithPassword({ email, password });
-  if (error || !data.session) throw new Error(`Sign-in failed for ${email}: ${error?.message}`);
-  return client;
-}
-
 test.describe('Front door schema: taxonomy, services, coverage', () => {
+  let operator: TestUser;
+  let otherOperator: TestUser;
+
+  test.beforeAll(async () => {
+    operator = await createTestUser('operator');
+    otherOperator = await createTestUser('operator');
+  });
+
+  test.afterAll(async () => {
+    if (operator) await deleteTestUser(operator);
+    if (otherOperator) await deleteTestUser(otherOperator);
+  });
+
   test('anon reads active categories, including customs-clearing', async () => {
     const { data, error } = await anon().from('service_categories').select('slug');
     expect(error).toBeNull();
@@ -38,12 +43,22 @@ test.describe('Front door schema: taxonomy, services, coverage', () => {
   });
 
   test('operator cannot add coverage for another operator', async () => {
-    const client = await signIn(OPERATOR_EMAIL, OPERATOR_PASS);
-    const { error } = await client.from('operator_coverage').insert({
-      operator_profile_id: '00000000-0000-0000-0000-0000000000aa',
+    const { error } = await operator.client.from('operator_coverage').insert({
+      operator_profile_id: otherOperator.operatorProfileId,
       origin_country: 'South Africa',
       destination_country: 'Ghana',
     });
     expect(error).not.toBeNull();
+  });
+
+  test('operator can add own coverage, and others cannot read it', async () => {
+    const { error } = await operator.client.from('operator_coverage').insert({
+      operator_profile_id: operator.operatorProfileId,
+      origin_country: 'South Africa',
+      destination_country: 'Ghana',
+    });
+    expect(error).toBeNull();
+    const { data } = await otherOperator.client.from('operator_coverage').select('id');
+    expect(data ?? []).toHaveLength(0);
   });
 });
