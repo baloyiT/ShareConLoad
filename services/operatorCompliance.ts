@@ -31,6 +31,20 @@ export function requiredDocTypes(entity: string | null | undefined): string[] {
   return isIndividual(entity) ? [...INDIVIDUAL_DOC_TYPES] : [...COMPANY_DOC_TYPES];
 }
 
+// Front door listing: lighter than the Stage 3 requirements above.
+export type VerificationLevel = 'registered' | 'identity_verified' | 'business_verified';
+export type ParticipationStatus = 'pending' | 'active' | 'suspended' | 'deactivated';
+
+export function listingDocTypes(entity: string | null | undefined): string[] {
+  return isIndividual(entity) ? ['identity'] : ['identity', 'business_registration'];
+}
+
+export function verificationLabel(level: VerificationLevel): string | null {
+  if (level === 'business_verified') return 'Business verified';
+  if (level === 'identity_verified') return 'Identity verified';
+  return null;
+}
+
 // Entity-aware label/description overrides for the two doc types whose meaning
 // differs by entity. Returns {} when the default (company-oriented) text applies.
 export function docLabelOverride(
