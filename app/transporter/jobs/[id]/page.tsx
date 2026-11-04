@@ -156,19 +156,7 @@ export default function TransporterJobDetailPage() {
       }
     }
 
-    // Trigger payout (best-effort, non-blocking)
-    const { data: { session } } = await supabase.auth.getSession();
-    fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/trigger-transporter-payout`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token ?? ''}`,
-        },
-        body: JSON.stringify({ jobId: job.id }),
-      }
-    ).catch((err) => console.error('Payout trigger failed (non-blocking):', err));
+    // trigger-transporter-payout is admin-only. An admin screen is needed before this service goes live.
 
     setJob({ ...job, status: 'delivered', delivered_at: new Date().toISOString() });
     setActionLoading(false);

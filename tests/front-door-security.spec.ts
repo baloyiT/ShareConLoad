@@ -14,6 +14,8 @@ import {
   safeEqual,
   SUPPORT_EMAIL,
 } from '../supabase/functions/_shared/auth';
+import { chargeRetryDecision, chargeState, transferReference } from '../supabase/functions/_shared/payments';
+import { callbackOutcome } from '../services/paymentCallback';
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -71,6 +73,7 @@ test.describe('operator self-edit guard', () => {
     bank_name: 'Self Bank',
     bank_country: 'Ghana',
     bank_swift_code: 'SELFSET0',
+    bank_confirmation_letter_url: 'https://example.invalid/letter.pdf',
     payout_method: 'manual',
     phone_verified: true,
   };
@@ -196,8 +199,11 @@ test.describe('operator self-edit guard', () => {
       { bank_code: '999' },
       { bank_account_number: '1234567890' },
       { bank_account_name: 'Self Set' },
+      { bank_confirmation_letter_url: 'https://example.invalid/letter.pdf' },
       { payout_method: 'manual' },
       { phone_verified: true },
+      { status: null },
+      { verification_level: null },
     ];
 
     for (const extra of blockedInserts) {
@@ -279,6 +285,75 @@ test.describe('operator self-edit guard', () => {
       expect(serviceErr).toBeNull();
       expect(await operatorRow(second.operatorProfileId)).toBeNull();
     });
+  });
+});
+
+test.describe('payments table', () => {
+  test('a customer cannot insert payments, and a booking still gets its three stages', async () => {
+    test.setTimeout(60_000);
+    const service = adminClient();
+    const operator = await newUser('operator');
+    const customer = await newUser('customer');
+
+    const { data: container, error: containerErr } = await service.from('containers').insert({
+      operator_id: operator.id,
+      origin_country: 'South Africa',
+      origin_city: 'Durban',
+      destination_country: 'Ghana',
+      destination_city: 'Tema',
+      departure_date: '2030-01-01',
+      total_capacity_cbm: 10,
+      available_capacity_cbm: 10,
+      price_per_cbm: 100,
+    }).select('id').single();
+    expect(containerErr).toBeNull();
+    const containerId = container?.id as string;
+
+    try {
+      const { data: booking, error: bookingErr } = await customer.client.from('bookings').insert({
+        container_id: containerId,
+        customer_id: customer.id,
+        total_cbm: 1,
+        total_price: 100,
+      }).select('id').single();
+      expect(bookingErr).toBeNull();
+      const bookingId = booking?.id as string;
+
+      const { data: rows } = await service.from('payments')
+        .select('stage, amount, status').eq('booking_id', bookingId);
+      expect((rows ?? []).map(r => [r.stage, Number(r.amount), r.status]).sort()).toEqual([
+        ['deposit_20', 20, 'pending'],
+        ['final_release_30', 30, 'pending'],
+        ['pre_departure_50', 50, 'pending'],
+      ]);
+
+      const fake = {
+        booking_id: bookingId,
+        payer_id: customer.id,
+        payment_stage: 'manual_adjustment',
+        stage: 'manual_adjustment',
+        amount: 0,
+      };
+      for (const extra of [{ status: 'paid' }, { status: 'pending' }]) {
+        const { error } = await customer.client.from('payments').insert({ ...fake, ...extra });
+        expect(error?.code).toBe(DENIED);
+      }
+
+      const { error: duplicateErr } = await service.from('payments').insert({
+        booking_id: bookingId,
+        payer_id: customer.id,
+        payment_stage: 'deposit_20',
+        stage: 'deposit_20',
+        amount: 20,
+      });
+      expect(duplicateErr?.code).toBe('23505');
+
+      const { data: after } = await service.from('payments').select('id').eq('booking_id', bookingId);
+      expect(after).toHaveLength(3);
+    } finally {
+      await service.from('bookings').delete().eq('container_id', containerId);
+      await service.from('containers').delete().eq('id', containerId);
+    }
   });
 });
 
@@ -525,6 +600,110 @@ test.describe('Edge Function authorisation', () => {
     expect(check).toBeGreaterThan(-1);
     expect(check).toBeLessThan(firstEffect(code));
     expect(code).toContain('escapeHtml(');
+  });
+
+  test('a stored charge is only replaced when Paystack says it took no money', () => {
+    expect(chargeState('success')).toBe('charged');
+    for (const status of ['abandoned', 'failed', 'reversed']) expect(chargeState(status)).toBe('not_charged');
+    for (const status of ['ongoing', 'pending', 'processing', 'queued', 'something_new', undefined]) {
+      expect(chargeState(status)).toBe('in_flight');
+    }
+
+    const answer = (status: string) => ({ status: true, data: { status } });
+    expect(chargeRetryDecision(200, answer('success'))).toBe('confirming');
+    expect(chargeRetryDecision(200, answer('ongoing'))).toBe('confirming');
+    expect(chargeRetryDecision(200, answer('abandoned'))).toBe('new_charge');
+    expect(chargeRetryDecision(200, answer('failed'))).toBe('new_charge');
+    expect(chargeRetryDecision(400, { status: false })).toBe('new_charge');
+    expect(chargeRetryDecision(404, { status: false })).toBe('new_charge');
+    expect(chargeRetryDecision(401, { status: false })).toBe('unavailable');
+    expect(chargeRetryDecision(500, {})).toBe('unavailable');
+    expect(chargeRetryDecision(200, { status: false })).toBe('unavailable');
+  });
+
+  test('initialize-payment checks the last charge after ownership and before a new one', () => {
+    const code = handler('initialize-payment');
+    const owner = code.indexOf('Access denied');
+    const check = code.indexOf('chargeRetryDecision(');
+    const charge = code.indexOf('transaction/initialize');
+    expect(owner).toBeGreaterThan(-1);
+    expect(owner).toBeLessThan(check);
+    expect(check).toBeLessThan(charge);
+  });
+
+  test('a refunded payment is not treated as awaiting confirmation or marked paid again', () => {
+    expect(handler('initialize-payment')).toContain("payment.status === 'pending' && payment.paystack_reference");
+    const verify = handler('verify-payment');
+    expect(verify.indexOf("payment?.status === 'refunded'")).toBeGreaterThan(-1);
+    expect(verify.indexOf("payment?.status === 'refunded'")).toBeLessThan(verify.indexOf("status:             'paid'"));
+  });
+
+  test('the callback only reports failure when the payment really failed', () => {
+    expect(callbackOutcome({ success: true }, 200)).toBe('success');
+    expect(callbackOutcome({ success: false, confirming: true }, 200)).toBe('confirming');
+    expect(callbackOutcome(null, 401)).toBe('confirming');
+    expect(callbackOutcome(null, 403)).toBe('confirming');
+    expect(callbackOutcome(null, 500)).toBe('confirming');
+    expect(callbackOutcome(null, null)).toBe('confirming');
+    expect(callbackOutcome({ success: false }, 200)).toBe('failed');
+    expect(callbackOutcome(null, 400)).toBe('failed');
+  });
+
+  test('verify-payment answers neutrally when it cannot match or is still in flight', () => {
+    const code = handler('verify-payment');
+    expect(code.match(/confirming: true/g)).toHaveLength(2);
+  });
+
+  test('transfer references are stable, valid for Paystack, and change only per attempt', () => {
+    const id = '1A2B3C4D-0000-4000-8000-123456789ABC';
+    const reference = transferReference('payout', id);
+    expect(reference).toBe('scl-payout-1a2b3c4d000040008000123456789abc');
+    expect(transferReference('payout', id)).toBe(reference);
+    expect(transferReference('payout', id, 0)).toBe(reference);
+    expect(transferReference('payout', id, 1)).toBe(`${reference}-r1`);
+    expect(transferReference('agpay', id)).not.toBe(reference);
+    expect(transferReference('tpay', id)).not.toBe(reference);
+
+    for (const kind of ['payout', 'agpay', 'tpay'] as const) {
+      const longest = transferReference(kind, id, 999);
+      expect(longest.length).toBeLessThanOrEqual(50);
+      expect(longest).toMatch(/^[a-z0-9_-]{16,50}$/);
+    }
+
+    for (const attempt of [-1, 1.5, 1000]) {
+      expect(() => transferReference('payout', id, attempt)).toThrow(RangeError);
+    }
+  });
+
+  for (const name of [
+    'trigger-payout',
+    'auto-trigger-payouts',
+    'trigger-measurement-agent-payout',
+    'trigger-transporter-payout',
+  ]) {
+    test(`${name} uses a stable transfer reference`, () => {
+      const code = handler(name);
+      expect(code).toContain('transferReference(');
+      expect(code).not.toContain('Date.now()}');
+    });
+  }
+
+  test('manual and scheduled payouts share a reference, so one cannot repeat the other', () => {
+    expect(handler('trigger-payout')).toContain("transferReference('payout', payoutId, attempt)");
+    expect(handler('auto-trigger-payouts')).toContain("transferReference('payout', payout.id)");
+  });
+
+  test('only an explicit retry of a failed payout gets a new attempt', () => {
+    const code = handler('trigger-payout');
+    expect(code).toContain("retryFailed === true && payout.status === 'failed'");
+    expect(code).toContain("payout.status !== 'pending' && !retrying");
+  });
+
+  test('the transporter and agent pages no longer call the admin-only payouts', () => {
+    for (const file of ['app/transporter/jobs/[id]/page.tsx', 'app/measurement-agent/jobs/[id]/page.tsx']) {
+      const code = readFileSync(join(process.cwd(), file), 'utf-8');
+      expect(code).not.toContain('functions/v1/trigger-');
+    }
   });
 
   test('app callers of send-email do not send html', () => {

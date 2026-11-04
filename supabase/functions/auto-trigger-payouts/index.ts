@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { isCronRequest } from '../_shared/auth.ts';
+import { transferReference } from '../_shared/payments.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -165,7 +166,8 @@ serve(async (req: Request) => {
         ? Math.round((commissionAmount / grossAmount) * 10000) / 10000
         : 0;
       const amountKobo  = Math.round(netAmount * 100);
-      const transferRef = `SCL-AUTO-${payout.id.slice(0, 8)}-${Date.now()}`.toUpperCase();
+      // The same reference as trigger-payout, so neither can repeat the other.
+      const transferRef = transferReference('payout', payout.id);
 
       // Call Paystack
       const paystackRes = await fetch('https://api.paystack.co/transfer', {

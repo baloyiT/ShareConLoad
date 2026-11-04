@@ -5,8 +5,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import { callbackOutcome, CallbackOutcome } from '@/services/paymentCallback';
 
-import { Check, X } from 'lucide-react';
+import { Check, Clock, X } from 'lucide-react';
 // ─── Inner component (uses useSearchParams) ───────────────────────────────────
 
 function CallbackHandler() {
@@ -14,7 +15,7 @@ function CallbackHandler() {
   const router       = useRouter();
   const reference    = searchParams.get('reference') ?? searchParams.get('trxref') ?? '';
 
-  const [status,   setStatus]   = useState<'verifying' | 'success' | 'failed'>('verifying');
+  const [status,   setStatus]   = useState<'verifying' | CallbackOutcome>('verifying');
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [message,  setMessage]  = useState('');
 
@@ -30,14 +31,15 @@ function CallbackHandler() {
         body: { reference },
       });
 
-      if (error || !data?.success) {
-        setStatus('failed');
-        setMessage(data?.message ?? error?.message ?? 'Payment could not be verified. Please contact support.');
-        return;
-      }
+      const httpStatus: number | null = error ? (error.context as Response | undefined)?.status ?? null : 200;
+      if (error) console.error('verify-payment:', error.message);
 
-      setBookingId(data.bookingId ?? null);
-      setStatus('success');
+      const outcome = callbackOutcome(data, httpStatus);
+      if (outcome === 'failed') {
+        setMessage(data?.message ?? 'Payment could not be verified. Please contact support.');
+      }
+      if (outcome === 'success') setBookingId(data.bookingId ?? null);
+      setStatus(outcome);
     }
 
     verify();
@@ -91,6 +93,27 @@ function CallbackHandler() {
                 View My Bookings
               </Link>
             )}
+          </>
+        )}
+
+        {status === 'confirming' && (
+          <>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: '#fff7ed' }}>
+              <Clock className="w-8 h-8" style={{ color: '#ff6a00' }} />
+            </div>
+            <h2 className="text-xl font-extrabold text-gray-800 mb-1">Payment received, we&apos;re confirming it</h2>
+            <p className="text-sm text-gray-500 mb-1">
+              You don&apos;t need to pay again. Your booking will update as soon as the payment is confirmed.
+            </p>
+            <p className="text-xs text-gray-400 font-mono mb-6">Ref: {reference}</p>
+            <div className="flex flex-col gap-2">
+              <Link href="/bookings" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#0b103a' }}>
+                My Bookings
+              </Link>
+              <Link href="/support/new" className="btn btn-ghost rounded-xl text-gray-500 text-sm">
+                Contact Support
+              </Link>
+            </div>
           </>
         )}
 

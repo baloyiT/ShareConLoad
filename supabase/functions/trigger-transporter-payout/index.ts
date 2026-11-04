@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireAdmin } from '../_shared/auth.ts';
+import { transferReference } from '../_shared/payments.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -21,12 +22,13 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { jobId } = await req.json();
+    // retryAttempt: 1 or higher, only after the Paystack dashboard shows the last transfer failed.
+    const { jobId, retryAttempt } = await req.json();
     if (!jobId) return json({ error: 'jobId is required' }, 400);
 
     const { data: job } = await supabase
       .from('pickup_jobs')
-      .select('id, status, quoted_fee, transporter_profile_id')
+      .select('id, status, quoted_fee, transporter_profile_id, payout_released_at')
       .eq('id', jobId)
       .single();
 
@@ -36,6 +38,9 @@ serve(async (req: Request) => {
     }
     if (!job.transporter_profile_id) {
       return json({ error: 'No transporter assigned' }, 400);
+    }
+    if (job.payout_released_at && !retryAttempt) {
+      return json({ error: 'Payout has already been released' }, 400);
     }
 
     // Enforce payout eligibility rules
@@ -54,7 +59,7 @@ serve(async (req: Request) => {
 
     const netAmount = job.quoted_fee * TRANSPORTER_SHARE;
     const amountKobo = Math.round(netAmount * 100);
-    const transferRef = `SCL-TPAY-${jobId.slice(0, 8).toUpperCase()}-${Date.now()}`;
+    const transferRef = transferReference('tpay', jobId, retryAttempt ?? 0);
 
     const paystackRes = await fetch('https://api.paystack.co/transfer', {
       method: 'POST',

@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireAdmin } from '../_shared/auth.ts';
+import { transferReference } from '../_shared/payments.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -22,7 +23,8 @@ serve(async (req: Request) => {
     );
     const PAYSTACK_SECRET = Deno.env.get('PAYSTACK_SECRET_KEY') ?? '';
 
-    const { jobId } = await req.json();
+    // retryAttempt: 1 or higher, only after the Paystack dashboard shows the last transfer failed.
+    const { jobId, retryAttempt } = await req.json();
     if (!jobId) return json({ error: 'jobId is required' }, 400);
 
     // Load job
@@ -51,7 +53,7 @@ serve(async (req: Request) => {
     const grossAmount = job.quoted_fee;
     const netAmount = Math.round(grossAmount * AGENT_SHARE * 100) / 100;
     const amountKobo = Math.round(netAmount * 100);
-    const transferRef = `SCL-AGPAY-${jobId.slice(0, 8)}-${Date.now()}`.toUpperCase();
+    const transferRef = transferReference('agpay', jobId, retryAttempt ?? 0);
 
     const paystackRes = await fetch('https://api.paystack.co/transfer', {
       method: 'POST',

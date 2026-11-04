@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireUser } from '../_shared/auth.ts';
+import { chargeState } from '../_shared/payments.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -89,10 +90,7 @@ serve(async (req: Request) => {
       .maybeSingle();
 
     if (!ownedPayment) {
-      return json({
-        success: false,
-        message: 'We could not match this payment yet. If you paid, your booking will update shortly.',
-      });
+      return json({ success: false, confirming: true });
     }
 
     const { data: ownedBooking } = await supabase
@@ -118,6 +116,10 @@ serve(async (req: Request) => {
     );
     const paystackData = await paystackRes.json();
 
+    if (paystackData.status && chargeState(paystackData.data?.status) === 'in_flight') {
+      return json({ success: false, confirming: true });
+    }
+
     if (!paystackData.status || paystackData.data?.status !== 'success') {
       return json({
         success: false,
@@ -142,6 +144,11 @@ serve(async (req: Request) => {
 
     if (payment?.status === 'paid') {
       return json({ success: true, message: 'Payment already recorded', alreadyPaid: true });
+    }
+
+    // Paystack can still report a refunded transaction as a success.
+    if (payment?.status === 'refunded') {
+      return json({ success: false, message: 'This payment has been refunded.' });
     }
 
     // Validate amount (Paystack returns kobo; payment.amount is ZAR)

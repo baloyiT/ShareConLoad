@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireAdmin } from '../_shared/auth.ts';
+import { transferReference } from '../_shared/payments.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -66,7 +67,7 @@ serve(async (req: Request) => {
     );
     const PAYSTACK_SECRET = Deno.env.get('PAYSTACK_SECRET_KEY') ?? '';
 
-    const { payoutId, override, overrideReason } = await req.json();
+    const { payoutId, override, overrideReason, retryFailed } = await req.json();
     if (!payoutId) return json({ error: 'payoutId is required' }, 400);
     if (override && !overrideReason?.trim()) {
       return json({ error: 'Override reason is required' }, 400);
@@ -76,7 +77,7 @@ serve(async (req: Request) => {
     const [payoutRes, commRes] = await Promise.all([
       supabase
         .from('payouts')
-        .select('id, booking_id, operator_id, gross_amount, status, eligible_after')
+        .select('id, booking_id, operator_id, gross_amount, status, eligible_after, metadata')
         .eq('id', payoutId)
         .single(),
       supabase
@@ -87,7 +88,13 @@ serve(async (req: Request) => {
 
     const payout = payoutRes.data;
     if (payoutRes.error || !payout) return json({ error: 'Payout record not found' }, 404);
-    if (payout.status !== 'pending') return json({ error: `Payout is already ${payout.status}` }, 400);
+
+    // A failed status comes from Paystack's signed transfer.failed event, so that transfer moved
+    // no money. Only then may a retry use a new reference.
+    const retrying = retryFailed === true && payout.status === 'failed';
+    if (payout.status !== 'pending' && !retrying) {
+      return json({ error: `Payout is already ${payout.status}` }, 400);
+    }
 
     // ── 48h refund window check (admin override skippable) ─────────────────────
     let msRemainingAtOverride = 0;
@@ -146,7 +153,9 @@ serve(async (req: Request) => {
       ? Math.round((commissionAmount / grossAmount) * 10000) / 10000
       : 0;
     const amountKobo       = Math.round(netAmount * 100);
-    const transferRef      = `SCL-PAYOUT-${payoutId.slice(0, 8)}-${Date.now()}`.toUpperCase();
+    const lastAttempt      = Number(payout.metadata?.transfer_attempt ?? 0);
+    const attempt          = retrying ? lastAttempt + 1 : lastAttempt;
+    const transferRef      = transferReference('payout', payoutId, attempt);
 
     // ── Execute Paystack transfer ──────────────────────────────────────────────
     const paystackRes = await fetch('https://api.paystack.co/transfer', {
@@ -181,14 +190,17 @@ serve(async (req: Request) => {
         commission_rate:        commissionRate,
         platform_fee:           commissionAmount,
         paystack_transfer_code: transferCode,
-        ...(override ? {
-          metadata: {
+        failure_reason:         null,
+        metadata: {
+          ...(payout.metadata ?? {}),
+          transfer_attempt: attempt,
+          ...(override ? {
             overridden:      true,
             override_reason: overrideReason.trim(),
             overridden_by:   auth.user.id,
             overridden_at:   new Date().toISOString(),
-          },
-        } : {}),
+          } : {}),
+        },
       })
       .eq('id', payoutId);
 

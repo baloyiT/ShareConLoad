@@ -99,7 +99,6 @@ export default function AdminPayoutsPage() {
   const [triggering,   setTriggering]   = useState<string | null>(null);
   const [triggerError, setTriggerError] = useState<Record<string, string>>({});
   const [now, setNow] = useState(Date.now());
-  const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
   const [overrideTarget, setOverrideTarget] = useState<{ payoutId: string; msRemaining: number } | null>(null);
   const [overrideSubmitting, setOverrideSubmitting] = useState(false);
   const [overrideError, setOverrideError] = useState<string | null>(null);
@@ -107,20 +106,6 @@ export default function AdminPayoutsPage() {
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    async function fetchAdminProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (profile) setAdminProfileId(profile.id);
-    }
-    fetchAdminProfile();
   }, []);
 
   useEffect(() => {
@@ -182,12 +167,12 @@ export default function AdminPayoutsPage() {
     fetchPayouts();
   }, []);
 
-  async function handleTrigger(payoutId: string) {
+  async function handleTrigger(payoutId: string, retryFailed = false) {
     setTriggering(payoutId);
     setTriggerError((prev) => { const n = { ...prev }; delete n[payoutId]; return n; });
 
     const { data, error: fnErr } = await supabase.functions.invoke('trigger-payout', {
-      body: { payoutId },
+      body: { payoutId, retryFailed },
     });
 
     if (fnErr || !data?.success) {
@@ -200,7 +185,7 @@ export default function AdminPayoutsPage() {
     setPayouts((prev) =>
       prev.map((p) =>
         p.id === payoutId
-          ? { ...p, status: 'processing', paystack_transfer_code: data.transferCode ?? p.paystack_transfer_code, net_amount: data.netAmount ?? p.net_amount }
+          ? { ...p, status: 'processing', failure_reason: null, paystack_transfer_code: data.transferCode ?? p.paystack_transfer_code, net_amount: data.netAmount ?? p.net_amount }
           : p
       )
     );
@@ -217,7 +202,6 @@ export default function AdminPayoutsPage() {
         payoutId:       overrideTarget.payoutId,
         override:       true,
         overrideReason: reason,
-        adminProfileId,
       },
     });
 
@@ -441,6 +425,23 @@ export default function AdminPayoutsPage() {
                                   Manage operator →
                                 </Link>
                               )}
+                              {triggerError[p.id] && (
+                                <p className="text-xs text-red-500 mt-1 max-w-[120px]">{triggerError[p.id]}</p>
+                              )}
+                            </div>
+                          )}
+                          {p.status === 'failed' && (
+                            <div>
+                              <button
+                                onClick={() => handleTrigger(p.id, true)}
+                                disabled={isTriggering}
+                                className="btn btn-sm text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-40 whitespace-nowrap"
+                                style={{ backgroundColor: '#0b103a' }}
+                              >
+                                {isTriggering
+                                  ? <span className="loading loading-spinner loading-xs" />
+                                  : 'Retry →'}
+                              </button>
                               {triggerError[p.id] && (
                                 <p className="text-xs text-red-500 mt-1 max-w-[120px]">{triggerError[p.id]}</p>
                               )}

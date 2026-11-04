@@ -141,6 +141,12 @@ export default function PaymentPage() {
       body: { bookingId, paymentId, callbackUrl },
     });
 
+    // The last attempt may have taken money: show its status instead of charging again.
+    if (data?.confirming) {
+      window.location.href = `/payments/callback?reference=${encodeURIComponent(data.reference)}`;
+      return;
+    }
+
     if (fnErr || !data?.authorization_url) {
       setPayError(data?.error ?? fnErr?.message ?? 'Could not initialize payment. Please try again.');
       setPaying(false);

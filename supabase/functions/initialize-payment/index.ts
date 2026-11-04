@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { chargeRetryDecision } from '../_shared/payments.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -24,7 +25,7 @@ serve(async (req: Request) => {
     // ── Load payment record ────────────────────────────────────────────────────
     const { data: payment, error: pErr } = await supabase
       .from('payments')
-      .select('id, stage, amount, status, booking_id')
+      .select('id, stage, amount, status, booking_id, paystack_reference')
       .eq('id', paymentId)
       .eq('booking_id', bookingId)
       .single();
@@ -49,6 +50,24 @@ serve(async (req: Request) => {
     );
     if (!caller || caller.id !== booking.customer_id) {
       return json({ error: 'Access denied' }, 403);
+    }
+
+    // ── Never charge again while the last attempt may have taken money ─────────
+    // A paid payment stays pending here until verify-payment or the webhook records it.
+    if (payment.status === 'pending' && payment.paystack_reference) {
+      const lastRes = await fetch(
+        `https://api.paystack.co/transaction/verify/${encodeURIComponent(payment.paystack_reference)}`,
+        { headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` } },
+      );
+      const last = await lastRes.json().catch(() => ({}));
+      const decision = chargeRetryDecision(lastRes.status, last);
+
+      if (decision === 'confirming') {
+        return json({ confirming: true, reference: payment.paystack_reference });
+      }
+      if (decision === 'unavailable') {
+        return json({ error: 'We could not check your last payment. Please try again shortly.' }, 503);
+      }
     }
 
     const userId = booking.customer_id;

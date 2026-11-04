@@ -97,7 +97,6 @@ export default function AdminBookingsPage() {
   const [loadingPayments,setLoadingPayments]= useState(false);
   const [refunding,      setRefunding]      = useState<string | null>(null);
   const [refundError,    setRefundError]    = useState<Record<string, string>>({});
-  const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchBookings() {
@@ -114,19 +113,7 @@ export default function AdminBookingsPage() {
       setLoading(false);
     }
 
-    async function fetchAdminProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (profile) setAdminProfileId(profile.id);
-    }
-
     fetchBookings();
-    fetchAdminProfile();
   }, []);
 
   const filtered = statusFilter === 'all'
@@ -192,7 +179,7 @@ export default function AdminBookingsPage() {
     setRefundError((prev) => { const n = { ...prev }; delete n[paymentId]; return n; });
 
     const { data, error: fnErr } = await supabase.functions.invoke('process-refund', {
-      body: { paymentId, adminProfileId },
+      body: { paymentId },
     });
 
     if (fnErr || !data?.success) {

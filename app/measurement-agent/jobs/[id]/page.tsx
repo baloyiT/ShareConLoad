@@ -180,8 +180,6 @@ export default function AgentJobDetailPage() {
     setSubmitting(true);
     setError(null);
 
-    const { data: { session } } = await supabase.auth.getSession();
-
     // Upload photos
     const uploadedPhotos: Array<{ type: PhotoType; url: string }> = [];
     for (const photoType of PHOTO_TYPES) {
@@ -262,22 +260,7 @@ export default function AgentJobDetailPage() {
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('id', job.id);
 
-    // Trigger payout via Edge Function (best-effort; don't block on errors)
-    try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/trigger-measurement-agent-payout`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.access_token ?? ''}`,
-          },
-          body: JSON.stringify({ jobId: job.id }),
-        }
-      );
-    } catch (payoutErr) {
-      console.error('Payout trigger failed (non-blocking):', payoutErr);
-    }
+    // trigger-measurement-agent-payout is admin-only. An admin screen is needed before this service goes live.
 
     // Increment agent job counter via RPC
     await supabase.rpc('increment_agent_jobs', { agent_id: agentProfileId });
