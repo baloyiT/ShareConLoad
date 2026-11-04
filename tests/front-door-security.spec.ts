@@ -97,6 +97,72 @@ test.describe('operator self-edit guard', () => {
     });
   }
 
+  test.describe('signing from the live frontend', () => {
+    const signedAt = '2026-11-04T10:00:00.000Z';
+
+    test('the exact update production makes succeeds', async () => {
+      const target = await newUser('operator');
+      const { error } = await target.client.from('operator_profiles').update({
+        service_agreement_signed_at: signedAt,
+        service_agreement_version: 'v1',
+        status: 'pending_verification',
+      }).eq('profile_id', target.profileId);
+      expect(error).toBeNull();
+      const row = await operatorRow(target.operatorProfileId);
+      expect(row?.status).toBe('pending_verification');
+      expect(row?.service_agreement_version).toBe('v1');
+    });
+
+    test('the status change without a signed date fails', async () => {
+      const target = await newUser('operator');
+      const id = target.operatorProfileId ?? '';
+      const { error } = await target.client.from('operator_profiles')
+        .update({ status: 'pending_verification', service_agreement_version: 'v1' }).eq('id', id);
+      expect(error?.code).toBe(DENIED);
+      expect((await operatorRow(id))?.status).toBe('draft');
+    });
+
+    test('a date signed earlier does not allow the change on its own', async () => {
+      const target = await newUser('operator');
+      const id = target.operatorProfileId ?? '';
+      await adminClient().from('operator_profiles')
+        .update({ service_agreement_signed_at: signedAt }).eq('id', id);
+      const { error } = await target.client.from('operator_profiles')
+        .update({ status: 'pending_verification' }).eq('id', id);
+      expect(error?.code).toBe(DENIED);
+      expect((await operatorRow(id))?.status).toBe('draft');
+    });
+
+    for (const status of ['active', 'trusted', 'active_limited']) {
+      test(`signing cannot move draft to ${status}`, async () => {
+        const target = await newUser('operator');
+        const id = target.operatorProfileId ?? '';
+        const { error } = await target.client.from('operator_profiles')
+          .update({ service_agreement_signed_at: signedAt, status }).eq('id', id);
+        expect(error?.code).toBe(DENIED);
+        expect((await operatorRow(id))?.status).toBe('draft');
+      });
+    }
+
+    test('no other status change is allowed after signing', async () => {
+      const target = await newUser('operator');
+      const id = target.operatorProfileId ?? '';
+      await target.client.from('operator_profiles').update({
+        service_agreement_signed_at: signedAt,
+        status: 'pending_verification',
+      }).eq('id', id);
+
+      for (const status of ['active', 'trusted', 'draft']) {
+        const { error } = await target.client.from('operator_profiles').update({
+          service_agreement_signed_at: '2026-11-05T10:00:00.000Z',
+          status,
+        }).eq('id', id);
+        expect(error?.code).toBe(DENIED);
+      }
+      expect((await operatorRow(id))?.status).toBe('pending_verification');
+    });
+  });
+
   test('the service role can write what create-transfer-recipient and generate-agreement-pdf write', async () => {
     const target = await newUser('operator');
     const { error } = await adminClient().from('operator_profiles').update({
@@ -614,8 +680,8 @@ test.describe('Edge Function authorisation', () => {
     expect(chargeRetryDecision(200, answer('ongoing'))).toBe('confirming');
     expect(chargeRetryDecision(200, answer('abandoned'))).toBe('new_charge');
     expect(chargeRetryDecision(200, answer('failed'))).toBe('new_charge');
-    expect(chargeRetryDecision(400, { status: false })).toBe('new_charge');
-    expect(chargeRetryDecision(404, { status: false })).toBe('new_charge');
+    expect(chargeRetryDecision(400, { status: false })).toBe('unavailable');
+    expect(chargeRetryDecision(404, { status: false })).toBe('unavailable');
     expect(chargeRetryDecision(401, { status: false })).toBe('unavailable');
     expect(chargeRetryDecision(500, {})).toBe('unavailable');
     expect(chargeRetryDecision(200, { status: false })).toBe('unavailable');
@@ -649,9 +715,30 @@ test.describe('Edge Function authorisation', () => {
     expect(callbackOutcome(null, 400)).toBe('failed');
   });
 
-  test('verify-payment answers neutrally when it cannot match or is still in flight', () => {
+  test('verify-payment answers neutrally when it cannot match, is in flight or Paystack errors', () => {
     const code = handler('verify-payment');
     expect(code.match(/confirming: true/g)).toHaveLength(2);
+    expect(code).toContain("!paystackData.status || chargeState(paystackData.data?.status) === 'in_flight'");
+  });
+
+  test('the customer is never told money was received before it is confirmed', () => {
+    const code = readFileSync(join(process.cwd(), 'app/payments/callback/page.tsx'), 'utf-8');
+    expect(code).not.toContain('Payment received');
+    expect(code).toContain('confirming your payment');
+  });
+
+  test('the payment page explains a 503 in plain words', () => {
+    const code = readFileSync(join(process.cwd(), 'app/payments/[bookingId]/page.tsx'), 'utf-8');
+    expect(code).toContain('context?.status === 503');
+    expect(code).toContain('We could not check your last payment');
+  });
+
+  test('the webhook leaves a refunded payment alone', () => {
+    const code = handler('paystack-webhook');
+    const check = code.indexOf("existingPayment?.status === 'refunded'");
+    expect(check).toBeGreaterThan(-1);
+    expect(check).toBeLessThan(code.indexOf("status:             'paid'"));
+    expect(check).toBeLessThan(code.indexOf('await createPayoutRecord('));
   });
 
   test('transfer references are stable, valid for Paystack, and change only per attempt', () => {

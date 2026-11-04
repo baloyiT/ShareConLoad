@@ -107,6 +107,11 @@ serve(async (req: Request) => {
         ]);
 
         const existingPayment = paymentRes.data;
+
+        // Paystack can still report a refunded transaction as a success. Marking it paid
+        // again would also create a payout for money already returned.
+        if (existingPayment?.status === 'refunded') break;
+
         const alreadyPaid     = existingPayment?.status === 'paid';
 
         if (!alreadyPaid) {

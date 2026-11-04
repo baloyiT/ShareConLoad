@@ -116,11 +116,12 @@ serve(async (req: Request) => {
     );
     const paystackData = await paystackRes.json();
 
-    if (paystackData.status && chargeState(paystackData.data?.status) === 'in_flight') {
+    // An API error says nothing about the payment, so it is not a failure either.
+    if (!paystackData.status || chargeState(paystackData.data?.status) === 'in_flight') {
       return json({ success: false, confirming: true });
     }
 
-    if (!paystackData.status || paystackData.data?.status !== 'success') {
+    if (paystackData.data?.status !== 'success') {
       return json({
         success: false,
         message: paystackData.data?.gateway_response ?? 'Payment not successful',

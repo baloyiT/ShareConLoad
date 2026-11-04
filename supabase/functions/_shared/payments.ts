@@ -16,12 +16,11 @@ export function chargeState(paystackStatus: string | undefined): ChargeState {
 }
 
 // Whether a customer may start a new charge, given Paystack's answer about their last reference.
-// 400 and 404 mean Paystack has no such transaction. Any other error means we can't tell.
+// A reference is only stored after Paystack accepts it, so any error means we can't tell.
 export function chargeRetryDecision(
   httpStatus: number,
   body: { status?: boolean; data?: { status?: string } },
 ): ChargeRetryDecision {
-  if (httpStatus === 400 || httpStatus === 404) return 'new_charge';
   if (httpStatus >= 300 || !body.status) return 'unavailable';
   return chargeState(body.data?.status) === 'not_charged' ? 'new_charge' : 'confirming';
 }

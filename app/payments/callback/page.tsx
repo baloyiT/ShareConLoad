@@ -101,9 +101,9 @@ function CallbackHandler() {
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: '#fff7ed' }}>
               <Clock className="w-8 h-8" style={{ color: '#ff6a00' }} />
             </div>
-            <h2 className="text-xl font-extrabold text-gray-800 mb-1">Payment received, we&apos;re confirming it</h2>
+            <h2 className="text-xl font-extrabold text-gray-800 mb-1">We&apos;re confirming your payment</h2>
             <p className="text-sm text-gray-500 mb-1">
-              You don&apos;t need to pay again. Your booking will update as soon as the payment is confirmed.
+              Please don&apos;t pay again for now. Your booking will update as soon as we have confirmation.
             </p>
             <p className="text-xs text-gray-400 font-mono mb-6">Ref: {reference}</p>
             <div className="flex flex-col gap-2">

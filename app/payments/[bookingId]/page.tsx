@@ -147,6 +147,12 @@ export default function PaymentPage() {
       return;
     }
 
+    if (fnErr?.context?.status === 503) {
+      setPayError('We could not check your last payment. Please try again in a few minutes.');
+      setPaying(false);
+      return;
+    }
+
     if (fnErr || !data?.authorization_url) {
       setPayError(data?.error ?? fnErr?.message ?? 'Could not initialize payment. Please try again.');
       setPaying(false);
