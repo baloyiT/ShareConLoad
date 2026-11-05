@@ -476,3 +476,115 @@ test('a failed acceptance shows a plain message and records nothing', async ({ p
     await expect(page.getByText('You accepted version')).toHaveCount(0);
   });
 });
+
+// ── Services & coverage step ────────────────────────────────────────────────
+
+async function pickPlace(page: Page, id: string, query: string, option: string): Promise<void> {
+  await page.locator(`#${id}`).fill(query);
+  await page.getByRole('option', { name: option }).click();
+}
+
+async function addRoute(page: Page, from: string, to: string): Promise<void> {
+  await pickPlace(page, 'coverage-origin', from.split(',')[0], from);
+  await pickPlace(page, 'coverage-destination', to.split(',')[0], to);
+  await page.getByRole('button', { name: 'Add route' }).click();
+}
+
+test('operator ticks a service and it persists after reload', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+
+  const sea = page.getByLabel('Sea freight');
+  await expect(sea).not.toBeChecked({ timeout: 30_000 });
+  await sea.check();
+  await expect(sea).toBeChecked();
+  await expect.poll(async () => {
+    const { data } = await adminClient().from('operator_services').select('id').eq('operator_profile_id', user.operatorProfileId!);
+    return data?.length;
+  }).toBe(1);
+
+  await page.reload();
+  await expect(page.getByLabel('Sea freight')).toBeChecked({ timeout: 30_000 });
+
+  await page.getByLabel('Sea freight').uncheck();
+  await expect.poll(async () => {
+    const { data } = await adminClient().from('operator_services').select('id').eq('operator_profile_id', user.operatorProfileId!);
+    return data?.length;
+  }).toBe(0);
+});
+
+test('operator adds and removes a coverage row', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+  await expect(page.getByText('No routes added yet.')).toBeVisible({ timeout: 30_000 });
+
+  await addRoute(page, 'Durban, South Africa', 'Tema, Ghana');
+  const rows = page.getByTestId('coverage-row');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('Durban, South Africa');
+  await expect(rows.first()).toContainText('Tema, Ghana');
+
+  const { data } = await adminClient().from('operator_coverage')
+    .select('origin_country, origin_city, destination_country, destination_city, transport_mode')
+    .eq('operator_profile_id', user.operatorProfileId!);
+  expect(data).toEqual([{
+    origin_country: 'South Africa', origin_city: 'Durban',
+    destination_country: 'Ghana', destination_city: 'Tema', transport_mode: null,
+  }]);
+
+  await rows.first().getByRole('button', { name: /Remove/ }).click();
+  await expect(page.getByText('No routes added yet.')).toBeVisible();
+  const { data: after } = await adminClient().from('operator_coverage').select('id').eq('operator_profile_id', user.operatorProfileId!);
+  expect(after).toEqual([]);
+});
+
+test('a whole-country row saves a null city', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+  await expect(page.getByText('No routes added yet.')).toBeVisible({ timeout: 30_000 });
+
+  await pickPlace(page, 'coverage-origin', 'Durban', 'Durban, South Africa');
+  await page.getByLabel('Cover the whole country').first().check();
+  await pickPlace(page, 'coverage-destination', 'Tema', 'Tema, Ghana');
+  await page.getByLabel('Transport mode').selectOption('sea');
+  await page.getByRole('button', { name: 'Add route' }).click();
+  await expect(page.getByTestId('coverage-row').first()).toContainText('All of South Africa');
+
+  const { data } = await adminClient().from('operator_coverage')
+    .select('origin_city, destination_city, transport_mode').eq('operator_profile_id', user.operatorProfileId!);
+  expect(data).toEqual([{ origin_city: null, destination_city: 'Tema', transport_mode: 'sea' }]);
+});
+
+test('adding the same coverage twice shows a friendly message', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+  await expect(page.getByText('No routes added yet.')).toBeVisible({ timeout: 30_000 });
+
+  await addRoute(page, 'Durban, South Africa', 'Tema, Ghana');
+  await expect(page.getByTestId('coverage-row')).toHaveCount(1);
+  await addRoute(page, 'Durban, South Africa', 'Tema, Ghana');
+  await expect(page.getByText('You have already added this route.')).toBeVisible();
+  await expect(page.getByTestId('coverage-row')).toHaveCount(1);
+  const { data } = await adminClient().from('operator_coverage').select('id').eq('operator_profile_id', user.operatorProfileId!);
+  expect(data).toHaveLength(1);
+});
+
+test('the step shows complete with one service and one coverage row', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+  await expect(page.getByLabel('Sea freight')).toBeVisible({ timeout: 30_000 });
+  await expect(sidebar(page).getByRole('link', { name: 'Services & coverage' })).not.toHaveCSS('color', 'rgb(22, 163, 74)');
+
+  await page.getByLabel('Sea freight').check();
+  await expect(page.getByLabel('Sea freight')).toBeChecked();
+  await addRoute(page, 'Durban, South Africa', 'Tema, Ghana');
+  await expect(page.getByTestId('coverage-row')).toHaveCount(1);
+
+  await openHub(page);
+  await expect(sidebar(page).getByRole('link', { name: 'Services & coverage' })).toHaveCSS('color', 'rgb(22, 163, 74)');
+});
