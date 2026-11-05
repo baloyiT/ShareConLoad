@@ -42,7 +42,7 @@ type OperatorRow = {
 // Verify is only offered when it raises the level.
 const LEVEL_RANK: Record<VerificationLevel, number> = { registered: 0, identity_verified: 1, business_verified: 2 };
 
-type OperatorProfile =NonNullable<OperatorRow['operator_profile']>;
+type OperatorProfile = NonNullable<OperatorRow['operator_profile']>;
 
 // Why an active, verified operator is not in the directory yet. Empty when nothing blocks it.
 function listingBlockers(p: OperatorProfile): string[] {

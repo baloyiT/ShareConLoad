@@ -137,7 +137,7 @@ export default function ComplianceProfilePage() {
       {error && <div className="alert alert-error text-sm mb-4">{error}</div>}
       {locked && (
         <div className="alert text-sm mb-4">
-          Your legal name, entity type, identity numbers{tradingLocked ? ' and trading name' : ''} are verified and cannot be changed here. To change them, contact support@shareconload.com.
+          Your legal name, entity type{tradingLocked ? ', identity numbers and trading name' : ' and identity numbers'} are verified and cannot be changed here. To change them, contact support@shareconload.com.
         </div>
       )}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">

@@ -5,7 +5,7 @@ import PublicNav from '@/components/PublicNav';
 
 export const metadata = {
   title: 'Pricing, ShareConLoad',
-  description: 'ShareConLoad is free for customers. Listings and founding-operator leads are free.',
+  description: 'ShareConLoad is free for customers. Listings are free during the founding period, and founding-operator leads are free.',
 };
 
 const CUSTOMER_POINTS = [

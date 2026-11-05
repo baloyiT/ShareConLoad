@@ -75,19 +75,21 @@ export async function loadOperatorProgress(userId: string): Promise<OperatorProg
   const defs = established ? ESTABLISHED_OPERATOR_STEPS : NEW_OPERATOR_STEPS;
   const none = defs.map((s) => ({ ...s, done: false, notOpen: false }));
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id')
     .eq('user_id', userId)
     .eq('role_type', 'operator')
     .maybeSingle();
+  if (profileError) console.error('Could not load operator role:', profileError);
   if (!profile) return { hasOperatorRole: false, hasOperatorDetails: false, established, steps: none };
 
-  const { data: op } = await supabase
+  const { data: op, error: opError } = await supabase
     .from('operator_profiles')
     .select('id, legal_name, trading_name, phone_number, bank_account_name, paystack_recipient_code, service_agreement_signed_at, entity_type, participation_terms_version')
     .eq('profile_id', profile.id)
     .maybeSingle();
+  if (opError) console.error('Could not load operator details:', opError);
   if (!op) return { hasOperatorRole: true, hasOperatorDetails: false, established, steps: none };
 
   const [docs, services, coverage, termsOpen] = await Promise.all([

@@ -132,7 +132,7 @@ function Directory() {
     (Object.keys(next) as (keyof Filters)[]).forEach((k) => { if (next[k]) params.set(k, next[k]); });
     const qs = params.toString();
     // Typing in a box calls this on every keystroke; nothing to do when the URL already matches.
-    if (qs === query && !pending.current) return;
+    if (qs === (pending.current?.queries.at(-1) ?? query)) return;
     pending.current = { filters: next, queries: [...(pending.current?.queries ?? []), qs] };
     router.replace(qs ? `/directory?${qs}` : '/directory', { scroll: false });
   }
