@@ -8,7 +8,7 @@ import PageHero from '@/components/PageHero';
 
 import {
   AlertCircle, ClipboardList, Ship, CreditCard, TrendingUp, Scale, Flag, Unlock,
-  ArrowRightLeft, User, IdCard, Ruler, Truck, RulerDimensionLine, DollarSign, PackageCheck,
+  ArrowRightLeft, User, IdCard, Ruler, Truck, RulerDimensionLine, DollarSign, PackageCheck, Mail,
 } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -192,6 +192,7 @@ export default function AdminDashboard() {
                   { href: '/admin/transporters',         label: 'Transporters',        icon: Truck, desc: 'Manage transporters'                 },
                   { href: '/admin/measurement-jobs',     label: 'Measurement Jobs',    icon: RulerDimensionLine, desc: 'Assign & track measurement jobs'      },
                   { href: '/admin/rate-bands',           label: 'Rate Bands',          icon: DollarSign, desc: 'Measurement pricing zones'             },
+                  { href: '/admin/contact',              label: 'Contact',             icon: Mail, desc: 'Enquiries from the contact form'      },
                   { href: '/admin/pickup-jobs',          label: 'Pickup Jobs',         icon: PackageCheck, desc: 'Assign & track pickup jobs'             },
                 ].map(({ href, label, icon: Icon, desc }) => (
                   <Link

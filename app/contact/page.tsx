@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 
@@ -41,6 +42,7 @@ const COUNTRIES = [
 ];
 
 const SUBJECTS = [
+  'Freight enquiry',
   'General Inquiry',
   'Booking Support',
   'Operator Onboarding',
@@ -50,7 +52,24 @@ const SUBJECTS = [
   'Other',
 ];
 
+const FREIGHT_SUBJECT = 'Freight enquiry';
+const SUPPORT_EMAIL = 'support@shareconload.com';
+const MAX_PREFILL_LENGTH = 2000;
+
 export default function ContactPage() {
+  // useSearchParams needs a Suspense boundary for production builds.
+  return (
+    <Suspense fallback={null}>
+      <ContactForm />
+    </Suspense>
+  );
+}
+
+function ContactForm() {
+  const searchParams = useSearchParams();
+  const prefillSubject = searchParams.get('subject') ?? '';
+  const prefillMessage = (searchParams.get('message') ?? '').slice(0, MAX_PREFILL_LENGTH);
+  const [subject, setSubject] = useState(SUBJECTS.includes(prefillSubject) ? prefillSubject : '');
   const [submitting,   setSubmitting]   = useState(false);
   const [submitted,    setSubmitted]    = useState(false);
   const [error,        setError]        = useState<string | null>(null);
@@ -83,14 +102,15 @@ export default function ContactPage() {
       return el ? el.value.trim() : '';
     };
 
-    const { error: dbError } = await supabase.from('contact_submissions').insert({
+    const submission = {
       name:    get('name'),
       email:   get('email'),
       phone:   get('phone') || null,
       country: countryValue,
       subject: get('subject'),
       message: get('message'),
-    });
+    };
+    const { error: dbError } = await supabase.from('contact_submissions').insert(submission);
 
     if (dbError) {
       console.error('Contact form error:', dbError);
@@ -101,6 +121,25 @@ export default function ContactPage() {
 
     setSubmitted(true);
     setSubmitting(false);
+
+    if (submission.subject === FREIGHT_SUBJECT) await alertSupport(submission);
+  }
+
+  // The enquiry is already saved, so an alert failure is only logged. The server escapes the text.
+  async function alertSupport(s: { name: string; email: string; phone: string | null; country: string; message: string }) {
+    try {
+      const { error: alertError } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: SUPPORT_EMAIL,
+          subject: 'New freight enquiry',
+          title: 'New freight enquiry',
+          body: `${s.name} (${s.email}, ${s.phone ?? 'no phone'}, ${s.country})\n\n${s.message}`,
+        },
+      });
+      if (alertError) console.error('Freight enquiry alert failed:', alertError);
+    } catch (err) {
+      console.error('Freight enquiry alert failed:', err);
+    }
   }
 
   return (
@@ -181,11 +220,15 @@ export default function ContactPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                    Phone <span className="text-gray-400 font-normal normal-case">(optional)</span>
+                    Phone{' '}
+                    {subject === FREIGHT_SUBJECT
+                      ? <span className="text-red-400">*</span>
+                      : <span className="text-gray-400 font-normal normal-case">(optional)</span>}
                   </label>
                   <input
                     type="tel"
                     name="phone"
+                    required={subject === FREIGHT_SUBJECT}
                     placeholder="+27 82 000 0000"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
                     onFocus={e => e.target.style.boxShadow = '0 0 0 2px #ff6a00'}
@@ -199,7 +242,8 @@ export default function ContactPage() {
                   <select
                     name="subject"
                     required
-                    defaultValue=""
+                    value={subject}
+                    onChange={e => setSubject(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none bg-white"
                     onFocus={e => e.target.style.boxShadow = '0 0 0 2px #ff6a00'}
                     onBlur={e => e.target.style.boxShadow = ''}
@@ -254,6 +298,7 @@ export default function ContactPage() {
                 <textarea
                   name="message"
                   required
+                  defaultValue={prefillMessage}
                   rows={5}
                   placeholder="Tell us how we can help..."
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none resize-none"

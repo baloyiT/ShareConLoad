@@ -6,17 +6,21 @@ import { useRouter } from 'next/navigation';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 
 const MAX_WHAT_LENGTH = 500;
+const MAX_PLACE_LENGTH = 200;
+
+// Array.from counts whole characters, so a cut never splits an emoji.
+function cut(value: string, max: number): string {
+  return Array.from(value).slice(0, max).join('');
+}
 
 export function buildEnquiryContactUrl(what: string, from: string, to: string): string {
-  // Array.from counts whole characters, so the cut never splits an emoji.
-  // Half an emoji would make encodeURIComponent throw.
-  const shortened = Array.from(what).slice(0, MAX_WHAT_LENGTH).join('');
   const message = [
-    `What I need to move: ${shortened}`,
-    `From: ${from.trim() || 'Not sure'}`,
-    `To: ${to.trim() || 'Not sure'}`,
+    `What I need to move: ${cut(what.trim(), MAX_WHAT_LENGTH)}`,
+    `From: ${cut(from.trim(), MAX_PLACE_LENGTH) || 'Not sure'}`,
+    `To: ${cut(to.trim(), MAX_PLACE_LENGTH) || 'Not sure'}`,
   ].join('\n');
-  return `/contact?subject=${encodeURIComponent('Freight enquiry')}&message=${encodeURIComponent(message)}`;
+  // encodeURIComponent throws on a lone surrogate, so replace any with U+FFFD first.
+  return `/contact?subject=${encodeURIComponent('Freight enquiry')}&message=${encodeURIComponent(message.toWellFormed())}`;
 }
 
 export default function HomeEnquiryForm() {
@@ -24,9 +28,15 @@ export default function HomeEnquiryForm() {
   const [what, setWhat] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!what.trim()) {
+      setError('Please tell us what you need to move.');
+      return;
+    }
+    setError(null);
     router.push(buildEnquiryContactUrl(what, from, to));
   }
 
@@ -46,10 +56,11 @@ export default function HomeEnquiryForm() {
         rows={2}
         maxLength={MAX_WHAT_LENGTH}
         value={what}
-        onChange={(e) => setWhat(e.target.value)}
+        onChange={(e) => { setWhat(e.target.value); setError(null); }}
         placeholder="Furniture from a two-bedroom home"
         className="textarea textarea-bordered w-full text-sm"
       />
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <LocationAutocomplete
           id="enquiry-from"
