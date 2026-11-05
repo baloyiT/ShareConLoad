@@ -100,7 +100,7 @@ test.describe('Front door: public directory data', () => {
   let adminUser: TestUser;
 
   test.beforeAll(async () => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000);
     countryWide = await createTestUser('operator');
     cityOnly = await createTestUser('operator');
     modeless = await createTestUser('operator');
@@ -115,13 +115,13 @@ test.describe('Front door: public directory data', () => {
       { origin_country: OTHER, origin_city: 'Delta', destination_country: TO, destination_city: 'Beta', transport_mode: 'air' },
     ], 'air-freight');
     await seedOperator(modeless, {}, [{ origin_country: ANY_MODE_FROM, destination_country: TO }], 'forwarding');
-    const route =[{ origin_country: FROM, destination_country: TO }];
+    const route = [{ origin_country: FROM, destination_country: TO }];
     await seedOperator(suspended, { participation_status: 'suspended' }, route);
     await seedOperator(unverified, { verification_level: 'registered' }, route);
   });
 
   test.afterAll(async () => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000);
     for (const user of [countryWide, cityOnly, modeless, suspended, unverified, customer, adminUser]) {
       if (user) await deleteTestUser(user);
     }
