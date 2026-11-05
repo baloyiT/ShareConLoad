@@ -66,13 +66,17 @@ test('operator with no containers is kept out of /operator/create', async ({ pag
 
 // Seeds a customer with a real measurement job and booking. Booking insert fires only the
 // DB triggers for the payment schedule and container capacity (no Paystack, no email).
-interface Seed { user: TestUser; jobId: string; bookingId: string; containerId: string; paymentRef: string }
+// Every id is written to the record as soon as the row exists, so cleanup works after a partial seed.
+interface Seed { user?: TestUser; jobId?: string; bookingId?: string; containerId?: string; paymentRef?: string }
+interface FullSeed { user: TestUser; jobId: string; bookingId: string; containerId: string; paymentRef: string }
 
-async function seedCustomerData(): Promise<Seed> {
+async function seedCustomerData(seed: Seed): Promise<FullSeed> {
   const db = adminClient();
   const user = await newUser('customer');
+  seed.user = user;
   const operator = await newUser('operator');
   const paymentRef = `front-door-test-ref-${user.id}`;
+  seed.paymentRef = paymentRef;
 
   // A signup trigger gives every new user a default customer profile, so the helper user has
   // two customer rows. Kept on purpose: users can hold several profile rows and the pages
@@ -87,6 +91,7 @@ async function seedCustomerData(): Promise<Seed> {
     payment_ref: paymentRef,
   }).select('id').single();
   expect(jobErr).toBeNull();
+  seed.jobId = job!.id as string;
 
   const { data: container, error: cErr } = await db.from('containers').insert({
     operator_id: operator.id,
@@ -97,28 +102,48 @@ async function seedCustomerData(): Promise<Seed> {
     load_type: 'LCL', price_per_cbm: 100, currency_code: 'USD', status: 'open',
   }).select('id').single();
   expect(cErr).toBeNull();
+  seed.containerId = container!.id as string;
 
   const { data: booking, error: bErr } = await db.from('bookings').insert({
     container_id: container!.id, customer_id: user.id,
     total_cbm: 1, total_price: 100, status: 'pending',
   }).select('id').single();
   expect(bErr).toBeNull();
+  seed.bookingId = booking!.id as string;
 
-  return { user, jobId: job!.id as string, bookingId: booking!.id as string, containerId: container!.id as string, paymentRef };
+  return { user, jobId: seed.jobId!, bookingId: seed.bookingId, containerId: seed.containerId!, paymentRef };
 }
 
+// Tries every delete even if one fails, then reports all failures together.
 async function removeSeed(s: Seed): Promise<void> {
   const db = adminClient();
-  await db.from('measurement_jobs').delete().eq('id', s.jobId);
-  await db.from('pickup_jobs').delete().eq('booking_id', s.bookingId);
-  await db.from('payments').delete().eq('booking_id', s.bookingId);
-  await db.from('bookings').delete().eq('id', s.bookingId);
-  await db.from('containers').delete().eq('id', s.containerId);
+  const failures: string[] = [];
+  const del = async (table: string, column: string, value: string | undefined) => {
+    if (!value) return;
+    try {
+      const { error } = await db.from(table).delete().eq(column, value);
+      if (error) failures.push(`${table}: ${error.message}`);
+    } catch (err) {
+      failures.push(`${table}: ${String(err)}`);
+    }
+  };
+  await del('measurement_jobs', 'id', s.jobId);
+  // Rows derived from the booking, then the booking, then its container.
+  for (const table of [
+    'pickup_jobs', 'payments', 'payouts', 'booking_status_history',
+    'shipment_items', 'declarations', 'shipment_milestones', 'booking_messages',
+  ]) {
+    await del(table, 'booking_id', s.bookingId);
+  }
+  await del('bookings', 'id', s.bookingId);
+  await del('containers', 'id', s.containerId);
+  if (failures.length > 0) throw new Error(`seed cleanup failed: ${failures.join('; ')}`);
 }
 
 test('measurement job page loads the job and reaches verification (verify=1)', async ({ page }) => {
-  const seed = await seedCustomerData();
+  const record: Seed = {};
   try {
+    const seed = await seedCustomerData(record);
     await signInBrowser(page, seed.user);
 
     // Stub the verify function so Paystack is never called; record what the page sends.
@@ -140,26 +165,28 @@ test('measurement job page loads the job and reaches verification (verify=1)', a
     expect(pathOf(page)).toBe(`/measurement-service/${seed.jobId}`);
     expect(sent).toEqual([{ reference: seed.paymentRef }]);
   } finally {
-    await removeSeed(seed);
+    await removeSeed(record);
   }
 });
 
 test('measurement job page loads the job without verify', async ({ page }) => {
-  const seed = await seedCustomerData();
+  const record: Seed = {};
   try {
+    const seed = await seedCustomerData(record);
     await signInBrowser(page, seed.user);
     await page.goto(`/measurement-service/${seed.jobId}`);
     await expect(page.getByText('1 Test Street')).toBeVisible({ timeout: 20_000 });
     expect(pathOf(page)).toBe(`/measurement-service/${seed.jobId}`);
   } finally {
-    await removeSeed(seed);
+    await removeSeed(record);
   }
 });
 
 // A customer with two profile rows returning from a pickup payment must reach verification.
 test('/pickup/[bookingId]?verify=1 reaches verification for a user with two profile rows', async ({ page }) => {
-  const seed = await seedCustomerData();
+  const record: Seed = {};
   try {
+    const seed = await seedCustomerData(record);
     const { data: rows } = await adminClient().from('profiles').select('id, role_type')
       .eq('user_id', seed.user.id).order('id');
     expect(rows).toHaveLength(2);
@@ -191,13 +218,14 @@ test('/pickup/[bookingId]?verify=1 reaches verification for a user with two prof
     expect(pathOf(page)).toBe(`/pickup/${seed.bookingId}`);
     expect(sent).toEqual([{ reference: ref }]);
   } finally {
-    await removeSeed(seed);
+    await removeSeed(record);
   }
 });
 
 test('/pickup/[bookingId] loads the booking and does not bounce', async ({ page }) => {
-  const seed = await seedCustomerData();
+  const record: Seed = {};
   try {
+    const seed = await seedCustomerData(record);
     await signInBrowser(page, seed.user);
     const bookingQuery = page.waitForRequest(
       req => req.url().includes('/rest/v1/bookings') && req.url().includes(seed.bookingId),
@@ -208,7 +236,7 @@ test('/pickup/[bookingId] loads the booking and does not bounce', async ({ page 
     await page.waitForTimeout(3000);
     expect(pathOf(page)).toBe(`/pickup/${seed.bookingId}`);
   } finally {
-    await removeSeed(seed);
+    await removeSeed(record);
   }
 });
 
