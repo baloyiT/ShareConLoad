@@ -42,7 +42,12 @@ export default function CoverageEditor({ operatorProfileId }: { operatorProfileI
       .from('operator_coverage')
       .select('*')
       .eq('operator_profile_id', operatorProfileId)
-      .order('origin_country');
+      .order('origin_country')
+      .order('origin_city', { nullsFirst: true })
+      .order('destination_country')
+      .order('destination_city', { nullsFirst: true })
+      .order('transport_mode', { nullsFirst: true })
+      .order('id');
     if (err) {
       console.error('Could not load coverage:', err);
       setError('We could not load your routes. Please refresh and try again.');
@@ -127,7 +132,7 @@ export default function CoverageEditor({ operatorProfileId }: { operatorProfileI
                 type="button"
                 onClick={() => remove(r.id)}
                 aria-label={`Remove ${place(r.origin_city, r.origin_country)} to ${place(r.destination_city, r.destination_country)}`}
-                className="btn btn-ghost btn-xs text-gray-400"
+                className="btn btn-ghost btn-sm text-gray-400"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -142,18 +147,28 @@ export default function CoverageEditor({ operatorProfileId }: { operatorProfileI
           <div>
             <LocationAutocomplete id="coverage-origin" label="From" placeholder="Search a city" onSelect={setOrigin} />
             <label className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-              <input type="checkbox" className="checkbox checkbox-xs" checked={originWhole}
+              <input type="checkbox" className="checkbox checkbox-sm" checked={originWhole}
                 onChange={(e) => setOriginWhole(e.target.checked)} />
               Cover the whole country
             </label>
+            {originWhole && (
+              <p className="text-xs text-gray-500 mt-1">
+                {origin ? `Will cover all of ${origin.country}` : 'The country comes from the city you choose.'}
+              </p>
+            )}
           </div>
           <div>
             <LocationAutocomplete id="coverage-destination" label="To" placeholder="Search a city" onSelect={setDestination} />
             <label className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-              <input type="checkbox" className="checkbox checkbox-xs" checked={destinationWhole}
+              <input type="checkbox" className="checkbox checkbox-sm" checked={destinationWhole}
                 onChange={(e) => setDestinationWhole(e.target.checked)} />
               Cover the whole country
             </label>
+            {destinationWhole && (
+              <p className="text-xs text-gray-500 mt-1">
+                {destination ? `Will cover all of ${destination.country}` : 'The country comes from the city you choose.'}
+              </p>
+            )}
           </div>
         </div>
         <div>

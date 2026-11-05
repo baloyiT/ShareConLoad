@@ -14,6 +14,7 @@ export default function OperatorServicesPage() {
   const [operatorProfileId, setOperatorProfileId] = useState<string | null>(null);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [pending, setPending] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,11 +58,18 @@ export default function OperatorServicesPage() {
       return next;
     });
     apply(on);
+    setPending((prev) => new Set(prev).add(categoryId));
     const { error: err } = on
       ? await supabase.from('operator_services').insert({ operator_profile_id: operatorProfileId, service_category_id: categoryId })
       : await supabase.from('operator_services').delete()
           .eq('operator_profile_id', operatorProfileId).eq('service_category_id', categoryId);
-    if (err) {
+    setPending((prev) => {
+      const next = new Set(prev);
+      next.delete(categoryId);
+      return next;
+    });
+    // 23505: the row already exists, which is what the operator asked for.
+    if (err && !(on && err.code === '23505')) {
       console.error('Could not update service:', err);
       apply(!on);
       setError('We could not save that change. Please try again.');
@@ -93,6 +101,7 @@ export default function OperatorServicesPage() {
                     type="checkbox"
                     className="checkbox checkbox-sm"
                     checked={selected.has(c.id)}
+                    disabled={pending.has(c.id)}
                     onChange={(e) => toggle(c.id, e.target.checked)}
                   />
                   {c.name}

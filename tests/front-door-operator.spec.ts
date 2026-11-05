@@ -620,3 +620,62 @@ test('the step shows complete with one service and one coverage row', async ({ p
   await openHub(page);
   await expect(sidebar(page).getByRole('link', { name: 'Services & coverage' })).toHaveCSS('color', 'rgb(22, 163, 74)');
 });
+
+test('a failed service save puts the box back and shows a plain message', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+  await expect(page.getByLabel('Sea freight')).not.toBeChecked({ timeout: 30_000 });
+
+  await page.route('**/rest/v1/operator_services*', route =>
+    route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'boom' }) }));
+  await page.getByLabel('Sea freight').check({ noWaitAfter: true });
+  await expect(page.getByText('We could not save that change. Please try again.')).toBeVisible();
+  await expect(page.getByLabel('Sea freight')).not.toBeChecked();
+  await expect(page.getByLabel('Sea freight')).toBeEnabled();
+  const { data } = await adminClient().from('operator_services').select('id').eq('operator_profile_id', user.operatorProfileId!);
+  expect(data).toEqual([]);
+});
+
+test('a unique violation on a service insert counts as saved', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+  await expect(page.getByLabel('Sea freight')).not.toBeChecked({ timeout: 30_000 });
+
+  await page.route('**/rest/v1/operator_services*', route => route.request().method() === 'POST'
+    ? route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ code: '23505', message: 'duplicate key value' }) })
+    : route.continue());
+  await page.getByLabel('Sea freight').check({ noWaitAfter: true });
+  await expect(page.getByLabel('Sea freight')).toBeEnabled();
+  await expect(page.getByLabel('Sea freight')).toBeChecked();
+  await expect(page.getByText('We could not save that change')).toHaveCount(0);
+});
+
+test('the checkbox is disabled while its save is in flight', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+  await expect(page.getByLabel('Sea freight')).not.toBeChecked({ timeout: 30_000 });
+
+  let release: () => void = () => {};
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/rest/v1/operator_services*', async route => { await gate; await route.continue(); });
+  await page.getByLabel('Sea freight').check({ noWaitAfter: true });
+  await expect(page.getByLabel('Sea freight')).toBeDisabled();
+  release();
+  await expect(page.getByLabel('Sea freight')).toBeEnabled();
+  await expect(page.getByLabel('Sea freight')).toBeChecked();
+});
+
+test('whole-country hint names the country once a city is picked', async ({ page }) => {
+  const user = await newUser('operator');
+  await signInBrowser(page, user);
+  await page.goto('/operator/services');
+  await expect(page.getByText('No routes added yet.')).toBeVisible({ timeout: 30_000 });
+
+  await page.getByLabel('Cover the whole country').first().check();
+  await expect(page.getByText('The country comes from the city you choose.')).toBeVisible();
+  await pickPlace(page, 'coverage-origin', 'Durban', 'Durban, South Africa');
+  await expect(page.getByText('Will cover all of South Africa')).toBeVisible();
+});
