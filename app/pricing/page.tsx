@@ -1,225 +1,75 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import { Check } from 'lucide-react';
+import PublicFooter from '@/components/PublicFooter';
+import PublicNav from '@/components/PublicNav';
 
-import { ArrowLeft, Check, ChevronRight } from 'lucide-react';
-export const metadata = { title: 'Pricing, ShareConLoad' };
+export const metadata = {
+  title: 'Pricing, ShareConLoad',
+  description: 'ShareConLoad is free for customers. Listings and founding-operator leads are free.',
+};
+
+const CUSTOMER_POINTS = [
+  'Sending an enquiry costs nothing.',
+  'Browsing the operator directory costs nothing.',
+  'Comparing quotes costs nothing.',
+  'You agree the price and terms directly with the operator you choose, and pay that operator directly.',
+];
+
+const OPERATOR_POINTS = [
+  'Listing in the directory is free.',
+  'Leads during our founding period are free.',
+  'We have not set a price for leads after the founding period. We will tell founding operators before anything changes.',
+];
+
+function Panel({ title, points }: { title: string; points: string[] }) {
+  return (
+    <div className="rounded-2xl border border-[#E5E7EB] p-6">
+      <h2 className="text-xl font-bold text-[#081D3A]">{title}</h2>
+      <ul className="mt-4 space-y-3">
+        {points.map((p) => (
+          <li key={p} className="flex items-start gap-2 text-sm">
+            <Check className="w-4 h-4 mt-0.5 shrink-0 text-[#FF6A00]" />
+            <span>{p}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans">
+    <div className="min-h-screen flex flex-col bg-white font-sans text-[#333B48]">
+      <PublicNav />
 
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm h-14 flex items-center px-6 sm:px-10 gap-4">
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
-          <span className="text-lg font-extrabold tracking-tight">
-            <span style={{ color: '#0b103a' }}>Share</span>
-            <span style={{ color: '#ff6a00' }}>Con</span>
-            <span style={{ color: '#0b103a' }}>Load</span>
-          </span>
-        </Link>
-        <div className="flex-1" />
-        <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Home
-        </Link>
-      </nav>
-
-      {/* Hero */}
-      <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
-        <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#ff6a00' }}>Pricing</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">Simple, Transparent Pricing</h1>
-          <p className="text-gray-400 text-sm">
-            No hidden fees. Pay only for the space you use. Operators earn more as volumes grow.
-          </p>
-        </div>
-      </div>
-
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-8">
-
-        {/* ── Shippers ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span
-              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"
-              style={{ backgroundColor: '#fff7ed', color: '#ff6a00' }}
-            >
-              For Shippers
-            </span>
-          </div>
-
-          <h2 className="text-lg font-extrabold text-gray-900 mb-1">How shipping costs work</h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Each operator sets their own price per CBM (cubic metre) on their container listing. You
-            pay only for the exact space your cargo occupies, no whole-container commitment required.
-            Your total cost is calculated as:
-          </p>
-
-          <div className="rounded-xl border border-gray-100 bg-gray-50 px-5 py-4 text-sm font-mono text-gray-700 mb-6">
-            Total Cost = CBM booked × Price per CBM (set by operator)
-          </div>
-
-          {/* Payment stages */}
-          <h3 className="text-sm font-bold text-gray-800 mb-3">Payment stages</h3>
-          <p className="text-sm text-gray-500 mb-5">
-            Your total is never charged at once. It is split into three stages tied to shipment
-            milestones, so your money moves only as the shipment progresses.
-          </p>
-
-          <div className="space-y-3 mb-6">
-            {[
-              {
-                pct: '20%',
-                label: 'Deposit, paid at booking',
-                detail: 'Secures your space immediately. Refundable within 48 hours of booking confirmation. Non-refundable after that window.',
-                color: '#ff6a00',
-              },
-              {
-                pct: '50%',
-                label: 'Pre-Departure, due 7 days before sailing',
-                detail: 'Required before the container departs the origin port. Booking may be cancelled if not paid in time.',
-                color: '#0b103a',
-              },
-              {
-                pct: '30%',
-                label: 'Final Release, paid at destination',
-                detail: 'Due before cargo is released to you at the destination. Cargo is held until this stage is cleared.',
-                color: '#0b103a',
-              },
-            ].map(({ pct, label, detail, color }) => (
-              <div key={pct} className="flex gap-4 items-start rounded-xl border border-gray-100 px-5 py-4">
-                <span
-                  className="text-xl font-extrabold shrink-0 w-12 text-right"
-                  style={{ color }}
-                >
-                  {pct}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">{label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{detail}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Platform service fee note */}
-          <div className="rounded-xl border border-amber-100 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-            <p className="font-semibold mb-1">Platform service fee</p>
-            <p>
-              A non-refundable platform service fee is included in the total at checkout. This covers
-              marketplace coordination, booking administration, payment processing, and transaction
-              facilitation. The exact fee is displayed before you confirm your booking.
+      <main className="flex-1">
+        <section className="bg-[#081D3A]">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
+            <p className="text-sm font-semibold text-[#FF6A00]">Freight. Connected.</p>
+            <h1 className="mt-2 text-3xl lg:text-4xl font-bold text-white">Pricing</h1>
+            <p className="mt-4 text-base lg:text-lg text-[#D6DCE5]">
+              Customers pay nothing to use ShareConLoad. Operators list for free.
             </p>
           </div>
+        </section>
 
-          <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4 text-xs text-gray-500 space-y-1">
-            <p>All amounts are denominated in South African Rand (ZAR).</p>
-            <p>Payments are processed securely via Paystack.</p>
-          </div>
-        </div>
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Panel title="For customers: free" points={CUSTOMER_POINTS} />
+          <Panel title="For operators: free to start" points={OPERATOR_POINTS} />
+        </section>
 
-        {/* ── Operators ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span
-              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"
-              style={{ backgroundColor: '#eef2ff', color: '#0b103a' }}
-            >
-              For Operators
-            </span>
-          </div>
-
-          {/* Payout stages */}
-          <h3 className="text-sm font-bold text-gray-800 mb-3">Payout schedule</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Payouts are released automatically as each customer payment stage clears. You receive
-            three separate transfers per shipment:
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-12">
+          <p className="text-sm text-[#6B7280]">
+            ShareConLoad does not take payment for freight at this stage. Freight prices are set by
+            the operators.{' '}
+            <Link href="/contact" className="font-semibold text-[#FF6A00] hover:underline">
+              Questions? Contact us.
+            </Link>
           </p>
+        </section>
+      </main>
 
-          <div className="space-y-3 mb-5">
-            {[
-              { stage: 'Stage 1', pct: '20%', trigger: 'Released after customer deposit clears and booking is confirmed' },
-              { stage: 'Stage 2', pct: '50%', trigger: 'Released after pre-departure payment clears (7 days before sailing)' },
-              { stage: 'Stage 3', pct: '30%', trigger: 'Released after final customer payment clears at destination' },
-            ].map(({ stage, pct, trigger }) => (
-              <div key={stage} className="flex gap-4 items-start rounded-xl border border-gray-100 px-5 py-4">
-                <div className="shrink-0 text-center">
-                  <p className="text-xs text-gray-400 font-semibold">{stage}</p>
-                  <p className="text-lg font-extrabold" style={{ color: '#0b103a' }}>{pct}</p>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">{trigger}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="rounded-xl border border-amber-100 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-            <p className="font-semibold mb-1">Payout eligibility</p>
-            <p>
-              Payouts require a verified bank account, an active Paystack recipient code, no open
-              dispute on the booking, and a 48-hour refund window to have elapsed on Stage 1. Payouts
-              may be withheld if <code className="text-xs bg-amber-100 px-1 rounded">payout_hold</code> is
-              active on your operator profile.
-            </p>
-          </div>
-        </div>
-
-        {/* ── No hidden fees callout ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
-          <h2 className="text-base font-extrabold text-gray-900 mb-4">What is never charged</h2>
-          <div className="grid sm:grid-cols-2 gap-3 text-sm text-gray-600">
-            {[
-              'No listing fees for operators',
-              'No subscription or monthly fees',
-              'No charge to browse containers',
-              'No charge to create an account',
-              'No charge to submit a support ticket or dispute',
-              'No charge for shipment tracking',
-            ].map((item) => (
-              <div key={item} className="flex items-start gap-2">
-                <Check className="w-4 h-4 mt-0.5 shrink-0 text-green-500" strokeWidth={2.5} />
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Related links ── */}
-        <div className="flex flex-col sm:flex-row gap-3 text-sm">
-          <Link
-            href="/payment-flow"
-            className="flex-1 flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 shadow-sm hover:border-orange-200 transition-colors"
-          >
-            <div>
-              <p className="font-semibold text-gray-800">Payment Flow</p>
-              <p className="text-xs text-gray-400 mt-0.5">End-to-end explanation of how Paystack processes payments</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
-          </Link>
-          <Link
-            href="/cancellation"
-            className="flex-1 flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 shadow-sm hover:border-orange-200 transition-colors"
-          >
-            <div>
-              <p className="font-semibold text-gray-800">Cancellation &amp; Refund Policy</p>
-              <p className="text-xs text-gray-400 mt-0.5">Deposit windows, refund eligibility, and operator non-performance rules</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
-          </Link>
-          <Link
-            href="/terms"
-            className="flex-1 flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 shadow-sm hover:border-orange-200 transition-colors"
-          >
-            <div>
-              <p className="font-semibold text-gray-800">Terms &amp; Conditions</p>
-              <p className="text-xs text-gray-400 mt-0.5">Full payment terms, booking conditions, and platform rules</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-4" />
-          </Link>
-        </div>
-
-        <p className="text-center text-xs text-gray-400 mt-2 italic">Share the Load. Connect the World.</p>
-      </div>
+      <PublicFooter />
     </div>
   );
 }

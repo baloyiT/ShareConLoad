@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import PublicFooter from '@/components/PublicFooter';
+import PublicNav from '@/components/PublicNav';
 
-import { ArrowLeft, Check, ChevronRight } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 export const metadata = {
   title: 'Payment Flow, ShareConLoad',
   description: 'How payments flow between customers, ShareConLoad, and operators, staged payments processed securely via Paystack.',
@@ -12,21 +13,7 @@ export default function PaymentFlowPage() {
     <div className="min-h-screen bg-[#f8fafc] font-sans">
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm h-14 flex items-center px-6 sm:px-10 gap-4">
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
-          <span className="text-lg font-extrabold tracking-tight">
-            <span style={{ color: '#0b103a' }}>Share</span>
-            <span style={{ color: '#ff6a00' }}>Con</span>
-            <span style={{ color: '#0b103a' }}>Load</span>
-          </span>
-        </Link>
-        <div className="flex-1" />
-        <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Home
-        </Link>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
@@ -264,6 +251,7 @@ export default function PaymentFlowPage() {
 
         <p className="text-center text-xs text-gray-400 mt-2 italic">Share the Load. Connect the World.</p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

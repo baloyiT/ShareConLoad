@@ -4,6 +4,8 @@ import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
+import PublicFooter from '@/components/PublicFooter';
+import PublicNav from '@/components/PublicNav';
 
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Globe, Mail } from 'lucide-react';
 const COUNTRIES = [
@@ -144,6 +146,7 @@ function ContactForm() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <PublicNav />
 
       {/* Header */}
       <div className="py-12 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
@@ -346,6 +349,8 @@ function ContactForm() {
           ))}
         </div>
       </div>
+
+      <PublicFooter />
     </div>
   );
 }

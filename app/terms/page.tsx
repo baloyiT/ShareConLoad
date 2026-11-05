@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import PublicFooter from '@/components/PublicFooter';
+import PublicNav from '@/components/PublicNav';
 
-import { ArrowLeft } from 'lucide-react';
 export const metadata = { title: 'Terms & Conditions, ShareConLoad' };
 
 function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
@@ -42,21 +42,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-[#f8fafc] font-sans">
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm h-14 flex items-center px-6 sm:px-10 gap-4">
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <Image src="/logo1.png" alt="" width={36} height={36} className="h-8 w-auto" />
-          <span className="text-lg font-extrabold tracking-tight">
-            <span style={{ color: '#0b103a' }}>Share</span>
-            <span style={{ color: '#ff6a00' }}>Con</span>
-            <span style={{ color: '#0b103a' }}>Load</span>
-          </span>
-        </Link>
-        <div className="flex-1" />
-        <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Home
-        </Link>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <div className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #0b103a 0%, #1a3a6b 100%)' }}>
@@ -94,7 +80,8 @@ export default function TermsPage() {
             <p>ShareConLoad is a digital logistics marketplace platform that facilitates connections between Customers and independent Operators for shared container shipping services.</p>
             <p>ShareConLoad is <strong>NOT</strong> any of the following, unless expressly stated otherwise:</p>
             <Bullets items={['A shipping line','A freight carrier','A customs broker','A warehouse operator','A logistics transporter','A freight forwarding company']} />
-            <p>All transport services are performed exclusively by independent third-party Operators. ShareConLoad facilitates shipment bookings, payment processing, booking coordination, and dispute management processes on the Platform.</p>
+            <p><strong>Independent Operators deliver the freight services and are responsible for them. ShareConLoad connects Customers with Operators.</strong></p>
+            <p>All transport services are performed exclusively by independent third-party Operators.ShareConLoad facilitates shipment bookings, payment processing, booking coordination, and dispute management processes on the Platform.</p>
           </Section>
 
           <Section number="3" title="Eligibility">
@@ -207,6 +194,7 @@ export default function TermsPage() {
 
         <p className="text-center text-xs text-gray-400 mt-6 italic">Share the Load. Connect the World.</p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

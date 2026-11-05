@@ -11,12 +11,11 @@ function snap(page: Page, name: string) {
 }
 
 test.describe('How It Works page', () => {
-  test('renders all three role journeys', async ({ page }) => {
+  test('renders the customer and operator journeys', async ({ page }) => {
     await page.goto('/how-it-works');
     await expect(page.locator('h1')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/shipper/i).first()).toBeVisible();
-    await expect(page.getByText(/operator/i).first()).toBeVisible();
-    await expect(page.getByText(/agent/i).first()).toBeVisible();
+    await expect(page.getByText('If you need to move freight')).toBeVisible();
+    await expect(page.getByText('If you are a freight operator')).toBeVisible();
     await snap(page, '01-how-it-works');
   });
 });
@@ -42,27 +41,18 @@ test.describe('Static / policy pages', () => {
     await snap(page, '04-cancellation');
   });
 
-  test('Pricing page renders payment stage table', async ({ page }) => {
+  test('Pricing page says customers pay nothing', async ({ page }) => {
     await page.goto('/pricing');
     await expect(page.locator('h1')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/20%/).first()).toBeVisible();
-    await expect(page.getByText(/50%/).first()).toBeVisible();
-    await expect(page.getByText(/30%/).first()).toBeVisible();
+    await expect(page.getByText(/customers pay nothing/i).first()).toBeVisible();
     await snap(page, '05-pricing');
   });
 });
 
-test.describe('Home page — agent CTA', () => {
-  test('Join as Agent CTA is visible', async ({ page }) => {
+test.describe('Home page - operator invitation', () => {
+  test('home invites operators to the For operators page', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/agent/i).first()).toBeVisible({ timeout: 10_000 });
-    await snap(page, '06-home-agent-cta');
-  });
-
-  test('container cards show currency info', async ({ page }) => {
-    await page.goto('/');
-    // Allow containers to load
-    await page.waitForTimeout(3000);
-    await snap(page, '07-home-containers');
+    await expect(page.locator('main a[href="/for-operators"]')).toBeVisible({ timeout: 10_000 });
+    await snap(page, '06-home-operator-invitation');
   });
 });
