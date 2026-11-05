@@ -1,5 +1,6 @@
 'use client';
 
+import Stage3Gate from '@/components/Stage3Gate';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -21,7 +22,7 @@ type MeasurementAgentProfile = {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function MeasurementAgentDashboard() {
+function MeasurementAgentDashboardContent() {
   const router = useRouter();
 
   const [agentProfile, setAgentProfile] = useState<MeasurementAgentProfile | null | undefined>(undefined);
@@ -260,5 +261,13 @@ export default function MeasurementAgentDashboard() {
         {renderContent()}
       </div>
     </div>
+  );
+}
+
+export default function MeasurementAgentDashboard() {
+  return (
+    <Stage3Gate allow={['measurement_agent']}>
+      <MeasurementAgentDashboardContent />
+    </Stage3Gate>
   );
 }

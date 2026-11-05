@@ -468,14 +468,14 @@ export default function BookingPage() {
               <Link href="/onboarding/customer/status" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#ff6a00' }}>
                 Check Verification Status
               </Link>
-              <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Browse Containers</Link>
+              <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Back to Home</Link>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
               <Link href="/onboarding/customer" className="btn text-white font-bold rounded-xl w-full" style={{ backgroundColor: '#ff6a00' }}>
                 {kycStatus === 'rejected' ? 'Resubmit Verification' : 'Verify My Identity'}
               </Link>
-              <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Browse Containers</Link>
+              <Link href="/" className="btn btn-ghost rounded-xl text-gray-500 w-full">← Back to Home</Link>
             </div>
           )}
         </div>
@@ -493,7 +493,7 @@ export default function BookingPage() {
           This container may no longer be available.
         </p>
         <Link href="/" className="btn btn-sm mt-2 text-white" style={{ backgroundColor: '#0b103a' }}>
-          ← Back to listings
+          ← Back to Home
         </Link>
       </div>
     );

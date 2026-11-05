@@ -1,5 +1,6 @@
 'use client';
 
+import Stage3Gate from '@/components/Stage3Gate';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -53,7 +54,7 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }
   cancelled:  { bg: '#f9fafb', color: '#6b7280', label: 'Cancelled' },
 };
 
-export default function AgentDashboard() {
+function AgentDashboardContent() {
   const router = useRouter();
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null);
   const [bookings, setBookings] = useState<BookingSummary[]>([]);
@@ -258,5 +259,13 @@ export default function AgentDashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AgentDashboard() {
+  return (
+    <Stage3Gate allow={['agent']}>
+      <AgentDashboardContent />
+    </Stage3Gate>
   );
 }

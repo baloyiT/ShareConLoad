@@ -1,5 +1,6 @@
 'use client';
 
+import Stage3Gate from '@/components/Stage3Gate';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,7 +9,7 @@ import { supabase } from '@/services/supabaseClient';
 type RateBand = { id: string; zone_name: string; base_fee: number };
 type Step = 'form' | 'confirm' | 'paying';
 
-export default function MeasurementServicePage() {
+function MeasurementServicePageContent() {
   const router = useRouter();
   const [step, setStep]               = useState<Step>('form');
   const [profileId, setProfileId]     = useState<string | null>(null);
@@ -217,5 +218,13 @@ export default function MeasurementServicePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function MeasurementServicePage() {
+  return (
+    <Stage3Gate allow={['has_booking']}>
+      <MeasurementServicePageContent />
+    </Stage3Gate>
   );
 }

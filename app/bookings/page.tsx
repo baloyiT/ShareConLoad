@@ -348,13 +348,8 @@ export default function MyBookingsPage() {
               {statusFilter === 'all' ? 'No bookings yet' : `No ${STATUS_CONFIG[statusFilter]?.label ?? statusFilter} bookings`}
             </h2>
             <p className="text-gray-400 text-sm mb-6 max-w-xs">
-              {statusFilter === 'all' ? 'Browse available containers and make your first booking.' : 'Try a different filter to see your other bookings.'}
+              {statusFilter === 'all' ? 'Your bookings will appear here.' : 'Try a different filter to see your other bookings.'}
             </p>
-            {statusFilter === 'all' && (
-              <Link href="/#listings" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#ff6a00' }}>
-                Browse Containers
-              </Link>
-            )}
           </div>
         )}
 

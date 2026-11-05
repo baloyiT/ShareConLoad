@@ -145,7 +145,7 @@ export default function CustomerKycStatus() {
               {/* CTA */}
               {status === 'verified' && (
                 <Link href="/" className="btn w-full text-white font-bold rounded-xl" style={{ backgroundColor: '#ff6a00' }}>
-                  Browse Containers →
+                  Back to Home →
                 </Link>
               )}
               {(status === 'rejected') && (

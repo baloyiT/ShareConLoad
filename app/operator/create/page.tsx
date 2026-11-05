@@ -1,5 +1,6 @@
 'use client';
 
+import Stage3Gate from '@/components/Stage3Gate';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -58,7 +59,7 @@ const EMPTY_FORM: ContainerForm = {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function CreateContainerPage() {
+function CreateContainerPageContent() {
   const router = useRouter();
 
   const [form, setForm] = useState<ContainerForm>(EMPTY_FORM);
@@ -709,5 +710,13 @@ function PricingPreviewTile({ label, value, highlight }: { label: string; value:
       <p className="text-xs text-gray-400 mb-1">{label}</p>
       <p className={`font-bold text-sm ${highlight ? 'text-orange-500' : 'text-gray-800'}`}>{value}</p>
     </div>
+  );
+}
+
+export default function CreateContainerPage() {
+  return (
+    <Stage3Gate allow={['has_containers']}>
+      <CreateContainerPageContent />
+    </Stage3Gate>
   );
 }

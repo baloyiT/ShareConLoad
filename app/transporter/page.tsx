@@ -1,5 +1,6 @@
 'use client';
 
+import Stage3Gate from '@/components/Stage3Gate';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -23,7 +24,7 @@ type TransporterProfile = {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function TransporterDashboard() {
+function TransporterDashboardContent() {
   const router = useRouter();
 
   const [transporterProfile, setTransporterProfile] = useState<TransporterProfile | null | undefined>(undefined);
@@ -249,5 +250,13 @@ export default function TransporterDashboard() {
         {renderContent()}
       </div>
     </div>
+  );
+}
+
+export default function TransporterDashboard() {
+  return (
+    <Stage3Gate allow={['transporter']}>
+      <TransporterDashboardContent />
+    </Stage3Gate>
   );
 }
