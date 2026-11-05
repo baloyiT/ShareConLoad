@@ -101,6 +101,20 @@ test('home form does not submit a whitespace-only description', async ({ page })
   expect(new URL(page.url()).pathname).toBe('/');
 });
 
+test('Continue still reaches /contact when the browser has no toWellFormed', async ({ page }) => {
+  await page.addInitScript(() => {
+    delete (String.prototype as { toWellFormed?: unknown }).toWellFormed;
+  });
+  await page.goto('/');
+  expect(await page.evaluate(() => typeof ''.toWellFormed)).toBe('undefined');
+  const form = page.locator('#get-quotes');
+  await form.locator('#enquiry-what').fill('Two sofas \uD800');
+  await form.getByRole('button', { name: 'Continue' }).click();
+  await page.waitForURL(/\/contact\?/, { timeout: 20_000 });
+  await expect(page.locator('select[name="subject"]')).toHaveValue('Freight enquiry');
+  await expect(page.locator('textarea[name="message"]')).toHaveValue(/What I need to move: Two sofas �\n/);
+});
+
 test('/contact prefills subject and message from the query string', async ({ page }) => {
   await page.goto(buildEnquiryContactUrl('Two sofas', 'Johannesburg', 'Accra'));
   await expect(page.locator('select[name="subject"]')).toHaveValue('Freight enquiry');

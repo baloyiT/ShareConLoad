@@ -13,6 +13,14 @@ function cut(value: string, max: number): string {
   return Array.from(value).slice(0, max).join('');
 }
 
+// Array.from goes by code point, so a valid pair stays one item and a lone surrogate is a
+// one-unit item. String.prototype.toWellFormed is avoided because older browsers lack it.
+function wellFormed(value: string): string {
+  return Array.from(value)
+    .map((ch) => (ch.length === 1 && ch >= '\uD800' && ch <= '\uDFFF' ? '�' : ch))
+    .join('');
+}
+
 export function buildEnquiryContactUrl(what: string, from: string, to: string): string {
   const message = [
     `What I need to move: ${cut(what.trim(), MAX_WHAT_LENGTH)}`,
@@ -20,7 +28,7 @@ export function buildEnquiryContactUrl(what: string, from: string, to: string): 
     `To: ${cut(to.trim(), MAX_PLACE_LENGTH) || 'Not sure'}`,
   ].join('\n');
   // encodeURIComponent throws on a lone surrogate, so replace any with U+FFFD first.
-  return `/contact?subject=${encodeURIComponent('Freight enquiry')}&message=${encodeURIComponent(message.toWellFormed())}`;
+  return `/contact?subject=${encodeURIComponent('Freight enquiry')}&message=${encodeURIComponent(wellFormed(message))}`;
 }
 
 export default function HomeEnquiryForm() {

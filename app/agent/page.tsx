@@ -153,7 +153,7 @@ function AgentDashboardContent() {
             <Link href="/agent" className="font-semibold" style={{ color: '#16a34a' }}>Dashboard</Link>
             <Link href="/agent/shippers" className="hover:text-gray-900 transition-colors">My Shippers</Link>
             <Link href="/agent/bookings" className="hover:text-gray-900 transition-colors">Bookings</Link>
-            <Link href="/#listings" className="hover:text-gray-900 transition-colors">Browse Containers</Link>
+            <Link href="/directory" className="hover:text-gray-900 transition-colors">Browse Containers</Link>
           </div>
           <div className="flex items-center gap-2">
             <RoleSwitcher currentRole="agent" />
@@ -198,7 +198,7 @@ function AgentDashboardContent() {
 
         <div className="flex flex-wrap gap-3">
           <Link
-            href="/#listings"
+            href="/directory"
             className="px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-opacity"
             style={{ backgroundColor: '#16a34a' }}
           >
@@ -221,7 +221,7 @@ function AgentDashboardContent() {
           {bookings.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
               <p className="text-gray-400 text-sm">No bookings yet. Browse containers to place your first booking.</p>
-              <Link href="/#listings" className="inline-block mt-4 text-sm font-bold text-green-600 hover:text-green-800">
+              <Link href="/directory" className="inline-block mt-4 text-sm font-bold text-green-600 hover:text-green-800">
                 Browse Containers
               </Link>
             </div>

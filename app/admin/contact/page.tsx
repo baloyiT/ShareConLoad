@@ -26,10 +26,10 @@ export default function AdminContactPage() {
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/'); return; }
+      if (!user) { router.replace('/'); return; }
       const { data: profiles } = await supabase.from('profiles').select('is_admin').eq('user_id', user.id);
       const isAdmin = Array.isArray(profiles) && profiles.some((p) => p.is_admin === true);
-      if (!isAdmin) { router.push('/'); return; }
+      if (!isAdmin) { router.replace('/'); return; }
 
       const { data, error: loadError } = await supabase
         .from('contact_submissions')
