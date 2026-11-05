@@ -11,27 +11,31 @@ test.describe('Home page', () => {
     await expect(page.getByText('ShareConLoad').first()).toBeVisible();
   });
 
-  test('shows Log in and Sign up buttons when logged out', async ({ page }) => {
-    await expect(page.getByRole('link', { name: 'Login' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Sign Up' })).toBeVisible();
+  test('shows Log in and Get quotes when logged out', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: 'Main' });
+    await expect(nav.getByRole('link', { name: 'Log in' })).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Get quotes' })).toBeVisible();
   });
 
   test('shows hero headline', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /Share the Load/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Tell us what you need to move/i })).toBeVisible();
   });
 
-  test('shows search form with all four fields', async ({ page }) => {
+  // hidden until Stage 3
+  test.skip('shows search form with all four fields', async ({ page }) => {
     await expect(page.getByPlaceholder(/Shanghai, China/i)).toBeVisible();
     await expect(page.getByPlaceholder(/Lagos, Nigeria/i)).toBeVisible();
     await expect(page.locator('input[type="date"]')).toBeVisible();
     await expect(page.getByPlaceholder(/e.g. 200/i)).toBeVisible();
   });
 
-  test('shows Available Containers section', async ({ page }) => {
+  // hidden until Stage 3
+  test.skip('shows Available Containers section', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Available Containers' })).toBeVisible();
   });
 
-  test('shows feature cards', async ({ page }) => {
+  // hidden until Stage 3
+  test.skip('shows feature cards', async ({ page }) => {
     await expect(page.getByText('Secure Bookings')).toBeVisible();
     await expect(page.getByText('24/7 Support')).toBeVisible();
     await expect(page.getByText('Flexible Bookings')).toBeVisible();
@@ -45,7 +49,8 @@ test.describe('Home page', () => {
 
 // ── Search / filter ───────────────────────────────────────────────────────────
 
-test.describe('Container search', () => {
+// hidden until Stage 3
+test.describe.skip('Container search', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Wait for initial container load to settle before interacting
@@ -87,14 +92,14 @@ test.describe('Navbar navigation', () => {
 
   test('Log in link navigates to login page', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: 'Login' }).click();
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Log in' }).click();
     await expect(page).toHaveURL('/auth/login');
   });
 
-  test('Sign up link navigates to register page', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('link', { name: 'Sign up' }).click();
-    await expect(page).toHaveURL('/auth/register');
+  test('register page is reached from the login page', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.getByRole('link', { name: /create one/i }).click();
+    await expect(page).toHaveURL(/\/auth\/register/);
   });
 });
 

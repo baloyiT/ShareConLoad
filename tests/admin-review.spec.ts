@@ -1,8 +1,13 @@
 import { test, expect, Page } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
 
-test.use({ storageState: 'tests/.auth/admin-user.json' });
+// The old shared login is dead, so these tests use a throwaway user.
+let user: TestUser;
+test.beforeAll(async () => { user = await createTestUser('admin'); });
+test.afterAll(async () => { await deleteTestUser(user); });
+test.beforeEach(async ({ page }) => { await signInBrowser(page, user); });
 
 const SNAP_DIR = path.join('tests', 'snapshots', 'admin-kyc-review');
 function snap(page: Page, name: string) {
@@ -59,7 +64,8 @@ test.describe('ADM-10–13 — Agent KYC review', () => {
     await snap(page, '04-admin-agents-statuses');
   });
 
-  test('ADM-11 — can open review modal', async ({ page }) => {
+  // Opens a real applicant's record and screenshots it. Needs a seeded test applicant.
+  test.skip('ADM-11 — can open review modal', async ({ page }) => {
     await page.goto('/admin/agents');
     await page.waitForTimeout(3000);
 
@@ -96,7 +102,8 @@ test.describe('ADM-14–16 — Customer KYC review', () => {
     await expect(page.locator('body')).not.toContainText('500');
   });
 
-  test('ADM-15 — can open customer review modal', async ({ page }) => {
+  // Opens a real applicant's record and screenshots it. Needs a seeded test applicant.
+  test.skip('ADM-15 — can open customer review modal', async ({ page }) => {
     await page.goto('/admin/customers');
     await page.waitForTimeout(3000);
 
@@ -137,7 +144,8 @@ test.describe('ADM-17–19 — FX Rates management', () => {
     await snap(page, '09-admin-fx-rates');
   });
 
-  test('ADM-18 — can edit a rate value', async ({ page }) => {
+  // Saves a new ZAR rate to the live fx_rates table: do not re-enable it against production.
+  test.skip('ADM-18 — can edit a rate value', async ({ page }) => {
     await page.goto('/admin/fx-rates');
     await expect(page.locator('h1,h2').first()).toBeVisible({ timeout: 10_000 });
 

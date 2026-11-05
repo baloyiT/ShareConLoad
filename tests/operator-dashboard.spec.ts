@@ -1,8 +1,13 @@
 import { test, expect, Page } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
 
-test.use({ storageState: 'tests/.auth/operator-user.json' });
+// The old shared login is dead, so these tests use a throwaway user.
+let user: TestUser;
+test.beforeAll(async () => { user = await createTestUser('operator'); });
+test.afterAll(async () => { await deleteTestUser(user); });
+test.beforeEach(async ({ page }) => { await signInBrowser(page, user); });
 
 const SNAP_DIR = path.join('tests', 'snapshots', 'operator-dashboard');
 function snap(page: Page, name: string) {
@@ -19,7 +24,8 @@ test.describe('TC-OPERATOR — Operator dashboard', () => {
     await snap(page, '01-operator-dashboard');
   });
 
-  test('OPR-01 — shows link to create container', async ({ page }) => {
+  // hidden until Stage 3
+  test.skip('OPR-01 — shows link to create container', async ({ page }) => {
     await page.goto('/operator');
     await expect(page.locator('h1,h2').first()).toBeVisible({ timeout: 10_000 });
     await expect(
@@ -29,7 +35,8 @@ test.describe('TC-OPERATOR — Operator dashboard', () => {
   });
 });
 
-test.describe('TC-OPERATOR — Create container', () => {
+// hidden until Stage 3. OPR-02 happy path also creates a real container: do not re-enable it against production.
+test.describe.skip('TC-OPERATOR — Create container', () => {
   test('OPR-02 — create container form renders all fields', async ({ page }) => {
     await page.goto('/operator/create');
     await expect(page.locator('h1,h2').first()).toBeVisible({ timeout: 10_000 });

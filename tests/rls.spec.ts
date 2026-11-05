@@ -2,6 +2,7 @@ import { test, expect, Page } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
+import { adminClient, createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
 
 // RLS tests verify access control at the DB level.
 // We use the Supabase JS client with each user's session token to directly
@@ -62,15 +63,22 @@ test.describe('TC-RLS — Anon access', () => {
       email:       uniqueEmail,
       role:       'other',
     });
+    const { error: cleanupError } = await adminClient().from('waitlist_entries').delete().eq('email', uniqueEmail);
     expect(error).toBeNull();
+    expect(cleanupError).toBeNull();
     await page.goto('/');
     await snap(page, '03-anon-waitlist-allowed');
   });
 });
 
 test.describe('TC-RLS — Customer data isolation', () => {
+  // The old shared logins are dead, so this uses a throwaway user. It has no rows of its own.
+  let customer: TestUser;
+  test.beforeAll(async () => { customer = await createTestUser('customer'); });
+  test.afterAll(async () => { await deleteTestUser(customer); });
+
   test('RLS-01 — customer cannot read another customer\'s bookings', async ({ page }) => {
-    const client = await signIn(CUSTOMER_EMAIL, CUSTOMER_PASS);
+    const client = customer.client;
 
     // Get own user ID
     const { data: { user } } = await client.auth.getUser();
@@ -90,7 +98,7 @@ test.describe('TC-RLS — Customer data isolation', () => {
   });
 
   test('RLS-09 — customer cannot update another customer\'s KYC', async ({ page }) => {
-    const client = await signIn(CUSTOMER_EMAIL, CUSTOMER_PASS);
+    const client = customer.client;
 
     // Attempt to update a KYC row with a random UUID (not own)
     const { error } = await client
@@ -108,7 +116,9 @@ test.describe('TC-RLS — Customer data isolation', () => {
   });
 });
 
-test.describe('TC-RLS — Operator data isolation', () => {
+// Shared login is dead, and this needs an operator whose containers can be told apart from
+// everyone else's. It signed in to a real account: do not re-enable it as written.
+test.describe.skip('TC-RLS — Operator data isolation', () => {
   test('RLS-02 — operator cannot read another operator\'s containers', async ({ page }) => {
     const client = await signIn(OPERATOR_EMAIL, OPERATOR_PASS);
 
@@ -128,7 +138,9 @@ test.describe('TC-RLS — Operator data isolation', () => {
   });
 });
 
-test.describe('TC-RLS — Agent data isolation', () => {
+// Shared login is dead, and tests/helpers/frontDoorUsers.ts has no agent user. These signed in
+// to a real account: do not re-enable them as written.
+test.describe.skip('TC-RLS — Agent data isolation', () => {
   test('RLS-03 — agent cannot read another agent\'s profiles', async ({ page }) => {
     const client = await signIn(AGENT_EMAIL, AGENT_PASS);
 
@@ -180,8 +192,13 @@ test.describe('TC-RLS — Agent data isolation', () => {
 });
 
 test.describe('TC-RLS — Admin access', () => {
+  // The old shared logins are dead, so this uses a throwaway user. It has no rows of its own.
+  let customer: TestUser;
+  test.beforeAll(async () => { customer = await createTestUser('customer'); });
+  test.afterAll(async () => { await deleteTestUser(customer); });
+
   test('RLS-08 — is_admin() returns false for customer', async ({ page }) => {
-    const client = await signIn(CUSTOMER_EMAIL, CUSTOMER_PASS);
+    const client = customer.client;
 
     // Attempt to read audit_logs — admin only
     const { data, error } = await client.from('audit_logs').select('*').limit(1);
@@ -194,7 +211,9 @@ test.describe('TC-RLS — Admin access', () => {
     await snap(page, '10-non-admin-audit-logs-blocked');
   });
 
-  test('RLS-04 — fx_rates admin write blocked for non-admin', async ({ page }) => {
+  // If the policy ever broke, this would overwrite the live ZAR rate: do not re-enable it
+  // against production.
+  test.skip('RLS-04 — fx_rates admin write blocked for non-admin', async ({ page }) => {
     const client = await signIn(CUSTOMER_EMAIL, CUSTOMER_PASS);
 
     const { error } = await client
@@ -208,9 +227,12 @@ test.describe('TC-RLS — Admin access', () => {
 });
 
 test.describe('TC-RLS — Protected UI routes (via browser)', () => {
-  test('RLS — /admin is inaccessible to operator', async ({ page, browser }) => {
-    const ctx = await browser.newContext({ storageState: 'tests/.auth/operator-user.json' });
-    const operatorPage = await ctx.newPage();
+  let operator: TestUser;
+  test.beforeAll(async () => { operator = await createTestUser('operator'); });
+  test.afterAll(async () => { await deleteTestUser(operator); });
+
+  test('RLS — /admin is inaccessible to operator', async ({ page: operatorPage }) => {
+    await signInBrowser(operatorPage, operator);
     await operatorPage.goto('/admin');
     await operatorPage.waitForTimeout(3000);
 
@@ -221,6 +243,5 @@ test.describe('TC-RLS — Protected UI routes (via browser)', () => {
     expect(adminContent).toBe(false);
 
     await snap(operatorPage, '12-operator-blocked-from-admin');
-    await ctx.close();
   });
 });

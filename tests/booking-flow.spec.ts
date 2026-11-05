@@ -1,8 +1,13 @@
 import { test, expect, Page } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
 
-test.use({ storageState: 'tests/.auth/customer-user.json' });
+// The old shared login is dead, so these tests use a throwaway user.
+let user: TestUser;
+test.beforeAll(async () => { user = await createTestUser('customer'); });
+test.afterAll(async () => { await deleteTestUser(user); });
+test.beforeEach(async ({ page }) => { await signInBrowser(page, user); });
 
 const SNAP_DIR = path.join('tests', 'snapshots', 'booking-flow');
 function snap(page: Page, name: string) {
@@ -21,7 +26,8 @@ async function getFirstContainerId(page: Page): Promise<string | null> {
   return href?.split('/').pop() ?? null;
 }
 
-test.describe('TC-CONTAINER — Container detail page', () => {
+// hidden until Stage 3
+test.describe.skip('TC-CONTAINER — Container detail page', () => {
   test('CONT-04 — container detail renders key info', async ({ page }) => {
     const id = await getFirstContainerId(page);
     if (!id) { test.skip(); return; }
@@ -41,7 +47,9 @@ test.describe('TC-CONTAINER — Container detail page', () => {
   });
 });
 
-test.describe('TC-BOOKING — Booking form', () => {
+// hidden until Stage 3. BOOK-05 also books space on a real container and creates real payment rows:
+// do not re-enable it against production.
+test.describe.skip('TC-BOOKING — Booking form', () => {
   let containerId: string | null = null;
 
   test.beforeAll(async ({ browser }) => {

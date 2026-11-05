@@ -1,8 +1,13 @@
 import { test, expect, Page } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
 
-test.use({ storageState: 'tests/.auth/admin-user.json' });
+// The old shared login is dead, so these tests use a throwaway user.
+let user: TestUser;
+test.beforeAll(async () => { user = await createTestUser('admin'); });
+test.afterAll(async () => { await deleteTestUser(user); });
+test.beforeEach(async ({ page }) => { await signInBrowser(page, user); });
 
 const SNAP_DIR = path.join('tests', 'snapshots', 'admin-operations');
 function snap(page: Page, name: string) {
@@ -98,8 +103,8 @@ test.describe('ADM-01 — Operator management', () => {
     await page.waitForTimeout(3000);
     await snap(page, '10-admin-operators-controls');
 
-    // Toggle controls or empty state
-    await expect(page.locator('body')).not.toContainText('500');
+    // Toggle controls or empty state. Not a search for "500": real operator data can contain it.
+    await expect(page.getByRole('heading', { name: 'Operator Management' })).toBeVisible();
   });
 });
 

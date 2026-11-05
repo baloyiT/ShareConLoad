@@ -1,6 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
 
 const SNAP_DIR = path.join('tests', 'snapshots', 'multi-currency');
 function snap(page: Page, name: string) {
@@ -8,7 +9,8 @@ function snap(page: Page, name: string) {
   return page.screenshot({ path: path.join(SNAP_DIR, `${name}.png`), fullPage: true });
 }
 
-test.describe('FX-05 — Currency selector on container create (operator)', () => {
+// hidden until Stage 3
+test.describe.skip('FX-05 — Currency selector on container create (operator)', () => {
   test.use({ storageState: 'tests/.auth/operator-user.json' });
 
   test('all 9 currencies are available in selector', async ({ page }) => {
@@ -55,7 +57,8 @@ test.describe('FX-05 — Currency selector on container create (operator)', () =
   });
 });
 
-test.describe('FX-01–03 — Container cards show dual currency (anon)', () => {
+// hidden until Stage 3
+test.describe.skip('FX-01–03 — Container cards show dual currency (anon)', () => {
   test('FX-01 — home page container cards show currency info', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(4000);
@@ -100,7 +103,11 @@ test.describe('FX-01–03 — Container cards show dual currency (anon)', () => 
 });
 
 test.describe('ADM-17 — FX rates admin page (admin)', () => {
-  test.use({ storageState: 'tests/.auth/admin-user.json' });
+  // The old shared login is dead, so these tests use a throwaway user.
+  let user: TestUser;
+  test.beforeAll(async () => { user = await createTestUser('admin'); });
+  test.afterAll(async () => { await deleteTestUser(user); });
+  test.beforeEach(async ({ page }) => { await signInBrowser(page, user); });
 
   test('shows all 9 currencies with rates', async ({ page }) => {
     await page.goto('/admin/fx-rates');
