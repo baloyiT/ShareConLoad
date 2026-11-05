@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 import ComplianceStepper from '@/components/ComplianceStepper';
-import { requiredDocTypes, docLabelOverride } from '@/services/operatorCompliance';
+import { listingDocTypes, requiredDocTypes, docLabelOverride } from '@/services/operatorCompliance';
+import { hasContainers } from '@/services/operatorSteps';
 
 type DocStatus = 'under_review' | 'approved' | 'rejected';
 
@@ -66,6 +67,7 @@ export default function ComplianceDocumentsPage() {
 
   const [operatorProfileId, setOperatorProfileId] = useState<string | null>(null);
   const [entityType, setEntityType] = useState<string>('company');
+  const [established, setEstablished] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
   const [agreementUrlPath, setAgreementUrlPath] = useState<string | null>(null);
@@ -102,9 +104,11 @@ export default function ComplianceDocumentsPage() {
       setAgreementUrlPath(recordMap['service_agreement']?.file_url ?? null);
 
       const entityVal = op.entity_type ?? 'company';
-      const required = requiredDocTypes(entityVal);
+      const isEstablished = await hasContainers(user.id);
+      setEstablished(isEstablished);
+      const required = isEstablished ? requiredDocTypes(entityVal) : listingDocTypes(entityVal);
       const visibleDefs = DOC_DEFS
-        .filter((d) => required.includes(d.type) || d.optional)
+        .filter((d) => required.includes(d.type) || (isEstablished && d.optional))
         .map((d) => {
           const o = docLabelOverride(d.type, entityVal);
           return { ...d, label: o.label ?? d.label, desc: o.desc ?? d.desc };
@@ -191,16 +195,18 @@ export default function ComplianceDocumentsPage() {
     );
   }
 
-  const REQUIRED_TYPES = requiredDocTypes(entityType);
+  const REQUIRED_TYPES = established ? requiredDocTypes(entityType) : listingDocTypes(entityType);
   const requiredCount = REQUIRED_TYPES.length;
   const uploadedCount = slots.filter((s) => REQUIRED_TYPES.includes(s.type) && s.record !== null).length;
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
-      <ComplianceStepper current={4} />
+      <ComplianceStepper current="documents" />
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Documents</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Required documents for KYC and payout eligibility.</p>
+        <p className="text-sm text-gray-400 mt-0.5">
+          {established ? 'Required documents for KYC and payout eligibility.' : 'We use these documents to verify you.'}
+        </p>
       </div>
 
       {pageError && <div className="alert alert-error text-sm mb-4">{pageError}</div>}
@@ -316,11 +322,11 @@ export default function ComplianceDocumentsPage() {
       {uploadedCount >= requiredCount && (
         <div className="mt-6">
           <Link
-            href="/operator/compliance/agreement"
+            href={established ? '/operator/compliance/agreement' : '/operator/compliance/terms'}
             className="btn w-full text-white font-bold rounded-xl hover:opacity-90"
             style={{ backgroundColor: '#0b103a' }}
           >
-            Continue to Agreement →
+            {established ? 'Continue to Agreement →' : 'Continue to Participation Terms →'}
           </Link>
         </div>
       )}

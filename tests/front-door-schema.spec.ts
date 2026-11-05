@@ -322,6 +322,65 @@ test.describe('Front door schema: admin field guard', () => {
   });
 });
 
+test.describe('Front door schema: trading name guard', () => {
+  const tradingName = async (id: string | undefined) => {
+    const { data } = await adminClient().from('operator_profiles').select('trading_name').eq('id', id ?? '').single();
+    return data?.trading_name;
+  };
+  const setOwn = (op: TestUser, trading_name: string | null) =>
+    op.client.from('operator_profiles').update({ trading_name }).eq('id', op.operatorProfileId ?? '');
+  const verify = (op: TestUser) => adminClient().from('operator_profiles')
+    .update({ verification_level: 'identity_verified' }).eq('id', op.operatorProfileId ?? '');
+
+  test('a registered operator can set and change their trading name', async () => {
+    const op = await newUser('operator', { entityType: 'individual' });
+    expect((await setOwn(op, 'First Name')).error).toBeNull();
+    expect((await setOwn(op, 'Second Name')).error).toBeNull();
+    expect(await tradingName(op.operatorProfileId)).toBe('Second Name');
+  });
+
+  test('a verified operator with a blank trading name can set one, then it is locked', async () => {
+    const op = await newUser('operator', { entityType: 'individual' });
+    expect((await verify(op)).error).toBeNull();
+    expect((await setOwn(op, 'Set After Verification')).error).toBeNull();
+
+    for (const value of ['Changed', '', null]) {
+      const { error } = await setOwn(op, value);
+      expect(error?.code).toBe(DENIED);
+      expect(error?.message).toContain('trading name');
+    }
+    expect(await tradingName(op.operatorProfileId)).toBe('Set After Verification');
+  });
+
+  test('a whitespace-only trading name counts as blank for a verified operator', async () => {
+    const op = await newUser('operator', { entityType: 'individual' });
+    expect((await setOwn(op, '   ')).error).toBeNull();
+    expect((await verify(op)).error).toBeNull();
+    expect((await setOwn(op, 'Real Name')).error).toBeNull();
+    expect(await tradingName(op.operatorProfileId)).toBe('Real Name');
+  });
+
+  test('a verified operator can save other fields without touching the trading name', async () => {
+    const op = await newUser('operator', { entityType: 'individual' });
+    expect((await setOwn(op, 'Locked Name')).error).toBeNull();
+    expect((await verify(op)).error).toBeNull();
+    const { error } = await op.client.from('operator_profiles')
+      .update({ public_description: 'Still editable.' }).eq('id', op.operatorProfileId ?? '');
+    expect(error).toBeNull();
+  });
+
+  test('an admin can change a verified trading name', async () => {
+    const op = await newUser('operator', { entityType: 'individual' });
+    expect((await setOwn(op, 'Locked Name')).error).toBeNull();
+    expect((await verify(op)).error).toBeNull();
+    const admin = await newUser('admin');
+    const { error } = await admin.client.from('operator_profiles')
+      .update({ trading_name: 'Corrected Name' }).eq('id', op.operatorProfileId ?? '');
+    expect(error).toBeNull();
+    expect(await tradingName(op.operatorProfileId)).toBe('Corrected Name');
+  });
+});
+
 test.describe('Front door schema: participation terms', () => {
   const OWN_TERMS = { version: 'front-door-test-terms', title: 'Test terms', body: 'Test terms body.' };
   let terms: { version: string; body: string };
@@ -345,6 +404,53 @@ test.describe('Front door schema: participation terms', () => {
 
   test.afterAll(async () => {
     if (ownsTerms) await adminClient().from('participation_terms').delete().eq('version', OWN_TERMS.version);
+  });
+
+  // The terms are closed to acceptance. Opens them for the length of one call, and always closes them.
+  async function whileOpen<T>(fn: () => PromiseLike<T>): Promise<T> {
+    const admin = adminClient();
+    const setOpen = (open: boolean) => admin.from('participation_terms')
+      .update({ open_for_acceptance: open }).eq('version', terms.version);
+    let result: T;
+    try {
+      expect((await setOpen(true)).error).toBeNull();
+      result = await fn();
+    } finally {
+      const { error } = await setOpen(false);
+      if (error) console.error('COULD NOT CLOSE THE TERMS', error.message);
+    }
+    const { data } = await admin.from('participation_terms')
+      .select('open_for_acceptance').eq('version', terms.version).single();
+    expect(data?.open_for_acceptance).toBe(false);
+    return result;
+  }
+
+  const acceptWhileOpen = (op: TestUser) =>
+    whileOpen(() => op.client.rpc('accept_participation_terms', { p_version: terms.version }));
+
+  test('accepting is refused while the terms are not open, for a real operator', async () => {
+    const op = await newUser('operator');
+    const { data: flag, error: readErr } = await op.client.from('participation_terms')
+      .select('open_for_acceptance').eq('version', terms.version).single();
+    expect(readErr).toBeNull();
+    expect(flag?.open_for_acceptance).toBe(false);
+
+    const { error } = await op.client.rpc('accept_participation_terms', { p_version: terms.version });
+    expect(error?.message).toContain('not open for acceptance');
+    const row = await readOperator(op.operatorProfileId);
+    expect(row?.participation_terms_accepted_at).toBeNull();
+    expect(row?.participation_terms_version).toBeNull();
+    expect(await acceptanceCount(op.operatorProfileId)).toBe(0);
+  });
+
+  test('an operator cannot open the terms themselves', async () => {
+    const op = await newUser('operator');
+    const { data } = await op.client.from('participation_terms')
+      .update({ open_for_acceptance: true }).eq('version', terms.version).select('version');
+    expect(data ?? []).toHaveLength(0);
+    const { data: row } = await adminClient().from('participation_terms')
+      .select('open_for_acceptance').eq('version', terms.version).single();
+    expect(row?.open_for_acceptance).toBe(false);
   });
 
   test('anyone can read the current terms', async () => {
@@ -375,7 +481,7 @@ test.describe('Front door schema: participation terms', () => {
 
   test('accepting terms writes the column and one agreement_acceptances row with type operator_participation_terms', async () => {
     const op = await newUser('operator');
-    const { error } = await op.client.rpc('accept_participation_terms', { p_version: terms.version });
+    const { error } = await acceptWhileOpen(op);
     expect(error).toBeNull();
 
     const row = await readOperator(op.operatorProfileId);
@@ -395,7 +501,7 @@ test.describe('Front door schema: participation terms', () => {
 
   test('accepting terms leaves service_agreement_signed_at null', async () => {
     const op = await newUser('operator');
-    const { error } = await op.client.rpc('accept_participation_terms', { p_version: terms.version });
+    const { error } = await acceptWhileOpen(op);
     expect(error).toBeNull();
     expect((await readOperator(op.operatorProfileId))?.service_agreement_signed_at).toBeNull();
   });
@@ -431,11 +537,11 @@ test.describe('Front door schema: participation terms', () => {
 
   test('accepting the same version twice is refused and changes nothing', async () => {
     const op = await newUser('operator');
-    const first = await op.client.rpc('accept_participation_terms', { p_version: terms.version });
+    const first = await acceptWhileOpen(op);
     expect(first.error).toBeNull();
     const acceptedAt = (await readOperator(op.operatorProfileId))?.participation_terms_accepted_at;
 
-    const second = await op.client.rpc('accept_participation_terms', { p_version: terms.version });
+    const second = await acceptWhileOpen(op);
     expect(second.error?.message).toContain('already accepted');
     expect(await acceptanceCount(op.operatorProfileId)).toBe(1);
     expect((await readOperator(op.operatorProfileId))?.participation_terms_accepted_at).toBe(acceptedAt);
@@ -502,7 +608,7 @@ test.describe('Front door schema: participation terms', () => {
     await admin.from('operator_coverage').insert(coverage);
     expect(await isListed()).toBe(false);
 
-    const { error: acceptErr } = await op.client.rpc('accept_participation_terms', { p_version: terms.version });
+    const { error: acceptErr } = await acceptWhileOpen(op);
     expect(acceptErr).toBeNull();
     expect(await isListed()).toBe(false);
 

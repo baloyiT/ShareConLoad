@@ -30,6 +30,7 @@ export interface OperatorCoverage {
 
 export interface DirectoryOperator {
   id: string;
+  // The trading name if set, otherwise a company's legal name. Never an individual's legal name.
   display_name: string;
   public_description: string | null;
   verification_level: VerificationLevel;

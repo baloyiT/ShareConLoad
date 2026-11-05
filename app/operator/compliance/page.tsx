@@ -4,66 +4,30 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
-import { requiredDocTypes } from '@/services/operatorCompliance';
+import { loadOperatorProgress, type OperatorProgress } from '@/services/operatorSteps';
 
-import { Check } from 'lucide-react';
-type DocRecord = { doc_type: string; status: string };
+import { Check, Clock } from 'lucide-react';
 
-type StepState = 'done' | 'in_progress' | 'not_started';
-
-const STEP_DEFS = [
-  { number: 1, label: 'Business Profile',  desc: 'Your legal entity name, registration number, and entity type.',     href: '/operator/compliance/profile' },
-  { number: 2, label: 'Contact Details',   desc: 'Primary contact person, phone number, and business address.',        href: '/operator/compliance/contact' },
-  { number: 3, label: 'Bank Account',      desc: 'Payout bank account for receiving transfer payments.',               href: '/operator/bank' },
-  { number: 4, label: 'Documents',         desc: 'KYC documents required for your entity type and payout eligibility.', href: '/operator/compliance/documents' },
-  { number: 5, label: 'Service Agreement', desc: 'Read and sign the ShareConLoad Operator Service Agreement.',         href: '/operator/compliance/agreement' },
-];
+type StepState = 'done' | 'not_started' | 'not_open';
 
 export default function ComplianceHubPage() {
   const router = useRouter();
 
   const [loading, setLoading]   = useState(true);
   const [error,   setError]     = useState<string | null>(null);
-  const [stepsDone, setStepsDone] = useState<boolean[]>([false, false, false, false, false]);
+  const [steps,   setSteps]     = useState<OperatorProgress['steps']>([]);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login?next=/operator/compliance'); return; }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('role_type', 'operator')
-        .single();
+      const progress = await loadOperatorProgress(user.id);
 
-      if (!profile) { router.replace('/onboarding/operator'); return; }
+      if (!progress.hasOperatorRole) { router.replace('/onboarding/operator'); return; }
+      if (!progress.hasOperatorDetails) { setError('Could not load operator profile.'); setLoading(false); return; }
 
-      const { data: op, error: opErr } = await supabase
-        .from('operator_profiles')
-        .select('id, legal_name, phone_number, bank_account_name, service_agreement_signed_at, status, entity_type')
-        .eq('profile_id', profile.id)
-        .single();
-
-      if (opErr || !op) { setError('Could not load operator profile.'); setLoading(false); return; }
-
-      const { data: docs } = await supabase
-        .from('compliance_documents')
-        .select('doc_type, status')
-        .eq('operator_profile_id', op.id);
-
-      const required = requiredDocTypes(op.entity_type);
-      const uploadedTypes = new Set((docs ?? []).map((d: DocRecord) => d.doc_type));
-      const allDocsUploaded = required.every((t) => uploadedTypes.has(t));
-
-      setStepsDone([
-        !!op.legal_name,
-        !!op.phone_number,
-        !!op.bank_account_name,
-        allDocsUploaded,
-        !!op.service_agreement_signed_at,
-      ]);
+      setSteps(progress.steps);
       setLoading(false);
     }
     load();
@@ -85,35 +49,33 @@ export default function ComplianceHubPage() {
     );
   }
 
-  const completedCount = stepsDone.filter(Boolean).length;
-  const allDone = completedCount === 5;
-  const firstIncomplete = stepsDone.findIndex((d) => !d);
-
-  function getStepState(idx: number): StepState {
-    return stepsDone[idx] ? 'done' : 'not_started';
-  }
+  const total = steps.length;
+  const completedCount = steps.filter((s) => s.done).length;
+  const allDone = completedCount === total;
+  const firstIncomplete = steps.findIndex((s) => !s.done && !s.notOpen);
+  const waitingOnTerms = !allDone && firstIncomplete === -1;
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Compliance &amp; Verification</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Complete all required steps to activate your operator account.</p>
+        <p className="text-sm text-gray-400 mt-0.5">Complete these steps so we can review your operator account.</p>
       </div>
 
       {/* Progress bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-semibold text-gray-500">{completedCount} of 5 steps complete</span>
+          <span className="text-xs font-semibold text-gray-500">{completedCount} of {total} steps complete</span>
           <span className="text-xs font-bold" style={{ color: allDone ? '#22c55e' : '#0b103a' }}>
-            {Math.round((completedCount / 5) * 100)}%
+            {Math.round((completedCount / total) * 100)}%
           </span>
         </div>
         <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
-              width: `${(completedCount / 5) * 100}%`,
+              width: `${(completedCount / total) * 100}%`,
               backgroundColor: allDone ? '#22c55e' : '#ff6a00',
             }}
           />
@@ -128,15 +90,22 @@ export default function ComplianceHubPage() {
         </div>
       )}
 
+      {waitingOnTerms && (
+        <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+          <Check className="w-5 h-5 text-green-500 shrink-0" strokeWidth={2.5} />
+          <p className="text-sm font-bold text-green-800">You have finished everything you can for now. The participation terms are still being finalised.</p>
+        </div>
+      )}
+
       {/* Step cards */}
       <div className="flex flex-col gap-3">
-        {STEP_DEFS.map((step, idx) => {
-          const state: StepState = getStepState(idx);
+        {steps.map((step, idx) => {
+          const state: StepState = step.done ? 'done' : step.notOpen ? 'not_open' : 'not_started';
           const isNext = !allDone && idx === firstIncomplete;
 
           return (
             <div
-              key={step.number}
+              key={step.key}
               className="bg-white rounded-2xl border shadow-sm p-5 flex items-start gap-4"
               style={{ borderColor: isNext ? '#0b103a' : '#f3f4f6', borderWidth: isNext ? '1.5px' : '1px' }}
             >
@@ -150,7 +119,9 @@ export default function ComplianceHubPage() {
               >
                 {state === 'done' ? (
                   <Check className="w-4 h-4" strokeWidth={3} />
-                ) : step.number}
+                ) : state === 'not_open' ? (
+                  <Clock className="w-4 h-4" />
+                ) : idx + 1}
               </div>
 
               {/* Content */}
@@ -158,13 +129,20 @@ export default function ComplianceHubPage() {
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div>
                     <p className="text-sm font-bold text-gray-800">{step.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{step.desc}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {state === 'not_open' ? 'These terms are being finalised. Acceptance is not open yet, so there is nothing for you to do here for now.' : step.desc}
+                    </p>
                   </div>
 
                   {/* Status badge */}
                   {state === 'done' && (
                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700 shrink-0">
                       Complete
+                    </span>
+                  )}
+                  {state === 'not_open' && (
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 shrink-0">
+                      Not open yet
                     </span>
                   )}
                   {state === 'not_started' && (
@@ -183,6 +161,14 @@ export default function ComplianceHubPage() {
                       style={{ borderColor: '#0b103a', color: '#0b103a' }}
                     >
                       Edit
+                    </Link>
+                  ) : state === 'not_open' ? (
+                    <Link
+                      href={step.href}
+                      className="btn btn-sm rounded-xl text-xs font-semibold text-gray-500"
+                      style={{ backgroundColor: '#f3f4f6' }}
+                    >
+                      Read the draft
                     </Link>
                   ) : isNext ? (
                     <Link

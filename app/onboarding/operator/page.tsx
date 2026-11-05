@@ -10,6 +10,7 @@ import { createOperatorProfile } from '@/actions/operatorActions';
 
 import { AlertCircle, Check, Info } from 'lucide-react';
 import { ID_TYPES } from '@/services/operatorCompliance';
+import { OPERATOR_SIGNUP_OPEN } from '@/services/releaseFlags';
 const COUNTRY_CODES: Record<string, string> = {
   'South Africa': '+27', 'Afghanistan': '+93', 'Albania': '+355', 'Algeria': '+213',
   'Angola': '+244', 'Argentina': '+54', 'Australia': '+61', 'Austria': '+43',
@@ -90,7 +91,7 @@ export default function OperatorOnboardingPage() {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
-        router.replace('/auth/login?next=/onboarding/operator');
+        router.replace(OPERATOR_SIGNUP_OPEN ? '/auth/login?next=/onboarding/operator' : '/for-operators');
         return;
       }
       // Already an operator? Skip onboarding — send them straight to their dashboard,
@@ -112,6 +113,10 @@ export default function OperatorOnboardingPage() {
           router.replace('/operator');
           return;
         }
+      }
+      if (!OPERATOR_SIGNUP_OPEN) {
+        router.replace('/for-operators');
+        return;
       }
       setAuthChecked(true);
     });

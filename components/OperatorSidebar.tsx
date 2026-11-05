@@ -5,20 +5,14 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 
-import { ArrowLeft, Check, ClipboardList, CreditCard, Package, Plus } from 'lucide-react';
-import { requiredDocTypes } from '@/services/operatorCompliance';
-type CompletionStatus = {
-  profile:   boolean;
-  contact:   boolean;
-  account:   boolean;
-  documents: boolean;
-  agreement: boolean;
-};
+import { ArrowLeft, Check, ClipboardList, Clock, CreditCard, Package, Plus } from 'lucide-react';
+import { NEW_OPERATOR_STEPS, loadOperatorProgress, type OperatorProgress } from '@/services/operatorSteps';
 
 type OperatorInfo = {
   name: string;
   initials: string;
-  completion: CompletionStatus;
+  established: boolean;
+  steps: OperatorProgress['steps'];
 };
 
 function CheckIcon({ done }: { done: boolean }) {
@@ -76,11 +70,13 @@ function ComplianceItem({
   href,
   label,
   done,
+  notOpen,
   onClick,
 }: {
   href: string;
   label: string;
   done: boolean;
+  notOpen: boolean;
   onClick?: () => void;
 }) {
   const pathname = usePathname();
@@ -101,8 +97,11 @@ function ComplianceItem({
       className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
       style={{ color, backgroundColor: bg }}
     >
-      <CheckIcon done={done} />
-      <span className="flex-1 truncate">{label}</span>
+      {notOpen ? <Clock className="w-4 h-4 shrink-0 text-gray-400" /> : <CheckIcon done={done} />}
+      <span className="flex-1 min-w-0">
+        <span className="block truncate">{label}</span>
+        {notOpen && <span className="block text-xs font-normal text-gray-400">Not open yet</span>}
+      </span>
       {done && (
         <Check className="w-3 h-3 shrink-0" style={{ color: '#16a34a' }} strokeWidth={2.5} />
       )}
@@ -124,59 +123,16 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
         ? name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
         : (name[0]?.toUpperCase() ?? '');
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('role_type', 'operator')
-        .single();
-
-      if (!profile) { setInfo({ name, initials, completion: { profile: false, contact: false, account: false, documents: false, agreement: false } }); return; }
-
-      const { data: op } = await supabase
-        .from('operator_profiles')
-        .select('id, legal_name, phone_number, paystack_recipient_code, service_agreement_signed_at, entity_type')
-        .eq('profile_id', profile.id)
-        .single();
-
-      let documentsComplete = false;
-      if (op?.id) {
-        const { data: docs } = await supabase
-          .from('compliance_documents')
-          .select('doc_type, status')
-          .eq('operator_profile_id', op.id);
-
-        const required = requiredDocTypes(op.entity_type);
-        const uploadedTypes = new Set((docs ?? []).map((d) => d.doc_type));
-        documentsComplete = required.every((t) => uploadedTypes.has(t));
-      }
-
-      setInfo({
-        name,
-        initials,
-        completion: {
-          profile:   !!op?.legal_name,
-          contact:   !!op?.phone_number,
-          account:   !!op?.paystack_recipient_code,
-          documents: documentsComplete,
-          agreement: !!op?.service_agreement_signed_at,
-        },
-      });
+      const { established, steps } = await loadOperatorProgress(user.id);
+      setInfo({ name, initials, established, steps });
     }
     load();
   }, [pathname]);
 
-  const complianceItems: { href: string; label: string; key: keyof CompletionStatus }[] = [
-    { href: '/operator/compliance/profile',   label: 'Profile',           key: 'profile'   },
-    { href: '/operator/compliance/contact',   label: 'Contact',           key: 'contact'   },
-    { href: '/operator/bank',                 label: 'Account',           key: 'account'   },
-    { href: '/operator/compliance/documents', label: 'Documents',         key: 'documents' },
-    { href: '/operator/compliance/agreement', label: 'Service Agreement', key: 'agreement' },
-  ];
-
-  const totalDone = info
-    ? Object.values(info.completion).filter(Boolean).length
-    : 0;
+  // Until we know, show the new-operator steps with nothing done: never a Stage 3 link.
+  const steps = info?.steps ?? NEW_OPERATOR_STEPS.map((step) => ({ ...step, done: false, notOpen: false }));
+  const totalSteps = steps.length;
+  const totalDone = steps.filter((step) => step.done).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -208,11 +164,11 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Compliance</p>
             <span
               className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-              style={totalDone === 5
+              style={totalDone === totalSteps
                 ? { backgroundColor: '#dcfce7', color: '#16a34a' }
                 : { backgroundColor: '#f3f4f6', color: '#6b7280' }}
             >
-              {totalDone}/5
+              {totalDone}/{totalSteps}
             </span>
           </div>
           {/* Progress bar */}
@@ -220,42 +176,48 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
-                width: `${(totalDone / 5) * 100}%`,
-                backgroundColor: totalDone === 5 ? '#22c55e' : '#ff6a00',
+                width: `${(totalDone / totalSteps) * 100}%`,
+                backgroundColor: totalDone === totalSteps ? '#22c55e' : '#ff6a00',
                 minWidth: totalDone > 0 ? '8px' : '0',
               }}
             />
           </div>
           <div className="flex flex-col gap-0.5">
-            {complianceItems.map((item) => (
+            {steps.map((step) => (
               <ComplianceItem
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                done={info?.completion[item.key] ?? false}
+                key={step.href}
+                href={step.href}
+                label={step.label}
+                done={step.done}
+                notOpen={step.notOpen}
                 onClick={onClose}
               />
             ))}
           </div>
         </div>
 
-        {/* Operations */}
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400 px-3 mb-1.5">Operations</p>
-          <div className="flex flex-col gap-0.5">
-            <NavItem href="/operator" label="My Containers" icon={<Package className="w-4 h-4" />} exact onClick={onClose} />
-            <NavItem href="/operator/create" label="Create Container" icon={<Plus className="w-4 h-4" />} exact onClick={onClose} />
-            <NavItem href="/operator/bookings" label="Manage Bookings" icon={<ClipboardList className="w-4 h-4" />} onClick={onClose} />
-          </div>
-        </div>
+        {/* Stage 3: only for operators who already have containers */}
+        {info?.established && (
+          <>
+            {/* Operations */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 px-3 mb-1.5">Operations</p>
+              <div className="flex flex-col gap-0.5">
+                <NavItem href="/operator" label="My Containers" icon={<Package className="w-4 h-4" />} exact onClick={onClose} />
+                <NavItem href="/operator/create" label="Create Container" icon={<Plus className="w-4 h-4" />} exact onClick={onClose} />
+                <NavItem href="/operator/bookings" label="Manage Bookings" icon={<ClipboardList className="w-4 h-4" />} onClick={onClose} />
+              </div>
+            </div>
 
-        {/* Finance */}
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400 px-3 mb-1.5">Finance</p>
-          <div className="flex flex-col gap-0.5">
-            <NavItem href="/operator/payouts" label="Payout History" icon={<CreditCard className="w-4 h-4" />} onClick={onClose} />
-          </div>
-        </div>
+            {/* Finance */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 px-3 mb-1.5">Finance</p>
+              <div className="flex flex-col gap-0.5">
+                <NavItem href="/operator/payouts" label="Payout History" icon={<CreditCard className="w-4 h-4" />} onClick={onClose} />
+              </div>
+            </div>
+          </>
+        )}
 
       </nav>
 

@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import ComplianceStepper from '@/components/ComplianceStepper';
+import { hasContainers } from '@/services/operatorSteps';
 
 type ContactForm = {
   contact_person: string;
   phone_number:   string;
   address:        string;
   country:        string;
+  public_phone:   string;
+  public_email:   string;
 };
 
 const COUNTRIES = [
@@ -42,8 +45,9 @@ const COUNTRIES = [
 export default function ComplianceContactPage() {
   const router = useRouter();
 
+  const [userId,    setUserId]    = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [form,      setForm]      = useState<ContactForm>({ contact_person: '', phone_number: '', address: '', country: 'South Africa' });
+  const [form,      setForm]      = useState<ContactForm>({ contact_person: '', phone_number: '', address: '', country: 'South Africa', public_phone: '', public_email: '' });
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
   const [error,     setError]     = useState<string | null>(null);
@@ -52,6 +56,7 @@ export default function ComplianceContactPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login?next=/operator/compliance/contact'); return; }
+      setUserId(user.id);
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -65,7 +70,7 @@ export default function ComplianceContactPage() {
 
       const { data: op } = await supabase
         .from('operator_profiles')
-        .select('contact_person, phone_number, address, country')
+        .select('contact_person, phone_number, address, country, public_phone, public_email')
         .eq('profile_id', profile.id)
         .single();
 
@@ -75,6 +80,8 @@ export default function ComplianceContactPage() {
           phone_number:   op.phone_number   ?? '',
           address:        op.address        ?? '',
           country:        op.country        ?? 'South Africa',
+          public_phone:   op.public_phone   ?? '',
+          public_email:   op.public_email   ?? '',
         });
       }
       setLoading(false);
@@ -101,11 +108,14 @@ export default function ComplianceContactPage() {
         phone_number:   form.phone_number.trim(),
         address:        form.address.trim() || null,
         country:        form.country,
+        public_phone:   form.public_phone.trim() || null,
+        public_email:   form.public_email.trim() || null,
       })
       .eq('profile_id', profileId);
 
     if (updateErr) { setError(updateErr.message); setSaving(false); return; }
-    router.push('/operator/bank');
+    const established = userId ? await hasContainers(userId) : false;
+    router.push(established ? '/operator/bank' : '/operator/services');
   }
 
   if (loading) {
@@ -114,10 +124,10 @@ export default function ComplianceContactPage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
-      <ComplianceStepper current={2} />
+      <ComplianceStepper current="contact" />
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Contact Details</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Used for operational communication and payout notifications.</p>
+        <p className="text-sm text-gray-400 mt-0.5">Private details are for operational communication. Only the public phone and email appear in the directory.</p>
       </div>
 
       {error && <div className="alert alert-error text-sm mb-4">{error}</div>}
@@ -136,10 +146,12 @@ export default function ComplianceContactPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
+          <label htmlFor="phone_number" className="block text-sm font-semibold text-gray-700 mb-1">
             Phone Number <span className="text-red-500">*</span>
           </label>
+          <p className="text-xs text-gray-400 mb-1.5">Private. This number is never shown in the directory.</p>
           <input
+            id="phone_number"
             type="tel"
             value={form.phone_number}
             onChange={(e) => update('phone_number', e.target.value)}
@@ -168,6 +180,35 @@ export default function ComplianceContactPage() {
           >
             {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+
+        <div className="border-t border-gray-100 pt-4">
+          <p className="text-sm font-bold text-gray-800">Shown in the directory</p>
+          <p className="text-xs text-gray-400 mt-0.5">Customers use these to reach you. Keep them separate from your private details if you prefer.</p>
+        </div>
+
+        <div>
+          <label htmlFor="public_phone" className="block text-sm font-semibold text-gray-700 mb-1">Public phone (shown in the directory)</label>
+          <input
+            id="public_phone"
+            type="tel"
+            value={form.public_phone}
+            onChange={(e) => update('public_phone', e.target.value)}
+            placeholder="+27 82 123 4567"
+            className="input input-bordered w-full font-mono"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="public_email" className="block text-sm font-semibold text-gray-700 mb-1">Public email (shown in the directory)</label>
+          <input
+            id="public_email"
+            type="email"
+            value={form.public_email}
+            onChange={(e) => update('public_email', e.target.value)}
+            placeholder="The address customers can write to"
+            className="input input-bordered w-full"
+          />
         </div>
 
         <button

@@ -1,24 +1,40 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/services/supabaseClient';
+import {
+  ESTABLISHED_OPERATOR_STEPS,
+  NEW_OPERATOR_STEPS,
+  hasContainers,
+  termsOpenForAcceptance,
+  type OperatorStepKey,
+} from '@/services/operatorSteps';
 
-import { Check } from 'lucide-react';
-const STEPS = [
-  { number: 1, label: 'Business Profile', href: '/operator/compliance/profile' },
-  { number: 2, label: 'Contact Details',  href: '/operator/compliance/contact' },
-  { number: 3, label: 'Bank Account',     href: '/operator/bank' },
-  { number: 4, label: 'Documents',        href: '/operator/compliance/documents' },
-  { number: 5, label: 'Agreement',        href: '/operator/compliance/agreement' },
-];
+import { Check, Clock } from 'lucide-react';
 
-export default function ComplianceStepper({ current }: { current: number }) {
+export default function ComplianceStepper({ current }: { current: OperatorStepKey }) {
+  const [established, setEstablished] = useState(false);
+  const [termsOpen,   setTermsOpen]   = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) setEstablished(await hasContainers(user.id));
+    });
+    termsOpenForAcceptance().then(setTermsOpen);
+  }, []);
+
+  const steps = established ? ESTABLISHED_OPERATOR_STEPS : NEW_OPERATOR_STEPS;
+  const currentIdx = steps.findIndex((s) => s.key === current);
+
   return (
     <div className="flex items-start gap-0 mb-8 overflow-x-auto pb-1">
-      {STEPS.map((step, idx) => {
-        const done   = step.number < current;
-        const active = step.number === current;
+      {steps.map((step, idx) => {
+        const done   = idx < currentIdx;
+        const active = idx === currentIdx;
+        const notOpen = step.key === 'terms' && !termsOpen;
         return (
-          <div key={step.number} className="flex items-center shrink-0">
+          <div key={step.key} className="flex items-center shrink-0">
             <Link href={step.href} className="flex flex-col items-center gap-1.5">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
@@ -29,19 +45,21 @@ export default function ComplianceStepper({ current }: { current: number }) {
               >
                 {done ? (
                   <Check className="w-4 h-4" strokeWidth={3} />
-                ) : step.number}
+                ) : notOpen ? (
+                  <Clock className="w-4 h-4" />
+                ) : idx + 1}
               </div>
               <span
                 className="text-xs font-medium text-center hidden sm:block w-16 leading-tight"
                 style={{ color: active ? '#0b103a' : done ? '#22c55e' : '#9ca3af' }}
               >
-                {step.label}
+                {step.label}{notOpen && <span className="block font-normal">Not open yet</span>}
               </span>
             </Link>
-            {idx < STEPS.length - 1 && (
+            {idx < steps.length - 1 && (
               <div
                 className="h-0.5 w-6 sm:w-10 mx-1 mt-0 sm:-mt-4 shrink-0 rounded-full"
-                style={{ backgroundColor: step.number < current ? '#22c55e' : '#e5e7eb' }}
+                style={{ backgroundColor: done ? '#22c55e' : '#e5e7eb' }}
               />
             )}
           </div>

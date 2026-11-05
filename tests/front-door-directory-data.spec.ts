@@ -18,6 +18,10 @@ const FROM = `Fromland ${tag}`;
 const TO   = `Toland ${tag}`;
 const OTHER = `Otherland ${tag}`;
 const ANY_MODE_FROM = `Anyland ${tag}`;
+const NAME_FROM = `Nameland ${tag}`;
+const PRIVATE_LEGAL_NAME = `Private Person ${tag}`;
+const TRADING_NAME = `Aardvark Freight ${tag}`;
+const COMPANY_LEGAL_NAME = `Zebra Shipping Ltd ${tag}`;
 
 const PHONE = '+27 11 000 0000';
 const EMAIL = `front-door-public-${tag}@example.invalid`;
@@ -96,6 +100,12 @@ test.describe('Front door: public directory data', () => {
   let modeless: TestUser;
   let suspended: TestUser;
   let unverified: TestUser;
+  // Display name rules, all on their own route.
+  let namedIndividual: TestUser;
+  let blankIndividual: TestUser;
+  let spacesIndividual: TestUser;
+  let plainCompany: TestUser;
+  let tradingCompany: TestUser;
   let customer: TestUser;
   let adminUser: TestUser;
 
@@ -106,6 +116,11 @@ test.describe('Front door: public directory data', () => {
     modeless = await createTestUser('operator');
     suspended = await createTestUser('operator');
     unverified = await createTestUser('operator');
+    namedIndividual = await createTestUser('operator', { entityType: 'individual' });
+    blankIndividual = await createTestUser('operator', { entityType: 'individual' });
+    spacesIndividual = await createTestUser('operator', { entityType: 'individual' });
+    plainCompany = await createTestUser('operator', { entityType: 'company' });
+    tradingCompany = await createTestUser('operator', { entityType: 'company' });
     customer = await createTestUser('customer');
     adminUser = await createTestUser('admin');
 
@@ -118,13 +133,59 @@ test.describe('Front door: public directory data', () => {
     const route = [{ origin_country: FROM, destination_country: TO }];
     await seedOperator(suspended, { participation_status: 'suspended' }, route);
     await seedOperator(unverified, { verification_level: 'registered' }, route);
+
+    const nameRoute = [{ origin_country: NAME_FROM, destination_country: TO }];
+    const individual = { legal_name: PRIVATE_LEGAL_NAME, verification_level: 'identity_verified' };
+    await seedOperator(namedIndividual, { ...individual, trading_name: `  ${TRADING_NAME}  ` }, nameRoute);
+    await seedOperator(blankIndividual, individual, nameRoute);
+    await seedOperator(spacesIndividual, { ...individual, trading_name: '   ' }, nameRoute);
+    await seedOperator(plainCompany, { legal_name: COMPANY_LEGAL_NAME, trading_name: '  ' }, nameRoute);
+    await seedOperator(tradingCompany, { legal_name: 'Aaa Hidden Registered Name', trading_name: `Mongoose Cargo ${tag}` }, nameRoute);
   });
 
   test.afterAll(async () => {
     test.setTimeout(240_000);
-    for (const user of [countryWide, cityOnly, modeless, suspended, unverified, customer, adminUser]) {
+    for (const user of [countryWide, cityOnly, modeless, suspended, unverified, namedIndividual, blankIndividual,
+      spacesIndividual, plainCompany, tradingCompany, customer, adminUser]) {
       if (user) await deleteTestUser(user);
     }
+  });
+
+  test('an individual with a trading name shows it, trimmed, and never the legal name', async () => {
+    const id = namedIndividual.operatorProfileId ?? '';
+    const { data, error } = await anon().rpc('get_directory_operator', { op_id: id });
+    expect(error).toBeNull();
+    expect((data as DirectoryOperator[])[0].display_name).toBe(TRADING_NAME);
+    expect(JSON.stringify(data)).not.toContain(PRIVATE_LEGAL_NAME);
+
+    const rows = await search({ p_origin_country: NAME_FROM });
+    expect(rows.find(r => r.id === id)?.display_name).toBe(TRADING_NAME);
+    expect(JSON.stringify(rows)).not.toContain(PRIVATE_LEGAL_NAME);
+  });
+
+  test('an individual with a blank trading name is not listed', async () => {
+    for (const user of [blankIndividual, spacesIndividual]) {
+      const id = user.operatorProfileId ?? '';
+      const listed = await anon().rpc('operator_is_listed', { op_id: id });
+      expect(listed.data).toBe(false);
+      const direct = await anon().rpc('get_directory_operator', { op_id: id });
+      expect(direct.data ?? []).toHaveLength(0);
+      const contact = await anon().rpc('get_operator_contact', { op_id: id });
+      expect(contact.data ?? []).toHaveLength(0);
+      expect(ids(await search({ p_origin_country: NAME_FROM }))).not.toContain(id);
+    }
+  });
+
+  test('a company falls back to legal_name, and a trading name replaces it', async () => {
+    const rows = await search({ p_origin_country: NAME_FROM });
+    expect(rows.find(r => r.id === plainCompany.operatorProfileId)?.display_name).toBe(COMPANY_LEGAL_NAME);
+    expect(rows.find(r => r.id === tradingCompany.operatorProfileId)?.display_name).toBe(`Mongoose Cargo ${tag}`);
+    expect(JSON.stringify(rows)).not.toContain('Aaa Hidden Registered Name');
+  });
+
+  test('search results sort on the name shown, not the legal name', async () => {
+    const rows = await search({ p_origin_country: NAME_FROM });
+    expect(rows.map(r => r.display_name)).toEqual([TRADING_NAME, `Mongoose Cargo ${tag}`, COMPANY_LEGAL_NAME]);
   });
 
   test('anon cannot select from operator_profiles', async () => {

@@ -7,7 +7,7 @@ import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 import { notify } from '@/services/notificationService';
 
-import { AlertTriangle, ArrowRight, Briefcase, Check, Megaphone, MessageCircle, Package } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Briefcase, Check, Megaphone, MessageCircle } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Container = {
@@ -98,16 +98,16 @@ export default function OperatorDashboard() {
         setError('Could not load your containers. Please try again.');
       } else {
         const list = data as Container[];
+        // New operators have nothing here yet: their portal starts at the compliance steps.
+        if (list.length === 0) { router.replace('/operator/compliance'); return; }
         setContainers(list);
-        if (list.length > 0) {
-          const ids = list.map((c) => c.id);
-          const { count } = await supabase
-            .from('bookings')
-            .select('id', { count: 'exact', head: true })
-            .in('container_id', ids)
-            .eq('status', 'pending');
-          setPendingCount(count ?? 0);
-        }
+        const ids = list.map((c) => c.id);
+        const { count } = await supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .in('container_id', ids)
+          .eq('status', 'pending');
+        setPendingCount(count ?? 0);
       }
       const { data: commData } = await supabase
         .from('platform_commission_config')
@@ -171,6 +171,11 @@ export default function OperatorDashboard() {
 
   const filtered = statusFilter === 'all' ? containers : containers.filter((c) => c.status === statusFilter);
 
+  // Nothing renders until we know this operator has containers, so a new operator never sees these links.
+  if (loading) {
+    return <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} /></div>;
+  }
+
   return (
     <div className="bg-[#f8fafc]">
 
@@ -178,7 +183,7 @@ export default function OperatorDashboard() {
         showMap
         title="My Containers"
         description="Manage your listed container space."
-        rightSlot={
+        rightSlot={containers.length > 0 ? (
           <Link
             href="/operator/create"
             className="btn text-white font-bold rounded-xl hover:opacity-90 self-start sm:self-auto"
@@ -186,7 +191,7 @@ export default function OperatorDashboard() {
           >
             + Create Container
           </Link>
-        }
+        ) : undefined}
       >
         {(() => {
           const urgent = containers.filter((c) => {
@@ -335,21 +340,8 @@ export default function OperatorDashboard() {
           </div>
         )}
 
-        {/* Loading / Error */}
-        {loading && <div className="flex justify-center py-24"><span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} /></div>}
+        {/* Error */}
         {error   && <div className="alert alert-error text-sm max-w-lg">{error}</div>}
-
-        {/* Empty state */}
-        {!loading && !error && containers.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: '#fff7ed' }}><Package className="w-7 h-7" style={{ color: '#ff6a00' }} /></div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">No containers yet</h3>
-            <p className="text-gray-400 text-sm max-w-xs mb-6">Create your first container listing to start accepting bookings.</p>
-            <Link href="/operator/create" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#ff6a00' }}>
-              + Create Container
-            </Link>
-          </div>
-        )}
 
         {/* Filtered empty */}
         {!loading && !error && containers.length > 0 && filtered.length === 0 && (

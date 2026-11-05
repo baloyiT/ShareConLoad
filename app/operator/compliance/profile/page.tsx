@@ -9,17 +9,21 @@ import { ID_TYPES } from '@/services/operatorCompliance';
 type ProfileForm = {
   entity_type:         string;
   legal_name:          string;
+  trading_name:        string;
   registration_number: string;
   vat_number:          string;
   id_type:             string;
   id_number:           string;
+  public_description:  string;
 };
 
 export default function ComplianceProfilePage() {
   const router = useRouter();
 
   const [profileId,  setProfileId]  = useState<string | null>(null);
-  const [form,       setForm]       = useState<ProfileForm>({ entity_type: 'company', legal_name: '', registration_number: '', vat_number: '', id_type: 'passport', id_number: '' });
+  const [form,       setForm]       = useState<ProfileForm>({ entity_type: 'company', legal_name: '', trading_name: '', registration_number: '', vat_number: '', id_type: 'passport', id_number: '', public_description: '' });
+  const [locked,     setLocked]     = useState(false);
+  const [tradingLocked, setTradingLocked] = useState(false);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState<string | null>(null);
@@ -41,7 +45,7 @@ export default function ComplianceProfilePage() {
 
       const { data: op } = await supabase
         .from('operator_profiles')
-        .select('entity_type, legal_name, registration_number, vat_number, id_type, id_number')
+        .select('entity_type, legal_name, trading_name, registration_number, vat_number, id_type, id_number, public_description, verification_level')
         .eq('profile_id', profile.id)
         .single();
 
@@ -49,11 +53,16 @@ export default function ComplianceProfilePage() {
         setForm({
           entity_type:         op.entity_type         ?? 'company',
           legal_name:          op.legal_name          ?? '',
+          trading_name:        op.trading_name        ?? '',
           registration_number: op.registration_number ?? '',
           vat_number:          op.vat_number          ?? '',
           id_type:             op.id_type             ?? 'passport',
           id_number:           op.id_number           ?? '',
+          public_description:  op.public_description  ?? '',
         });
+        setLocked(op.verification_level !== 'registered');
+        // A verified operator with no trading name may still add one, once.
+        setTradingLocked(op.verification_level !== 'registered' && !!op.trading_name?.trim());
       }
       setLoading(false);
     }
@@ -66,24 +75,39 @@ export default function ComplianceProfilePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.legal_name.trim()) { setError('Legal name is required.'); return; }
-    if (form.entity_type === 'individual' && !form.id_number.trim()) { setError('ID number is required.'); return; }
-    if (form.entity_type !== 'individual' && !form.registration_number.trim()) { setError('Registration number is required for companies.'); return; }
+    if (!locked) {
+      if (!form.legal_name.trim()) { setError('Legal name is required.'); return; }
+      if (form.entity_type === 'individual' && !form.id_number.trim()) { setError('ID number is required.'); return; }
+      if (form.entity_type !== 'individual' && !form.registration_number.trim()) { setError('Registration number is required for companies.'); return; }
+    }
+    if (form.entity_type === 'individual' && !form.trading_name.trim()) { setError('Trading name is required.'); return; }
     if (!profileId) return;
 
     setSaving(true);
     setError(null);
 
+    const individual = form.entity_type === 'individual';
+    const publicDescription = form.public_description.trim() || null;
+    const vatNumber = individual ? null : (form.vat_number.trim() || null);
+
+    // Identity fields are fixed once verified: the database refuses any change, so never send them.
+    const tradingName = tradingLocked ? {} : { trading_name: form.trading_name.trim() || null };
+    const updates = locked
+      ? { public_description: publicDescription, ...tradingName, ...(individual ? {} : { vat_number: vatNumber }) }
+      : {
+          public_description:  publicDescription,
+          ...tradingName,
+          vat_number:          vatNumber,
+          entity_type:         form.entity_type,
+          legal_name:          form.legal_name.trim(),
+          registration_number: individual ? null : (form.registration_number.trim() || null),
+          id_type:             individual ? form.id_type : null,
+          id_number:           individual ? (form.id_number.trim() || null) : null,
+        };
+
     const { error: upsertErr } = await supabase
       .from('operator_profiles')
-      .update({
-        entity_type:         form.entity_type,
-        legal_name:          form.legal_name.trim(),
-        registration_number: form.entity_type === 'individual' ? null : (form.registration_number.trim() || null),
-        vat_number:          form.entity_type === 'individual' ? null : (form.vat_number.trim() || null),
-        id_type:             form.entity_type === 'individual' ? form.id_type : null,
-        id_number:           form.entity_type === 'individual' ? (form.id_number.trim() || null) : null,
-      })
+      .update(updates)
       .eq('profile_id', profileId);
 
     if (upsertErr) { setError(upsertErr.message); setSaving(false); return; }
@@ -99,18 +123,25 @@ export default function ComplianceProfilePage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
-      <ComplianceStepper current={1} />
+      <ComplianceStepper current="profile" />
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Business Profile</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Legal entity details for compliance and billing.</p>
+        <p className="text-sm text-gray-400 mt-0.5">Your legal details, and how you appear in the directory.</p>
       </div>
 
       {error && <div className="alert alert-error text-sm mb-4">{error}</div>}
+      {locked && (
+        <div className="alert text-sm mb-4">
+          Your legal name, entity type, identity numbers and any trading name are verified and cannot be changed here. To change them, contact support@shareconload.com.
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Entity Type</label>
+          <label htmlFor="entity_type" className="block text-sm font-semibold text-gray-700 mb-1">Entity Type</label>
           <select
+            id="entity_type"
+            disabled={locked}
             value={form.entity_type}
             onChange={(e) => update('entity_type', e.target.value)}
             className="select select-bordered w-full"
@@ -123,13 +154,15 @@ export default function ComplianceProfilePage() {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
+          <label htmlFor="legal_name" className="block text-sm font-semibold text-gray-700 mb-1">
             {isIndividual ? 'Full Legal Name' : 'Registered Company Name'} <span className="text-red-500">*</span>
           </label>
           <p className="text-xs text-gray-400 mb-1.5">
             {isIndividual ? 'Your full name exactly as it appears on your ID.' : 'Your registered legal entity name.'}
           </p>
           <input
+            id="legal_name"
+            disabled={locked}
             type="text"
             value={form.legal_name}
             onChange={(e) => update('legal_name', e.target.value)}
@@ -139,17 +172,39 @@ export default function ComplianceProfilePage() {
           />
         </div>
 
+        <div>
+          <label htmlFor="trading_name" className="block text-sm font-semibold text-gray-700 mb-1">
+            Trading name (the name shown publicly in the directory)
+            {isIndividual
+              ? <> <span className="text-red-500">*</span></>
+              : <> <span className="text-gray-400 font-normal">(optional)</span></>}
+          </label>
+          <p className="text-xs text-gray-400 mb-1.5">
+            {isIndividual
+              ? 'This is the name customers see. Your legal name is not published.'
+              : 'If you leave this blank, your registered company name is shown.'}
+          </p>
+          <input
+            id="trading_name"
+            disabled={tradingLocked}
+            type="text"
+            value={form.trading_name}
+            onChange={(e) => update('trading_name', e.target.value)}
+            className="input input-bordered w-full"
+          />
+        </div>
+
         {isIndividual && (
           <>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">ID Type <span className="text-red-500">*</span></label>
-              <select value={form.id_type} onChange={(e) => update('id_type', e.target.value)} className="select select-bordered w-full">
+              <label htmlFor="id_type" className="block text-sm font-semibold text-gray-700 mb-1">ID Type <span className="text-red-500">*</span></label>
+              <select id="id_type" disabled={locked} value={form.id_type} onChange={(e) => update('id_type', e.target.value)} className="select select-bordered w-full">
                 {ID_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">ID Number <span className="text-red-500">*</span></label>
-              <input type="text" value={form.id_number} onChange={(e) => update('id_number', e.target.value)}
+              <label htmlFor="id_number" className="block text-sm font-semibold text-gray-700 mb-1">ID Number <span className="text-red-500">*</span></label>
+              <input id="id_number" disabled={locked} type="text" value={form.id_number} onChange={(e) => update('id_number', e.target.value)}
                 placeholder="Your ID or passport number" className="input input-bordered w-full" />
             </div>
           </>
@@ -158,10 +213,12 @@ export default function ComplianceProfilePage() {
         {!isIndividual && (
           <>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label htmlFor="registration_number" className="block text-sm font-semibold text-gray-700 mb-1">
                 Registration Number <span className="text-red-500">*</span>
               </label>
               <input
+                id="registration_number"
+                disabled={locked}
                 type="text"
                 value={form.registration_number}
                 onChange={(e) => update('registration_number', e.target.value)}
@@ -184,6 +241,18 @@ export default function ComplianceProfilePage() {
             </div>
           </>
         )}
+
+        <div>
+          <label htmlFor="public_description" className="block text-sm font-semibold text-gray-700 mb-1">Public description (shown in the directory)</label>
+          <p className="text-xs text-gray-400 mb-1.5">A short description of what you do.</p>
+          <textarea
+            id="public_description"
+            value={form.public_description}
+            onChange={(e) => update('public_description', e.target.value)}
+            maxLength={500}
+            className="textarea textarea-bordered w-full h-24 resize-none"
+          />
+        </div>
 
         <button
           type="submit"

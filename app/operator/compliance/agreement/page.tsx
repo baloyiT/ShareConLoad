@@ -106,7 +106,7 @@ export default function ComplianceAgreementPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-      <ComplianceStepper current={5} />
+      <ComplianceStepper current="agreement" />
       <div className="mb-6">
         <h1 className="text-xl font-extrabold text-gray-800">Service Agreement</h1>
         <p className="text-sm text-gray-400 mt-0.5">Version {AGREEMENT_VERSION}, read carefully before signing.</p>
