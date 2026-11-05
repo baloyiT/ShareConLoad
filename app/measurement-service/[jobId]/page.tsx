@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/services/supabaseClient';
 
@@ -288,14 +288,15 @@ function JobTrackContent({ jobId }: { jobId: string }) {
   );
 }
 
-export default function MeasurementJobTrackPage({ params }: { params: { jobId: string } }) {
+export default function MeasurementJobTrackPage() {
+  const { jobId } = useParams<{ jobId: string }>();
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     }>
-      <JobTrackContent jobId={params.jobId} />
+      <JobTrackContent jobId={jobId} />
     </Suspense>
   );
 }

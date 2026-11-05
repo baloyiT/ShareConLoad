@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Star } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
@@ -349,14 +349,15 @@ function PickupContent({ bookingId }: { bookingId: string }) {
   );
 }
 
-export default function PickupPage({ params }: { params: { bookingId: string } }) {
+export default function PickupPage() {
+  const { bookingId } = useParams<{ bookingId: string }>();
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <span className="loading loading-spinner loading-lg" style={{ color: '#ff6a00' }} />
       </div>
     }>
-      <PickupContent bookingId={params.bookingId} />
+      <PickupContent bookingId={bookingId} />
     </Suspense>
   );
 }

@@ -64,20 +64,115 @@ test('operator with no containers is kept out of /operator/create', async ({ pag
   await page.waitForURL(url => url.pathname === '/', { timeout: 20_000 });
 });
 
-// A customer returning from Paystack must reach the page even with no booking.
-// The page may send the visitor on by itself (it does for an unknown job), so the proof that
-// the gate let it through is that the page mounted and queried its job.
-test('/measurement-service/[jobId]?verify=1 is not gated', async ({ page }) => {
+// Seeds a customer with a real measurement job and booking. Booking insert fires only the
+// DB triggers for the payment schedule and container capacity (no Paystack, no email).
+interface Seed { user: TestUser; jobId: string; bookingId: string; containerId: string; paymentRef: string }
+
+async function seedCustomerData(): Promise<Seed> {
+  const db = adminClient();
   const user = await newUser('customer');
-  await signInBrowser(page, user);
-  const jobQuery = page.waitForRequest(req => req.url().includes('/rest/v1/measurement_jobs'), { timeout: 20_000 });
-  await page.goto('/measurement-service/00000000-0000-0000-0000-000000000000?verify=1');
-  await jobQuery;
+  const operator = await newUser('operator');
+  const paymentRef = `front-door-test-ref-${user.id}`;
+
+  // A signup trigger gives every new user a default customer profile, so the helper user has
+  // two. The pickup page reads its profile with .single(), as it would for a real customer who
+  // has exactly one, so drop the extra row (this throwaway user only).
+  const { error: dupErr } = await db.from('profiles').delete()
+    .eq('user_id', user.id).neq('id', user.profileId);
+  expect(dupErr).toBeNull();
+
+  const { data: job, error: jobErr } = await db.from('measurement_jobs').insert({
+    shipper_profile_id: user.profileId,
+    pickup_address: '1 Test Street',
+    pickup_city: 'Johannesburg',
+    pickup_country: 'South Africa',
+    quoted_fee: 100,
+    payment_ref: paymentRef,
+  }).select('id').single();
+  expect(jobErr).toBeNull();
+
+  const { data: container, error: cErr } = await db.from('containers').insert({
+    operator_id: operator.id,
+    origin_country: 'South Africa', origin_city: 'Durban',
+    destination_country: 'Ghana', destination_city: 'Tema',
+    departure_date: '2030-01-01',
+    total_capacity_cbm: 10, available_capacity_cbm: 10,
+    load_type: 'LCL', price_per_cbm: 100, currency_code: 'USD', status: 'open',
+  }).select('id').single();
+  expect(cErr).toBeNull();
+
+  const { data: booking, error: bErr } = await db.from('bookings').insert({
+    container_id: container!.id, customer_id: user.id,
+    total_cbm: 1, total_price: 100, status: 'pending',
+  }).select('id').single();
+  expect(bErr).toBeNull();
+
+  return { user, jobId: job!.id as string, bookingId: booking!.id as string, containerId: container!.id as string, paymentRef };
+}
+
+async function removeSeed(s: Seed): Promise<void> {
+  const db = adminClient();
+  await db.from('measurement_jobs').delete().eq('id', s.jobId);
+  await db.from('payments').delete().eq('booking_id', s.bookingId);
+  await db.from('bookings').delete().eq('id', s.bookingId);
+  await db.from('containers').delete().eq('id', s.containerId);
+}
+
+test('measurement job page loads the job and reaches verification (verify=1)', async ({ page }) => {
+  const seed = await seedCustomerData();
+  try {
+    await signInBrowser(page, seed.user);
+
+    // Stub the verify function so Paystack is never called; record what the page sends.
+    const sent: { reference?: string }[] = [];
+    await page.route('**/functions/v1/verify-measurement-payment', async route => {
+      const cors = {
+        'access-control-allow-origin': '*',
+        'access-control-allow-headers': '*',
+        'access-control-allow-methods': 'POST, OPTIONS',
+      };
+      if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+      sent.push(route.request().postDataJSON() as { reference?: string });
+      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: '{}' });
+    });
+
+    await page.goto(`/measurement-service/${seed.jobId}?verify=1`);
+    await expect(page.getByText('1 Test Street')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Payment confirmed!')).toBeVisible();
+    expect(pathOf(page)).toBe(`/measurement-service/${seed.jobId}`);
+    expect(sent).toEqual([{ reference: seed.paymentRef }]);
+  } finally {
+    await removeSeed(seed);
+  }
 });
 
-test('/pickup/[bookingId] is not redirected', async ({ page }) => {
-  const path = await visit(page, '/pickup/00000000-0000-0000-0000-000000000000');
-  expect(path).not.toBe('/');
+test('measurement job page loads the job without verify', async ({ page }) => {
+  const seed = await seedCustomerData();
+  try {
+    await signInBrowser(page, seed.user);
+    await page.goto(`/measurement-service/${seed.jobId}`);
+    await expect(page.getByText('1 Test Street')).toBeVisible({ timeout: 20_000 });
+    expect(pathOf(page)).toBe(`/measurement-service/${seed.jobId}`);
+  } finally {
+    await removeSeed(seed);
+  }
+});
+
+test('/pickup/[bookingId] loads the booking and does not bounce', async ({ page }) => {
+  const seed = await seedCustomerData();
+  try {
+    await signInBrowser(page, seed.user);
+    const bookingQuery = page.waitForRequest(
+      req => req.url().includes('/rest/v1/bookings') && req.url().includes(seed.bookingId),
+      { timeout: 20_000 },
+    );
+    await page.goto(`/pickup/${seed.bookingId}`);
+    await bookingQuery;
+    await page.waitForTimeout(3000);
+    expect(pathOf(page)).toBe(`/pickup/${seed.bookingId}`);
+  } finally {
+    await removeSeed(seed);
+  }
 });
 
 test('/booking/track/[id] and /bookings are not redirected', async ({ page }) => {
