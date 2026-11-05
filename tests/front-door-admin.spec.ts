@@ -141,11 +141,106 @@ test.describe('Front door: admin verification and taxonomy', () => {
     };
     expect(await listed()).toContain(id);
 
+    // Suspend asks first; cancelling changes nothing.
     await c.getByRole('button', { name: 'Suspend' }).click();
+    await expect(c.getByText(/removes .* from the directory immediately/i)).toBeVisible();
+    expect((await opState(id)).participation_status).toBe('active');
+    await c.getByRole('button', { name: 'Cancel' }).click();
+    await expect(c.getByRole('button', { name: 'Suspend' })).toBeVisible();
+    expect(await listed()).toContain(id);
+
+    await c.getByRole('button', { name: 'Suspend' }).click();
+    await c.getByRole('button', { name: 'Confirm suspend' }).click();
     await expect(c.getByRole('button', { name: 'Activate' })).toBeVisible();
     expect((await opState(id)).participation_status).toBe('suspended');
     expect(await auditRows(id, 'operator_suspended')).toHaveLength(1);
     expect(await listed()).not.toContain(id);
+  });
+
+  test('a failed audit write is reported to the admin', async ({ page }) => {
+    const name = `Audit Fail Co ${tag}`;
+    const op = await newOperator('company', name);
+    const id = op.operatorProfileId ?? '';
+    await approveDoc(id, 'identity');
+    await approveDoc(id, 'business_registration');
+    await signInBrowser(page, admin);
+    await page.goto('/admin/operators');
+    const c = card(page, name);
+    await expect(c).toBeVisible();
+    await page.route('**/rest/v1/audit_logs*', (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"boom"}' })
+        : route.continue());
+    await c.getByRole('button', { name: 'Verify as Business verified' }).click();
+    await expect(page.getByText('Saved, but the audit record failed. Tell support.')).toBeVisible();
+    expect((await opState(id)).verification_level).toBe('business_verified');
+    expect(await auditRows(id, 'operator_verified')).toHaveLength(0);
+  });
+
+  test('an update that changes no rows is a failure: no audit row, no local change', async ({ page }) => {
+    const name = `Zero Row Co ${tag}`;
+    const op = await newOperator('company', name);
+    const id = op.operatorProfileId ?? '';
+    await approveDoc(id, 'identity');
+    await approveDoc(id, 'business_registration');
+    await signInBrowser(page, admin);
+    await page.goto('/admin/operators');
+    const c = card(page, name);
+    await expect(c).toBeVisible();
+    // Pretend the database matched no rows.
+    await page.route('**/rest/v1/operator_profiles*', (route) =>
+      route.request().method() === 'PATCH'
+        ? route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+        : route.continue());
+
+    await c.getByRole('button', { name: 'Activate' }).click();
+    await expect(page.getByText('Could not change this operator.')).toBeVisible();
+    await expect(c.getByRole('button', { name: 'Activate' })).toBeVisible();
+
+    await c.getByRole('button', { name: 'Verify as Business verified' }).click();
+    await expect(page.getByText('Could not verify this operator.')).toBeVisible();
+    await expect(c.getByTestId('verification-badge')).toHaveText('Registered');
+
+    await c.getByLabel('Trading name').fill(`Zero Row ${tag}`);
+    await c.getByRole('button', { name: 'Save trading name' }).click();
+    await expect(page.getByText('Could not save the trading name.')).toBeVisible();
+    await expect(c.getByText('Trading name saved')).toHaveCount(0);
+
+    for (const action of ['operator_activated', 'operator_verified', 'operator_trading_name_changed']) {
+      expect(await auditRows(id, action)).toHaveLength(0);
+    }
+  });
+
+  test('a document rejected after the page loaded stops the verification', async ({ page }) => {
+    const name = `Rejected Later Co ${tag}`;
+    const op = await newOperator('company', name);
+    const id = op.operatorProfileId ?? '';
+    await approveDoc(id, 'identity');
+    await approveDoc(id, 'business_registration');
+    await signInBrowser(page, admin);
+    await page.goto('/admin/operators');
+    const c = card(page, name);
+    await expect(c.getByRole('button', { name: 'Verify as Business verified' })).toBeVisible();
+    const { error } = await adminClient().from('compliance_documents')
+      .update({ status: 'rejected' }).eq('operator_profile_id', id).eq('doc_type', 'business_registration');
+    expect(error).toBeNull();
+    await c.getByRole('button', { name: 'Verify as Business verified' }).click();
+    await expect(page.getByText(/documents are no longer approved/i)).toBeVisible();
+    expect((await opState(id)).verification_level).toBe('registered');
+    expect(await auditRows(id, 'operator_verified')).toHaveLength(0);
+  });
+
+  test('Verify is not offered as a downgrade', async ({ page }) => {
+    const name = `Already Business Person ${tag}`;
+    const op = await newOperator('individual', name);
+    const id = op.operatorProfileId ?? '';
+    await approveDoc(id, 'identity');
+    await adminClient().from('operator_profiles').update({ verification_level: 'business_verified' }).eq('id', id);
+    await signInBrowser(page, admin);
+    await page.goto('/admin/operators');
+    const c = card(page, name);
+    await expect(c.getByTestId('verification-badge')).toHaveText('Business verified');
+    await expect(c.getByRole('button', { name: /^Verify as/ })).toHaveCount(0);
   });
 
   test('admin edits a trading name, audited with old and new values, and sees why an operator is not listed', async ({ page }) => {
@@ -215,7 +310,7 @@ test.describe('Front door: admin verification and taxonomy', () => {
     // An operator holds this category, then it is deactivated.
     expect((await db.from('operator_services').insert({ operator_profile_id: op.operatorProfileId, service_category_id: cat?.id })).error).toBeNull();
     await row2.getByRole('button', { name: 'Deactivate' }).click();
-    await expect(row2.getByRole('button', { name: 'Activate' })).toBeVisible();
+    await expect(row2.getByRole('button', { name: 'Activate', exact: true })).toBeVisible();
     expect((await db.from('service_categories').select('is_active').eq('id', cat?.id).single()).data?.is_active).toBe(false);
     // Hidden from an operator's choices, but their row is kept.
     const visible = await op.client.from('service_categories').select('id').eq('id', cat?.id);
@@ -224,7 +319,27 @@ test.describe('Front door: admin verification and taxonomy', () => {
     expect(kept.data ?? []).toHaveLength(1);
   });
 
-  test('non-admin cannot open /admin/taxonomy', async ({ page }) => {
+  // The page itself is guarded only by the admin layout (a UI redirect). The real control is the
+  // service_categories policy, so this checks both: the redirect, and a direct API write by the same user.
+  test('non-admin cannot open /admin/taxonomy, and cannot write categories through the API', async ({ page }) => {
+    const db = adminClient();
+    const slug = `front-door-test-${tag}-guard`;
+    const { data: cat, error: seedErr } = await db.from('service_categories')
+      .insert({ name: `Front Door Test ${tag} Guard`, slug }).select('id').single();
+    expect(seedErr).toBeNull();
+    categoryIds.push(cat?.id as string);
+
+    const insert = await customer.client.from('service_categories')
+      .insert({ name: 'Nope', slug: `${slug}-2` });
+    expect(insert.error).not.toBeNull();
+    const update = await customer.client.from('service_categories')
+      .update({ name: 'Hijacked' }).eq('id', cat?.id).select('id');
+    expect(update.data ?? []).toHaveLength(0);
+    const del = await customer.client.from('service_categories').delete().eq('id', cat?.id).select('id');
+    expect(del.data ?? []).toHaveLength(0);
+    const { data: after } = await db.from('service_categories').select('name').eq('id', cat?.id).single();
+    expect(after?.name).toBe(`Front Door Test ${tag} Guard`);
+
     await signInBrowser(page, customer);
     await page.goto('/admin/taxonomy');
     await page.waitForURL((u) => !u.pathname.startsWith('/admin'), { timeout: 15_000 });

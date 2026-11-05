@@ -8,13 +8,14 @@ type AuditPayload = {
   actor_id?: string;
 };
 
-export async function logAudit({
+// Same as logAudit, but tells the caller whether the row was written.
+export async function logAuditChecked({
   action,
   target_type,
   target_id,
   metadata = {},
   actor_id,
-}: AuditPayload): Promise<void> {
+}: AuditPayload): Promise<boolean> {
   const { error } = await supabase.from('audit_logs').insert({
     action,
     target_type,
@@ -25,5 +26,11 @@ export async function logAudit({
 
   if (error) {
     console.error('[AuditLogger]', action, error.message);
+    return false;
   }
+  return true;
+}
+
+export async function logAudit(payload: AuditPayload): Promise<void> {
+  await logAuditChecked(payload);
 }

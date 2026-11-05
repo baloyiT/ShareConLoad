@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
-import { logAudit } from '@/services/auditLogger';
+import { logAudit, logAuditChecked } from '@/services/auditLogger';
 import { notify } from '@/services/notificationService';
 import {
   isBlankTradingName, isIndividual, TRADING_NAME_MAX_LENGTH, verifiableLevel, verificationLabel,
@@ -39,7 +39,10 @@ type OperatorRow = {
   } | null;
 };
 
-type OperatorProfile = NonNullable<OperatorRow['operator_profile']>;
+// Verify is only offered when it raises the level.
+const LEVEL_RANK: Record<VerificationLevel, number> = { registered: 0, identity_verified: 1, business_verified: 2 };
+
+type OperatorProfile =NonNullable<OperatorRow['operator_profile']>;
 
 // Why an active, verified operator is not in the directory yet. Empty when nothing blocks it.
 function listingBlockers(p: OperatorProfile): string[] {
@@ -69,6 +72,7 @@ export default function AdminOperatorsPage() {
   const [rejectReason,     setRejectReason]     = useState('');
   const [nameDrafts,       setNameDrafts]       = useState<Record<string, string>>({});
   const [nameSaved,        setNameSaved]        = useState<string | null>(null);
+  const [confirmSuspendId, setConfirmSuspendId] = useState<string | null>(null);
   const [termsOpen,        setTermsOpen]        = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -117,18 +121,43 @@ export default function AdminOperatorsPage() {
     if (!p) return;
     setSaving(op.id + '_verify');
     setError(null);
-    const { error: err } = await supabase
-      .from('operator_profiles').update({ verification_level: level }).eq('id', p.id);
-    if (err) { console.error('Verify failed:', err); setError('Could not verify this operator.'); }
-    else {
+
+    // The page may be stale: check the approved documents again just before verifying.
+    const { data: docs, error: docsErr } = await supabase
+      .from('compliance_documents').select('doc_type').eq('operator_profile_id', p.id).eq('status', 'approved');
+    if (docsErr) {
+      console.error('Re-reading documents failed:', docsErr);
+      setError('Could not verify this operator.');
+      setSaving(null);
+      return;
+    }
+    const check = verifiableLevel(p.entity_type, (docs ?? []).map((d) => d.doc_type as string));
+    if (check.level !== level || check.missing.length > 0) {
+      setError(`The documents are no longer approved for this level (needs: ${check.missing.join(', ')}). Refresh the page.`);
+      setSaving(null);
+      return;
+    }
+
+    // A zero-row update (select returns nothing) counts as a failure.
+    const { data, error: err } = await supabase
+      .from('operator_profiles').update({ verification_level: level }).eq('id', p.id).select('id');
+    if (err || !data || data.length === 0) {
+      console.error('Verify failed:', err ?? 'no rows updated');
+      setError('Could not verify this operator.');
+    } else {
       patchProfile(op, { verification_level: level });
-      await logAudit({
-        action: 'operator_verified', target_type: 'operator_profile', target_id: p.id,
-        actor_id: adminId ?? undefined,
-        metadata: { verification_level: level, previous: p.verification_level },
-      });
+      await audit('operator_verified', p.id, { verification_level: level, previous: p.verification_level });
     }
     setSaving(null);
+  }
+
+  async function audit(action: string, targetId: string, metadata: Record<string, unknown>) {
+    const ok = await logAuditChecked({
+      action, target_type: 'operator_profile', target_id: targetId,
+      actor_id: adminId ?? undefined, metadata,
+    });
+    if (!ok) setError('Saved, but the audit record failed. Tell support.');
+    return ok;
   }
 
   async function setParticipation(op: OperatorRow, next: 'active' | 'suspended') {
@@ -136,17 +165,16 @@ export default function AdminOperatorsPage() {
     if (!p) return;
     setSaving(op.id + '_participation');
     setError(null);
-    const { error: err } = await supabase
-      .from('operator_profiles').update({ participation_status: next }).eq('id', p.id);
-    if (err) { console.error('Participation change failed:', err); setError('Could not change this operator.'); }
-    else {
+    const { data, error: err } = await supabase
+      .from('operator_profiles').update({ participation_status: next }).eq('id', p.id).select('id');
+    if (err || !data || data.length === 0) {
+      console.error('Participation change failed:', err ?? 'no rows updated');
+      setError('Could not change this operator.');
+    } else {
       patchProfile(op, { participation_status: next });
-      await logAudit({
-        action: next === 'active' ? 'operator_activated' : 'operator_suspended',
-        target_type: 'operator_profile', target_id: p.id, actor_id: adminId ?? undefined,
-        metadata: { previous: p.participation_status },
-      });
+      await audit(next === 'active' ? 'operator_activated' : 'operator_suspended', p.id, { previous: p.participation_status });
     }
+    setConfirmSuspendId(null);
     setSaving(null);
   }
 
@@ -163,17 +191,15 @@ export default function AdminOperatorsPage() {
     setSaving(op.id + '_name');
     setError(null);
     setNameSaved(null);
-    const { error: err } = await supabase
-      .from('operator_profiles').update({ trading_name: next }).eq('id', p.id);
-    if (err) { console.error('Trading name save failed:', err); setError('Could not save the trading name.'); }
-    else {
+    const { data, error: err } = await supabase
+      .from('operator_profiles').update({ trading_name: next }).eq('id', p.id).select('id');
+    if (err || !data || data.length === 0) {
+      console.error('Trading name save failed:', err ?? 'no rows updated');
+      setError('Could not save the trading name.');
+    } else {
       patchProfile(op, { trading_name: next });
       setNameDrafts((prev) => ({ ...prev, [op.id]: next ?? '' }));
-      await logAudit({
-        action: 'operator_trading_name_changed', target_type: 'operator_profile', target_id: p.id,
-        actor_id: adminId ?? undefined, metadata: { old: p.trading_name, new: next },
-      });
-      setNameSaved(op.id);
+      if (await audit('operator_trading_name_changed', p.id, { old: p.trading_name, new: next })) setNameSaved(op.id);
     }
     setSaving(null);
   }
@@ -509,7 +535,7 @@ export default function AdminOperatorsPage() {
                                 <div className="flex flex-wrap items-center gap-2">
                                   <span className="text-gray-500">Verification:</span>
                                   <span data-testid="verification-badge" className="badge badge-sm border-0 bg-blue-50 text-blue-600">{label ?? 'Registered'}</span>
-                                  {p.verification_level !== level && missing.length === 0 && (
+                                  {LEVEL_RANK[level] > LEVEL_RANK[p.verification_level] && missing.length === 0 && (
                                     <button
                                       onClick={() => verify(op, level)}
                                       disabled={saving === op.id + '_verify'}
@@ -519,7 +545,7 @@ export default function AdminOperatorsPage() {
                                       {`Verify as ${verificationLabel(level)}`}
                                     </button>
                                   )}
-                                  {p.verification_level !== level && missing.length > 0 && (
+                                  {LEVEL_RANK[level] > LEVEL_RANK[p.verification_level] && missing.length > 0 && (
                                     <span className="text-xs text-gray-500">
                                       Cannot verify yet. Needs approved documents: {missing.join(', ')}.
                                     </span>
@@ -529,13 +555,27 @@ export default function AdminOperatorsPage() {
                                   <span className="text-gray-500">Participation:</span>
                                   <span className="badge badge-sm border-0 bg-gray-100 text-gray-600 capitalize">{p.participation_status}</span>
                                   {p.participation_status === 'active' ? (
-                                    <button
-                                      onClick={() => setParticipation(op, 'suspended')}
-                                      disabled={saving === op.id + '_participation'}
-                                      className="btn btn-xs rounded-lg font-semibold border border-red-200 text-red-500 hover:bg-red-50"
-                                    >
-                                      Suspend
-                                    </button>
+                                    confirmSuspendId === op.id ? (
+                                      <>
+                                        <span className="text-xs text-red-600">Suspending removes this operator from the directory immediately.</span>
+                                        <button
+                                          onClick={() => setParticipation(op, 'suspended')}
+                                          disabled={saving === op.id + '_participation'}
+                                          className="btn btn-xs rounded-lg text-white font-semibold"
+                                          style={{ backgroundColor: '#ef4444' }}
+                                        >
+                                          Confirm suspend
+                                        </button>
+                                        <button onClick={() => setConfirmSuspendId(null)} className="btn btn-xs btn-ghost">Cancel</button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        onClick={() => setConfirmSuspendId(op.id)}
+                                        className="btn btn-xs rounded-lg font-semibold border border-red-200 text-red-500 hover:bg-red-50"
+                                      >
+                                        Suspend
+                                      </button>
+                                    )
                                   ) : (
                                     <button
                                       onClick={() => setParticipation(op, 'active')}
