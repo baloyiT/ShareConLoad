@@ -75,11 +75,8 @@ async function seedCustomerData(): Promise<Seed> {
   const paymentRef = `front-door-test-ref-${user.id}`;
 
   // A signup trigger gives every new user a default customer profile, so the helper user has
-  // two. The pickup page reads its profile with .single(), as it would for a real customer who
-  // has exactly one, so drop the extra row (this throwaway user only).
-  const { error: dupErr } = await db.from('profiles').delete()
-    .eq('user_id', user.id).neq('id', user.profileId);
-  expect(dupErr).toBeNull();
+  // two customer rows. Kept on purpose: users can hold several profile rows and the pages
+  // must cope with that.
 
   const { data: job, error: jobErr } = await db.from('measurement_jobs').insert({
     shipper_profile_id: user.profileId,
@@ -113,6 +110,7 @@ async function seedCustomerData(): Promise<Seed> {
 async function removeSeed(s: Seed): Promise<void> {
   const db = adminClient();
   await db.from('measurement_jobs').delete().eq('id', s.jobId);
+  await db.from('pickup_jobs').delete().eq('booking_id', s.bookingId);
   await db.from('payments').delete().eq('booking_id', s.bookingId);
   await db.from('bookings').delete().eq('id', s.bookingId);
   await db.from('containers').delete().eq('id', s.containerId);
@@ -153,6 +151,45 @@ test('measurement job page loads the job without verify', async ({ page }) => {
     await page.goto(`/measurement-service/${seed.jobId}`);
     await expect(page.getByText('1 Test Street')).toBeVisible({ timeout: 20_000 });
     expect(pathOf(page)).toBe(`/measurement-service/${seed.jobId}`);
+  } finally {
+    await removeSeed(seed);
+  }
+});
+
+// A customer with two profile rows returning from a pickup payment must reach verification.
+test('/pickup/[bookingId]?verify=1 reaches verification for a user with two profile rows', async ({ page }) => {
+  const seed = await seedCustomerData();
+  try {
+    const { data: rows } = await adminClient().from('profiles').select('id, role_type')
+      .eq('user_id', seed.user.id).order('id');
+    expect(rows).toHaveLength(2);
+    // The page uses the customer row with the lowest id as the shipper.
+    const shipperId = rows!.find(r => r.role_type === 'customer')!.id as string;
+    const ref = `front-door-test-ref-pickup-${seed.user.id}`;
+    const { error } = await adminClient().from('pickup_jobs').insert({
+      booking_id: seed.bookingId, shipper_profile_id: shipperId,
+      pickup_address: '2 Test Street', pickup_city: 'Johannesburg', pickup_country: 'South Africa',
+      warehouse_address: 'Test Warehouse', quoted_fee: 50, status: 'pending_payment', payment_ref: ref,
+    });
+    expect(error).toBeNull();
+
+    await signInBrowser(page, seed.user);
+    const sent: { reference?: string }[] = [];
+    await page.route('**/functions/v1/verify-pickup-payment', async route => {
+      const cors = {
+        'access-control-allow-origin': '*',
+        'access-control-allow-headers': '*',
+        'access-control-allow-methods': 'POST, OPTIONS',
+      };
+      if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+      sent.push(route.request().postDataJSON() as { reference?: string });
+      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: '{}' });
+    });
+
+    await page.goto(`/pickup/${seed.bookingId}?verify=1`);
+    await expect(page.getByText('Payment confirmed!')).toBeVisible({ timeout: 20_000 });
+    expect(pathOf(page)).toBe(`/pickup/${seed.bookingId}`);
+    expect(sent).toEqual([{ reference: ref }]);
   } finally {
     await removeSeed(seed);
   }

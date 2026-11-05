@@ -42,11 +42,14 @@ function PickupContent({ bookingId }: { bookingId: string }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/auth/login'); return; }
 
-      const { data: profile } = await supabase
+      // Users can hold several profile rows. The shipper side of a pickup is the customer
+      // profile, so prefer it, and pick the same row every time (lowest id).
+      const { data: profileRows } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, role_type')
         .eq('user_id', user.id)
-        .single();
+        .order('id');
+      const profile = profileRows?.find((p) => p.role_type === 'customer') ?? profileRows?.[0];
       if (!profile) { router.push('/'); return; }
       setProfileId(profile.id);
 
