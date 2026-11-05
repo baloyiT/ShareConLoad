@@ -8,7 +8,7 @@ import PageHero from '@/components/PageHero';
 
 import {
   AlertCircle, ClipboardList, Ship, CreditCard, TrendingUp, Scale, Flag, Unlock,
-  ArrowRightLeft, User, IdCard, Ruler, Truck, RulerDimensionLine, DollarSign, PackageCheck, Mail,
+  ArrowRightLeft, User, IdCard, Ruler, Truck, RulerDimensionLine, DollarSign, PackageCheck, Mail, Tags,
 } from 'lucide-react';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -179,7 +179,8 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {[
                   { href: '/admin/bookings',   label: 'Bookings',    icon: ClipboardList, desc: 'Manage all bookings'         },
-                  { href: '/admin/operators',  label: 'Operators',   icon: Ship, desc: 'Payout controls'             },
+                  { href: '/admin/operators',  label: 'Operators',   icon: Ship, desc: 'Verification, listing, payouts' },
+                  { href: '/admin/taxonomy',   label: 'Service categories', icon: Tags, desc: 'Directory service types' },
                   { href: '/admin/payouts',    label: 'Payouts',     icon: CreditCard, desc: 'Payout history'              },
                   { href: '/admin/commission', label: 'Commission',  icon: TrendingUp, desc: 'Tiered & fixed rates'         },
                   { href: '/admin/disputes',   label: 'Disputes',    icon: Scale, desc: 'Resolve disputes'            },

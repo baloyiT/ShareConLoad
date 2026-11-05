@@ -39,6 +39,16 @@ export function listingDocTypes(entity: string | null | undefined): string[] {
   return isIndividual(entity) ? ['identity'] : ['identity', 'business_registration'];
 }
 
+// Admin verification: the one level this operator's approved documents can support, and what is missing.
+// A company earns Business verified, an individual earns Identity verified. Nothing else is offered.
+export function verifiableLevel(
+  entity: string | null | undefined,
+  approvedDocTypes: string[],
+): { level: 'identity_verified' | 'business_verified'; missing: string[] } {
+  const missing = listingDocTypes(entity).filter((t) => !approvedDocTypes.includes(t));
+  return { level: isIndividual(entity) ? 'identity_verified' : 'business_verified', missing };
+}
+
 // Must match the check on operator_profiles.trading_name in migration _87.
 export const TRADING_NAME_MAX_LENGTH = 120;
 export const TRADING_NAME_VISIBLE_CHARACTER =

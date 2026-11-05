@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
 import PageHero from '@/components/PageHero';
 import { logAudit } from '@/services/auditLogger';
 import { notify } from '@/services/notificationService';
+import {
+  isBlankTradingName, isIndividual, TRADING_NAME_MAX_LENGTH, verifiableLevel, verificationLabel,
+  type ParticipationStatus, type VerificationLevel,
+} from '@/services/operatorCompliance';
 
 type OperatorRow = {
   id: string;
@@ -24,8 +28,30 @@ type OperatorRow = {
     status: string | null;
     service_agreement_signed_at: string | null;
     compliance_rejection_reason: string | null;
+    entity_type: string | null;
+    trading_name: string | null;
+    verification_level: VerificationLevel;
+    participation_status: ParticipationStatus;
+    participation_terms_accepted_at: string | null;
+    operator_services: { id: string }[];
+    operator_coverage: { id: string }[];
+    compliance_documents: { doc_type: string; status: string }[];
   } | null;
 };
+
+type OperatorProfile = NonNullable<OperatorRow['operator_profile']>;
+
+// Why an active, verified operator is not in the directory yet. Empty when nothing blocks it.
+function listingBlockers(p: OperatorProfile): string[] {
+  const out: string[] = [];
+  if (isIndividual(p.entity_type) && isBlankTradingName(p.trading_name)) {
+    out.push('Trading name is blank (an individual is never listed under their legal name)');
+  }
+  if (p.operator_services.length === 0) out.push('No services chosen');
+  if (p.operator_coverage.length === 0) out.push('No coverage added');
+  if (!p.participation_terms_accepted_at) out.push('Terms not accepted');
+  return out;
+}
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -41,6 +67,9 @@ export default function AdminOperatorsPage() {
   const [holdReason,       setHoldReason]       = useState('');
   const [rejectModal,      setRejectModal]      = useState<OperatorRow | null>(null);
   const [rejectReason,     setRejectReason]     = useState('');
+  const [nameDrafts,       setNameDrafts]       = useState<Record<string, string>>({});
+  const [nameSaved,        setNameSaved]        = useState<string | null>(null);
+  const [termsOpen,        setTermsOpen]        = useState<boolean | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -54,7 +83,11 @@ export default function AdminOperatorsPage() {
           operator_profile:operator_profiles!profile_id(
             id, legal_name, payout_enabled, payout_hold, payout_hold_reason,
             paystack_recipient_code, bank_account_name, bank_account_number,
-            status, service_agreement_signed_at, compliance_rejection_reason
+            status, service_agreement_signed_at, compliance_rejection_reason,
+            entity_type, trading_name, verification_level, participation_status,
+            participation_terms_accepted_at,
+            operator_services(id), operator_coverage(id),
+            compliance_documents(doc_type, status)
           )
         `)
         .eq('role_type', 'operator')
@@ -62,10 +95,88 @@ export default function AdminOperatorsPage() {
 
       if (err) { setError(err.message); }
       else { setOperators((data ?? []) as unknown as OperatorRow[]); }
+
+      const { data: terms, error: termsErr } = await supabase
+        .from('participation_terms').select('open_for_acceptance').eq('is_current', true);
+      if (termsErr) console.error('Could not read participation terms:', termsErr);
+      else setTermsOpen((terms ?? []).some((t) => t.open_for_acceptance === true));
       setLoading(false);
     }
     init();
   }, []);
+
+  function patchProfile(op: OperatorRow, patch: Partial<OperatorProfile>) {
+    setOperators((prev) =>
+      prev.map((o) => o.id === op.id
+        ? { ...o, operator_profile: o.operator_profile ? { ...o.operator_profile, ...patch } : null }
+        : o));
+  }
+
+  async function verify(op: OperatorRow, level: VerificationLevel) {
+    const p = op.operator_profile;
+    if (!p) return;
+    setSaving(op.id + '_verify');
+    setError(null);
+    const { error: err } = await supabase
+      .from('operator_profiles').update({ verification_level: level }).eq('id', p.id);
+    if (err) { console.error('Verify failed:', err); setError('Could not verify this operator.'); }
+    else {
+      patchProfile(op, { verification_level: level });
+      await logAudit({
+        action: 'operator_verified', target_type: 'operator_profile', target_id: p.id,
+        actor_id: adminId ?? undefined,
+        metadata: { verification_level: level, previous: p.verification_level },
+      });
+    }
+    setSaving(null);
+  }
+
+  async function setParticipation(op: OperatorRow, next: 'active' | 'suspended') {
+    const p = op.operator_profile;
+    if (!p) return;
+    setSaving(op.id + '_participation');
+    setError(null);
+    const { error: err } = await supabase
+      .from('operator_profiles').update({ participation_status: next }).eq('id', p.id);
+    if (err) { console.error('Participation change failed:', err); setError('Could not change this operator.'); }
+    else {
+      patchProfile(op, { participation_status: next });
+      await logAudit({
+        action: next === 'active' ? 'operator_activated' : 'operator_suspended',
+        target_type: 'operator_profile', target_id: p.id, actor_id: adminId ?? undefined,
+        metadata: { previous: p.participation_status },
+      });
+    }
+    setSaving(null);
+  }
+
+  async function saveTradingName(op: OperatorRow) {
+    const p = op.operator_profile;
+    if (!p) return;
+    const draft = (nameDrafts[op.id] ?? p.trading_name ?? '').trim();
+    const next = draft === '' ? null : draft;
+    if (next !== null && (isBlankTradingName(next) || next.length > TRADING_NAME_MAX_LENGTH)) {
+      setError(`A trading name needs a visible character and at most ${TRADING_NAME_MAX_LENGTH} characters.`);
+      return;
+    }
+    if (next === p.trading_name) return;
+    setSaving(op.id + '_name');
+    setError(null);
+    setNameSaved(null);
+    const { error: err } = await supabase
+      .from('operator_profiles').update({ trading_name: next }).eq('id', p.id);
+    if (err) { console.error('Trading name save failed:', err); setError('Could not save the trading name.'); }
+    else {
+      patchProfile(op, { trading_name: next });
+      setNameDrafts((prev) => ({ ...prev, [op.id]: next ?? '' }));
+      await logAudit({
+        action: 'operator_trading_name_changed', target_type: 'operator_profile', target_id: p.id,
+        actor_id: adminId ?? undefined, metadata: { old: p.trading_name, new: next },
+      });
+      setNameSaved(op.id);
+    }
+    setSaving(null);
+  }
 
   async function togglePayoutEnabled(op: OperatorRow) {
     if (!op.operator_profile) return;
@@ -239,6 +350,12 @@ export default function AdminOperatorsPage() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {error && <div className="alert alert-error text-sm mb-4">{error}</div>}
+        {termsOpen === false && (
+          <div className="alert alert-info text-sm mb-4">
+            No operator can be listed until the participation terms are approved and opened for acceptance.
+            You can still verify and activate operators now; they appear in the directory once they accept the terms.
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-24">
@@ -263,7 +380,8 @@ export default function AdminOperatorsPage() {
                   {operators.map((op) => {
                     const p = op.operator_profile;
                     return (
-                      <tr key={op.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <Fragment key={op.id}>
+                      <tr className="hover:bg-gray-50 transition-colors">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#ff6a00' }}>
@@ -375,6 +493,97 @@ export default function AdminOperatorsPage() {
                           </div>
                         </td>
                       </tr>
+                      {p && (() => {
+                        const approved = p.compliance_documents.filter((d) => d.status === 'approved').map((d) => d.doc_type);
+                        const { level, missing } = verifiableLevel(p.entity_type, approved);
+                        const label = verificationLabel(p.verification_level);
+                        const blockers = p.participation_status === 'active' && p.verification_level !== 'registered' ? listingBlockers(p) : [];
+                        const inputId = `trading-name-${op.id}`;
+                        return (
+                          <tr className="border-b border-gray-50">
+                            <td colSpan={8} className="px-4 pb-4 pt-0">
+                              <div data-testid="operator-directory-panel" className="rounded-xl bg-gray-50 border border-gray-100 p-4 text-sm grid gap-3">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                  Directory listing · {p.legal_name ?? 'No name'} · {isIndividual(p.entity_type) ? 'Individual' : 'Company'}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-gray-500">Verification:</span>
+                                  <span data-testid="verification-badge" className="badge badge-sm border-0 bg-blue-50 text-blue-600">{label ?? 'Registered'}</span>
+                                  {p.verification_level !== level && missing.length === 0 && (
+                                    <button
+                                      onClick={() => verify(op, level)}
+                                      disabled={saving === op.id + '_verify'}
+                                      className="btn btn-xs rounded-lg text-white font-semibold"
+                                      style={{ backgroundColor: '#081D3A' }}
+                                    >
+                                      {`Verify as ${verificationLabel(level)}`}
+                                    </button>
+                                  )}
+                                  {p.verification_level !== level && missing.length > 0 && (
+                                    <span className="text-xs text-gray-500">
+                                      Cannot verify yet. Needs approved documents: {missing.join(', ')}.
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-gray-500">Participation:</span>
+                                  <span className="badge badge-sm border-0 bg-gray-100 text-gray-600 capitalize">{p.participation_status}</span>
+                                  {p.participation_status === 'active' ? (
+                                    <button
+                                      onClick={() => setParticipation(op, 'suspended')}
+                                      disabled={saving === op.id + '_participation'}
+                                      className="btn btn-xs rounded-lg font-semibold border border-red-200 text-red-500 hover:bg-red-50"
+                                    >
+                                      Suspend
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => setParticipation(op, 'active')}
+                                      disabled={saving === op.id + '_participation'}
+                                      className="btn btn-xs rounded-lg text-white font-semibold"
+                                      style={{ backgroundColor: '#FF6A00' }}
+                                    >
+                                      Activate
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap items-end gap-2">
+                                  <div>
+                                    <label htmlFor={inputId} className="block text-gray-500 mb-1">Trading name</label>
+                                    <input
+                                      id={inputId}
+                                      type="text"
+                                      className="input input-bordered input-sm w-64 max-w-full"
+                                      value={nameDrafts[op.id] ?? p.trading_name ?? ''}
+                                      onChange={(e) => { setNameSaved(null); setNameDrafts((prev) => ({ ...prev, [op.id]: e.target.value })); }}
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => saveTradingName(op)}
+                                    disabled={saving === op.id + '_name'}
+                                    className="btn btn-sm btn-outline rounded-lg"
+                                  >
+                                    Save trading name
+                                  </button>
+                                  {nameSaved === op.id && <span className="text-xs text-green-600">Trading name saved</span>}
+                                </div>
+                                <p className="text-xs text-gray-400">
+                                  The directory shows the trading name. Companies fall back to their legal name; individuals are never listed under their legal name.
+                                </p>
+                                {blockers.length > 0 && (
+                                  <div className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-3">
+                                    <p className="font-semibold mb-1">Active and verified, but not listed yet:</p>
+                                    <ul className="list-disc ml-4">
+                                      {blockers.map((b) => <li key={b}>{b}</li>)}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })()}
+                      </Fragment>
                     );
                   })}
                 </tbody>
