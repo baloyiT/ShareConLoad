@@ -76,6 +76,7 @@ test.describe('operator self-edit guard', () => {
     bank_confirmation_letter_url: 'https://example.invalid/letter.pdf',
     payout_method: 'manual',
     phone_verified: true,
+    compliance_rejection_reason: 'self-set',
   };
 
   for (const [field, value] of Object.entries(blockedUpdates)) {
@@ -87,6 +88,19 @@ test.describe('operator self-edit guard', () => {
       expect((await operatorRow(operator.operatorProfileId))?.[field]).toEqual(before?.[field]);
     });
   }
+
+  test('a client cannot clear a compliance rejection reason', async () => {
+    const id = operator.operatorProfileId ?? '';
+    await adminClient().from('operator_profiles').update({ compliance_rejection_reason: 'Rejected in a test' }).eq('id', id);
+    try {
+      const { error } = await operator.client.from('operator_profiles')
+        .update({ compliance_rejection_reason: null }).eq('id', id);
+      expect(error?.code).toBe(DENIED);
+      expect((await operatorRow(id))?.compliance_rejection_reason).toBe('Rejected in a test');
+    } finally {
+      await adminClient().from('operator_profiles').update({ compliance_rejection_reason: null }).eq('id', id);
+    }
+  });
 
   for (const status of ['pending_verification', 'active_limited', 'active', 'trusted']) {
     test(`a client cannot move status to ${status}`, async () => {
@@ -268,6 +282,7 @@ test.describe('operator self-edit guard', () => {
       { bank_confirmation_letter_url: 'https://example.invalid/letter.pdf' },
       { payout_method: 'manual' },
       { phone_verified: true },
+      { compliance_rejection_reason: 'self-set' },
       { status: null },
       { verification_level: null },
     ];
@@ -420,6 +435,280 @@ test.describe('payments table', () => {
       await service.from('bookings').delete().eq('container_id', containerId);
       await service.from('containers').delete().eq('id', containerId);
     }
+  });
+});
+
+test.describe('document status guard', () => {
+  test.describe('compliance_documents', () => {
+    let operator: TestUser;
+    let admin: TestUser;
+    const docType = 'identity';
+    const path = () => `${operator.operatorProfileId}/${docType}.pdf`;
+
+    // Exactly what app/operator/compliance/documents/page.tsx sends, on this branch and in production.
+    const upload = () => operator.client.from('compliance_documents').upsert(
+      {
+        operator_profile_id: operator.operatorProfileId,
+        doc_type: docType,
+        file_url: path(),
+        status: 'under_review',
+        admin_notes: null,
+        uploaded_at: new Date().toISOString(),
+      },
+      { onConflict: 'operator_profile_id,doc_type' },
+    ).select('id, doc_type, file_url, status, admin_notes, uploaded_at').single();
+
+    async function doc() {
+      const { data, error } = await adminClient().from('compliance_documents')
+        .select('*').eq('operator_profile_id', operator.operatorProfileId ?? '').eq('doc_type', docType).maybeSingle();
+      expect(error).toBeNull();
+      return data as Record<string, unknown> | null;
+    }
+
+    async function seed(extra: Record<string, unknown>) {
+      const { error } = await adminClient().from('compliance_documents').insert({
+        operator_profile_id: operator.operatorProfileId,
+        doc_type: docType,
+        file_url: path(),
+        ...extra,
+      });
+      expect(error).toBeNull();
+    }
+
+    test.beforeAll(async () => {
+      test.setTimeout(60_000);
+      operator = await newUser('operator');
+      admin = await newUser('admin');
+    });
+
+    test.beforeEach(async () => {
+      await adminClient().from('compliance_documents').delete().eq('operator_profile_id', operator.operatorProfileId ?? '');
+    });
+
+    const reviewerFields: Record<string, unknown>[] = [
+      { status: 'approved' },
+      { status: 'rejected' },
+      { admin_notes: 'self-set' },
+      { reviewed_at: '2030-01-01T00:00:00Z' },
+    ];
+
+    for (const extra of reviewerFields) {
+      test(`a client cannot upload with ${JSON.stringify(extra)}`, async () => {
+        const { error } = await operator.client.from('compliance_documents').insert({
+          operator_profile_id: operator.operatorProfileId, doc_type: docType, file_url: path(), ...extra,
+        });
+        expect(error?.code).toBe(DENIED);
+        expect(await doc()).toBeNull();
+      });
+
+      test(`a client cannot update a document with ${JSON.stringify(extra)}`, async () => {
+        await seed({});
+        const before = await doc();
+        const { error } = await operator.client.from('compliance_documents')
+          .update(extra).eq('operator_profile_id', operator.operatorProfileId ?? '');
+        expect(error?.code).toBe(DENIED);
+        expect(await doc()).toEqual(before);
+      });
+    }
+
+    test('a first upload goes in as under_review', async () => {
+      const { data, error } = await upload();
+      expect(error).toBeNull();
+      expect(data?.status).toBe('under_review');
+    });
+
+    test('a client cannot approve through the upload upsert', async () => {
+      await seed({});
+      const { error } = await operator.client.from('compliance_documents').upsert(
+        { operator_profile_id: operator.operatorProfileId, doc_type: docType, file_url: path(), status: 'approved' },
+        { onConflict: 'operator_profile_id,doc_type' },
+      );
+      expect(error?.code).toBe(DENIED);
+      expect((await doc())?.status).toBe('under_review');
+    });
+
+    test('re-uploading after a rejection goes back to review and clears the note', async () => {
+      await seed({ status: 'rejected', admin_notes: 'Too blurry', reviewed_at: '2026-01-01T00:00:00Z' });
+      const { data, error } = await upload();
+      expect(error).toBeNull();
+      expect(data?.status).toBe('under_review');
+      expect(data?.admin_notes).toBeNull();
+    });
+
+    test('a rejected document cannot have its note replaced or its review date moved', async () => {
+      await seed({ status: 'rejected', admin_notes: 'Too blurry', reviewed_at: '2026-01-01T00:00:00Z' });
+      for (const update of [
+        { status: 'under_review', admin_notes: 'self-set' },
+        { status: 'under_review', admin_notes: null, reviewed_at: null },
+      ]) {
+        const { error } = await operator.client.from('compliance_documents')
+          .update(update).eq('operator_profile_id', operator.operatorProfileId ?? '');
+        expect(error?.code).toBe(DENIED);
+      }
+      expect((await doc())?.status).toBe('rejected');
+    });
+
+    test('an approved document cannot change while it stays approved', async () => {
+      await seed({ status: 'approved', reviewed_at: '2026-01-01T00:00:00Z' });
+      for (const update of [
+        { file_url: `${operator.operatorProfileId}/other.pdf` },
+        { doc_type: 'tax_clearance' },
+        { uploaded_at: '2030-01-01T00:00:00Z' },
+      ]) {
+        const { error } = await operator.client.from('compliance_documents')
+          .update(update).eq('operator_profile_id', operator.operatorProfileId ?? '');
+        expect(error?.code).toBe(DENIED);
+      }
+      expect((await doc())?.file_url).toBe(path());
+    });
+
+    test('replacing an approved document sends it back to review', async () => {
+      await seed({ status: 'approved', reviewed_at: '2026-01-01T00:00:00Z' });
+      const { data, error } = await upload();
+      expect(error).toBeNull();
+      expect(data?.status).toBe('under_review');
+    });
+
+    test('an admin can still approve and reject', async () => {
+      await seed({});
+      const id = (await doc())?.id as string;
+      for (const update of [
+        { status: 'rejected', admin_notes: 'Too blurry', reviewed_at: new Date().toISOString() },
+        { status: 'approved', admin_notes: null, reviewed_at: new Date().toISOString() },
+      ]) {
+        const { error } = await admin.client.from('compliance_documents').update(update).eq('id', id);
+        expect(error).toBeNull();
+      }
+      expect((await doc())?.status).toBe('approved');
+    });
+
+    test('the service role can write the approved agreement as generate-agreement-pdf does', async () => {
+      const { error } = await adminClient().from('compliance_documents').upsert(
+        { operator_profile_id: operator.operatorProfileId, doc_type: 'service_agreement', file_url: 'x.pdf', status: 'approved' },
+        { onConflict: 'operator_profile_id,doc_type' },
+      );
+      expect(error).toBeNull();
+    });
+  });
+
+  test.describe('customer_kyc', () => {
+    let customer: TestUser;
+    let admin: TestUser;
+
+    const details = () => ({
+      profile_id: customer.profileId,
+      full_name: 'Front Door Test',
+      date_of_birth: null,
+      id_type: 'passport',
+      id_number: 'A1234567',
+      phone_number: null,
+      residential_address: null,
+      status: 'pending_review',
+    });
+
+    // Exactly what actions/customerKycActions.ts sends, on this branch and in production.
+    const saveDetails = () => customer.client.from('customer_kyc').update(details()).eq('profile_id', customer.profileId);
+    const saveDocs = () => customer.client.from('customer_kyc').update({
+      id_document_url: 'https://example.invalid/id.pdf',
+      proof_of_address_url: null,
+      status: 'pending_review',
+      submitted_at: new Date().toISOString(),
+    }).eq('profile_id', customer.profileId);
+
+    async function kyc() {
+      const { data, error } = await adminClient().from('customer_kyc')
+        .select('*').eq('profile_id', customer.profileId).maybeSingle();
+      expect(error).toBeNull();
+      return data as Record<string, unknown> | null;
+    }
+
+    async function seed(extra: Record<string, unknown>) {
+      const { error } = await adminClient().from('customer_kyc').insert({ ...details(), ...extra });
+      expect(error).toBeNull();
+    }
+
+    test.beforeAll(async () => {
+      test.setTimeout(60_000);
+      customer = await newUser('customer');
+      admin = await newUser('admin');
+    });
+
+    test.beforeEach(async () => {
+      await adminClient().from('customer_kyc').delete().eq('profile_id', customer.profileId);
+    });
+
+    const reviewerFields: Record<string, unknown>[] = [
+      { status: 'verified' },
+      { status: 'rejected' },
+      { rejection_reason: 'self-set' },
+      { reviewed_at: '2030-01-01T00:00:00Z' },
+    ];
+
+    for (const extra of reviewerFields) {
+      test(`a customer cannot submit KYC with ${JSON.stringify(extra)}`, async () => {
+        const { error } = await customer.client.from('customer_kyc').insert({ ...details(), ...extra });
+        expect(error?.code).toBe(DENIED);
+        expect(await kyc()).toBeNull();
+      });
+
+      test(`a customer cannot update KYC with ${JSON.stringify(extra)}`, async () => {
+        await seed({});
+        const before = await kyc();
+        const { error } = await customer.client.from('customer_kyc').update(extra).eq('profile_id', customer.profileId);
+        expect(error?.code).toBe(DENIED);
+        expect(await kyc()).toEqual(before);
+      });
+    }
+
+    test('the first submission still saves', async () => {
+      const { error } = await customer.client.from('customer_kyc').insert(details());
+      expect(error).toBeNull();
+      expect((await saveDocs()).error).toBeNull();
+      expect((await kyc())?.status).toBe('pending_review');
+    });
+
+    test('resubmitting after a rejection goes back to review and keeps the reason', async () => {
+      await seed({ status: 'rejected', rejection_reason: 'Expired ID', reviewed_at: '2026-01-01T00:00:00Z' });
+      expect((await saveDetails()).error).toBeNull();
+      expect((await saveDocs()).error).toBeNull();
+      const row = await kyc();
+      expect(row?.status).toBe('pending_review');
+      expect(row?.rejection_reason).toBe('Expired ID');
+    });
+
+    test('a rejection reason cannot be cleared', async () => {
+      await seed({ status: 'rejected', rejection_reason: 'Expired ID', reviewed_at: '2026-01-01T00:00:00Z' });
+      const { error } = await customer.client.from('customer_kyc')
+        .update({ status: 'pending_review', rejection_reason: null }).eq('profile_id', customer.profileId);
+      expect(error?.code).toBe(DENIED);
+      expect((await kyc())?.rejection_reason).toBe('Expired ID');
+    });
+
+    test('verified details cannot change while the row stays verified', async () => {
+      await seed({ status: 'verified', reviewed_at: '2026-01-01T00:00:00Z' });
+      const { error } = await customer.client.from('customer_kyc')
+        .update({ id_number: 'B7654321' }).eq('profile_id', customer.profileId);
+      expect(error?.code).toBe(DENIED);
+      expect((await kyc())?.id_number).toBe('A1234567');
+    });
+
+    test('resaving details on a verified row sends it back to review', async () => {
+      await seed({ status: 'verified', reviewed_at: '2026-01-01T00:00:00Z' });
+      expect((await saveDetails()).error).toBeNull();
+      expect((await kyc())?.status).toBe('pending_review');
+    });
+
+    test('an admin can still verify and reject', async () => {
+      await seed({});
+      for (const update of [
+        { status: 'rejected', rejection_reason: 'Expired ID', reviewed_at: new Date().toISOString() },
+        { status: 'verified', rejection_reason: null, reviewed_at: new Date().toISOString() },
+      ]) {
+        const { error } = await admin.client.from('customer_kyc').update(update).eq('profile_id', customer.profileId);
+        expect(error).toBeNull();
+      }
+      expect((await kyc())?.status).toBe('verified');
+    });
   });
 });
 
