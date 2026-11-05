@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ShareConLoad – Global Container Sharing",
-  description: "Find and book shared container space for international shipments.",
+  title: "ShareConLoad – Freight. Connected.",
+  description: "Tell us what you need to move and we'll find the right operators. Browse independent freight operators across sea, air, road and rail.",
 };
 
 export default function RootLayout({
