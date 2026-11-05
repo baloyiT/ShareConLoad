@@ -49,8 +49,8 @@ export default function AboutPage() {
           <p className="mt-3">
             Finding the right freight operator is hard when you are new to shipping. Customers tell us
             what they need to move. We check the details, then match them with operators who offer
-            that service and cover that route. You compare what the operators offer and choose who to
-            work with.
+            that service and cover that route. Compare any quotes you receive and choose who to work
+            with.
           </p>
           <p className="mt-3">
             Using ShareConLoad is free for customers. You agree terms and payment directly with the

@@ -14,15 +14,15 @@ const LABELS = [
     name: 'Business verified',
     who: 'For registered companies.',
     checked: [
-      'The company has uploaded an identity document, and we have reviewed it.',
-      'The company has uploaded its business registration document, and we have reviewed it.',
+      'The company has uploaded an identity document, and it has been approved.',
+      'The company has uploaded its business registration document, and it has been approved.',
     ],
   },
   {
     icon: UserCheck,
     name: 'Identity verified',
     who: 'For individuals operating without a registered company.',
-    checked: ['The individual has uploaded an identity document, and we have reviewed it.'],
+    checked: ['The individual has uploaded an identity document, and it has been approved.'],
   },
 ];
 

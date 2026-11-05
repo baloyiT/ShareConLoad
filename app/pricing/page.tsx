@@ -11,14 +11,14 @@ export const metadata = {
 const CUSTOMER_POINTS = [
   'Sending an enquiry costs nothing.',
   'Browsing the operator directory costs nothing.',
-  'Comparing quotes costs nothing.',
+  'Comparing any quotes you receive costs nothing.',
   'You agree the price and terms directly with the operator you choose, and pay that operator directly.',
 ];
 
 const OPERATOR_POINTS = [
-  'Listing in the directory is free.',
+  'Listing is free during our founding period.',
   'Leads during our founding period are free.',
-  'We have not set a price for leads after the founding period. We will tell founding operators before anything changes.',
+  'We have not set a price for leads after the founding period.',
 ];
 
 function Panel({ title, points }: { title: string; points: string[] }) {

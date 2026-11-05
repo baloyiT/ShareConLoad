@@ -3,8 +3,20 @@ import { test, expect } from '@playwright/test';
 // Public pages: no login and no database writes.
 
 const FOOTER_LINE = 'Independent operators deliver the freight and are responsible for it. ShareConLoad connects you.';
-const BANNED = /container space|list your container|escrow|cbm|become an agent/i;
-const CLAIMS = /lowest price|cheapest|guaranteed (quote|volume|quality)|we guarantee/i;
+const BANNED = /container|cbm|escrow|\bagents?\b|paystack|deposit/i;
+const CLAIMS =
+  /lowest price|cheapest|best price|\bguarantee|vetted|top[- ]rated|\d+\+? operators|we guarantee/i;
+// The required disclaimers are the only places "guarantee" may appear.
+const ALLOWED_DISCLAIMERS = [
+  /neither label guarantees service quality/gi,
+  /what verification does not guarantee/gi,
+  /neither label guarantees the quality of an operator's service/gi,
+];
+const EMAIL = /[\w.+-]+@[\w-]+(\.[\w-]+)+/g;
+
+function withoutDisclaimers(text: string): string {
+  return ALLOWED_DISCLAIMERS.reduce((t, re) => t.replace(re, ''), text);
+}
 
 const PUBLIC_PAGES = [
   '/about',
@@ -29,23 +41,45 @@ test.describe('Front door public pages', () => {
       await expect(page.locator('h1')).toBeVisible({ timeout: 15_000 });
       const text = await page.locator('body').innerText();
       expect(text).not.toMatch(BANNED);
-      expect(text).not.toMatch(CLAIMS);
+      expect(withoutDisclaimers(text)).not.toMatch(CLAIMS);
+      const emails = new Set((text.match(EMAIL) ?? []).map((e) => e.toLowerCase()));
+      for (const e of emails) expect(e).toBe('support@shareconload.com');
     });
   }
 
-  test('every public page shows the operator responsibility line', async ({ page }) => {
-    for (const path of PUBLIC_PAGES) {
-      await page.goto(path);
-      await expect(page.getByText(FOOTER_LINE).first(), path).toBeVisible({ timeout: 15_000 });
+  test('/contact makes no forbidden claims and shows only the support email', async ({ page }) => {
+    await page.goto('/contact');
+    await expect(page.locator('h1')).toBeVisible({ timeout: 15_000 });
+    const text = await page.locator('body').innerText();
+    expect(withoutDisclaimers(text)).not.toMatch(CLAIMS);
+    for (const e of new Set((text.match(EMAIL) ?? []).map((m) => m.toLowerCase()))) {
+      expect(e).toBe('support@shareconload.com');
     }
   });
 
-  test('every public page has the shared navigation', async ({ page }) => {
-    for (const path of PUBLIC_PAGES) {
+  for (const path of PUBLIC_PAGES) {
+    test(`${path} shows the operator responsibility line and shared navigation`, async ({ page }) => {
       await page.goto(path);
-      await expect(page.getByRole('navigation', { name: 'Main' }), path).toBeVisible({ timeout: 15_000 });
-    }
+      await expect(page.getByText(FOOTER_LINE).first()).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    });
+  }
+
+  test('privacy states that operators deliver and are responsible for the freight', async ({ page }) => {
+    await page.goto('/privacy');
+    await expect(
+      page.getByText(/shipping services\. Independent operators deliver the freight and are responsible for it\. ShareConLoad connects you\./),
+    ).toBeVisible({ timeout: 15_000 });
   });
+
+  for (const path of ['/cancellation', '/payment-flow', '/dispute-resolution']) {
+    test(`${path} still loads its content with the footer line`, async ({ page }) => {
+      const res = await page.goto(path);
+      expect(res?.status()).toBe(200);
+      await expect(page.locator('h1')).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText(FOOTER_LINE).first()).toBeVisible();
+    });
+  }
 
   test('pricing says customers pay nothing and shows no lead price', async ({ page }) => {
     await page.goto('/pricing');

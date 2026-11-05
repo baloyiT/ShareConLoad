@@ -76,9 +76,8 @@ export default function ForOperatorsPage() {
             <div>
               <h2 className="text-2xl font-bold text-[#081D3A]">Free founding period</h2>
               <p className="mt-3">
-                Listing in the directory is free, and so are leads during our founding period. We have
-                not set a price for leads after that, and we will tell founding operators before
-                anything changes.
+                Listing is free during our founding period, and so are leads. We have not set a price
+                for leads after the founding period.
               </p>
             </div>
             <div>

@@ -81,7 +81,7 @@ export default function TermsPage() {
             <p>ShareConLoad is <strong>NOT</strong> any of the following, unless expressly stated otherwise:</p>
             <Bullets items={['A shipping line','A freight carrier','A customs broker','A warehouse operator','A logistics transporter','A freight forwarding company']} />
             <p><strong>Independent Operators deliver the freight services and are responsible for them. ShareConLoad connects Customers with Operators.</strong></p>
-            <p>All transport services are performed exclusively by independent third-party Operators.ShareConLoad facilitates shipment bookings, payment processing, booking coordination, and dispute management processes on the Platform.</p>
+            <p>All transport services are performed exclusively by independent third-party Operators. ShareConLoad facilitates shipment bookings, payment processing, booking coordination, and dispute management processes on the Platform.</p>
           </Section>
 
           <Section number="3" title="Eligibility">

@@ -19,7 +19,7 @@ const CUSTOMER_STEPS = [
   },
   {
     title: 'Compare and choose',
-    desc: "See the operators' quotes side by side. You choose who to work with and pay your chosen operator directly.",
+    desc: "Compare any quotes you receive. You choose who to work with and pay your chosen operator directly.",
   },
 ];
 
