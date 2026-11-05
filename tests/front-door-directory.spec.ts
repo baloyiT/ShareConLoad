@@ -68,6 +68,8 @@ async function expectNoHorizontalScroll(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
+// Seeded operators are public while the run lasts. If a run is killed, sweep leftovers by hand:
+// users whose email starts with front-door-test-, and service_categories with slug fd-test-hidden-*.
 test.describe('Front door: public directory pages', () => {
   test.beforeAll(async () => {
     test.setTimeout(240_000);
@@ -82,7 +84,7 @@ test.describe('Front door: public directory pages', () => {
       const r = [{ origin_country: FROM, destination_country: TO }];
       await seed(company, { legal_name: COMPANY }, r);
       await seed(individual, { legal_name: `Private Legal ${tag}`, trading_name: INDIVIDUAL_TRADING, verification_level: 'identity_verified' }, r);
-          const { error: catErr } = await adminClient().from('service_categories')
+      const { error: catErr } = await adminClient().from('service_categories')
         .insert({ name: `Hidden ${tag}`, slug: HIDDEN_SLUG, is_active: false, sort_order: 999 });
       expect(catErr).toBeNull();
       await seed(bare, { legal_name: BARE, public_phone: null, public_email: null, public_description: null }, r, HIDDEN_SLUG);
@@ -263,5 +265,93 @@ test.describe('Front door: public directory pages', () => {
     await page.goto(`/directory?fromCountry=${encodeURIComponent(NONE_FROM)}`);
     await expect(page.getByRole('link', { name: PROMPT })).toBeVisible();
     await expectNoHorizontalScroll(page);
+  });
+  const SOME_ROW = {
+    id: '11111111-1111-4111-8111-111111111111', display_name: 'Mocked Operator', public_description: null,
+    verification_level: 'business_verified', services: ['Air freight'],
+    coverage: [{ id: 'c1', operator_profile_id: '11111111-1111-4111-8111-111111111111', origin_country: 'A', origin_city: null,
+      destination_country: 'B', destination_city: null, transport_mode: 'air' }],
+  };
+  const mockSearch = (page: Page, status: number, body: unknown) =>
+    page.route('**/rest/v1/rpc/search_directory*', r =>
+      r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) }));
+
+  test('one result with no filters never claims the directory is empty, and shows proper mode labels', async ({ page }) => {
+    await mockSearch(page, 200, [SOME_ROW]);
+    await page.goto('/directory');
+    await expect(page.getByRole('article')).toHaveCount(1);
+    await expect(page.getByText(/no operators are listed yet/i)).toHaveCount(0);
+    await expect(page.getByText('Need more options?')).toBeVisible();
+    await expect(page.getByRole('link', { name: PROMPT })).toBeVisible();
+    await expect(page.getByText('A to B (Air)')).toBeVisible();
+  });
+
+  test('a failed search claims nothing about emptiness', async ({ page }) => {
+    await mockSearch(page, 500, { message: 'boom' });
+    await page.goto('/directory');
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.getByText('Loading operators')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: PROMPT })).toBeVisible();
+    await expect(page.getByText(/no operators are listed yet/i)).toHaveCount(0);
+    await expect(page.getByText(/not every route/i)).toHaveCount(0);
+  });
+
+  test('leaving filters via the nav link, then changing mode, does not bring old filters back', async ({ page }) => {
+    await mockSearch(page, 200, []);
+    await page.goto(`/directory?service=sea-freight&mode=sea&${route}`);
+    await expect(page.getByLabel('From', { exact: true })).toHaveValue(FROM);
+    await page.getByLabel('From', { exact: true }).fill('Joh');
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Find operators' }).click();
+    await expect(page.getByLabel('From', { exact: true })).toHaveValue('');
+    await expect(page.getByLabel('To', { exact: true })).toHaveValue('');
+    await page.getByLabel('Mode', { exact: true }).selectOption('air');
+    await expect(page).toHaveURL(/\/directory\?mode=air$/);
+    await expect(page.getByLabel('Service', { exact: true })).toHaveValue('');
+    await expect(page.getByLabel('From', { exact: true })).toHaveValue('');
+    await expect(page.getByLabel('To', { exact: true })).toHaveValue('');
+  });
+
+  test('hand-set URLs are normalised: a city with no country and an unknown service are not applied', async ({ page }) => {
+    const bodies: string[] = [];
+    page.on('request', req => { if (req.url().includes('/rpc/search_directory')) bodies.push(req.postData() ?? ''); });
+    await page.goto('/directory?fromCity=Nowhere&service=no-such-service&toCountry=Ghana');
+    await expect(page.getByLabel('Service', { exact: true })).toHaveValue('');
+    await expect.poll(() => JSON.parse(bodies[bodies.length - 1] || 'null')).toEqual({ p_destination_country: 'Ghana' });
+  });
+
+  test('nav and footer line are in the first HTML', async ({ request }) => {
+    const html = await (await request.get('/directory')).text();
+    expect(html).toContain('Independent operators deliver the freight and are responsible for it. ShareConLoad connects you.');
+  });
+
+  test('result limit note has no number', async ({ page }) => {
+    await mockSearch(page, 200, Array.from({ length: 100 }, (_, i) => ({ ...SOME_ROW, id: `11111111-1111-4111-8111-${String(i).padStart(12, '0')}` })));
+    await page.goto('/directory');
+    await expect(page.getByText(/narrow your search/i)).toBeVisible();
+    await expect(page.getByText(/first 100/i)).toHaveCount(0);
+  });
+
+  test('a failed contact lookup keeps the button so the visitor can try again, and only on a click', async ({ page }) => {
+    let calls = 0;
+    await page.route('**/rest/v1/rpc/get_operator_contact*', r => {
+      calls++;
+      return calls === 1
+        ? r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"boom"}' })
+        : r.continue();
+    });
+    await page.goto(`/directory/${company.operatorProfileId}`);
+    await expect(page.getByRole('heading', { name: COMPANY })).toBeVisible();
+    expect(calls).toBe(0);
+    await page.getByRole('button', { name: 'Contact this operator' }).click();
+    await expect(page.getByRole('alert')).toBeVisible();
+    await page.getByRole('button', { name: 'Contact this operator' }).click();
+    await expect(page.getByRole('link', { name: EMAIL })).toBeVisible();
+    expect(calls).toBe(2);
+  });
+
+  test('operator not found offers the enquiry link', async ({ page }) => {
+    await page.goto('/directory/00000000-0000-4000-8000-000000000000');
+    await expect(page.getByRole('heading', { name: NOT_FOUND })).toBeVisible();
+    await expect(page.getByRole('link', { name: PROMPT })).toHaveAttribute('href', /^\/contact\?/);
   });
 });

@@ -91,6 +91,12 @@ export default function DirectoryOperatorPage() {
               This operator is not listed, or the link is wrong. You can search the directory, or tell us what you
               are moving and we will help.
             </p>
+            <Link
+              href={buildEnquiryContactUrl('', '', '')}
+              className="justify-self-start text-sm font-semibold text-white bg-[#FF6A00] px-5 py-3 rounded-xl hover:opacity-90"
+            >
+              Tell us what you&apos;re moving and we&apos;ll help
+            </Link>
           </div>
         )}
 
@@ -153,7 +159,10 @@ function OperatorProfile({ operator, contact, onShowContact }: {
 
       <section className="grid grid-cols-1 gap-3 border-t border-[#E5E7EB] pt-5">
         <h2 className="text-sm font-semibold text-[#081D3A]">Contact</h2>
-        {(contact.kind === 'hidden' || contact.kind === 'loading') && (
+        {contact.kind === 'error' && (
+          <p role="alert" className="text-sm text-red-600">We could not load the contact details. Please try again.</p>
+        )}
+        {contact.kind !== 'shown' && (
           <button
             type="button"
             onClick={onShowContact}
@@ -162,9 +171,6 @@ function OperatorProfile({ operator, contact, onShowContact }: {
           >
             Contact this operator
           </button>
-        )}
-        {contact.kind === 'error' && (
-          <p role="alert" className="text-sm text-red-600">We could not load the contact details. Please try again.</p>
         )}
         {contact.kind === 'shown' && (contact.contact?.public_phone || contact.contact?.public_email) && (
           <ul className="grid grid-cols-1 gap-2 text-sm min-w-0">

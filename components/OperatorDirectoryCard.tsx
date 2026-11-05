@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { BadgeCheck, UserCheck } from 'lucide-react';
 import { verificationLabel } from '@/services/operatorCompliance';
-import type { DirectoryOperator, OperatorCoverage } from '@/services/freightTypes';
+import type { DirectoryOperator, OperatorCoverage, TransportMode } from '@/services/freightTypes';
+
+export const MODE_LABELS: Record<TransportMode, string> = { sea: 'Sea', air: 'Air', road: 'Road', rail: 'Rail' };
 
 const MAX_COVERAGE_ON_CARD = 3;
 
@@ -11,7 +13,7 @@ function place(city: string | null, country: string): string {
 
 export function formatCoverage(c: OperatorCoverage): string {
   const route = `${place(c.origin_city, c.origin_country)} to ${place(c.destination_city, c.destination_country)}`;
-  return c.transport_mode ? `${route} (${c.transport_mode})` : route;
+  return c.transport_mode ? `${route} (${MODE_LABELS[c.transport_mode]})` : route;
 }
 
 export function VerificationBadge({ level }: { level: DirectoryOperator['verification_level'] }) {
