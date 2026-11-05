@@ -70,7 +70,9 @@ function Directory() {
   if (services && filters.service && !services.some((s) => s.slug === filters.service)) filters.service = '';
   const searchKey = JSON.stringify(filters);
   const [operators, setOperators] = useState<DirectoryOperator[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Tied to its search, so a new search shows no old error without a reset in the effect.
+  const [failedSearch, setFailedSearch] = useState<string | null>(null);
+  const error = failedSearch === searchKey ? 'We could not load operators. Please try again.' : null;
   // What the visitor is typing, kept apart from the filter until a place is picked.
   const [fromText, setFromText] = useState(placeText(filters.fromCity, filters.fromCountry));
   const [toText, setToText] = useState(placeText(filters.toCity, filters.toCountry));
@@ -93,15 +95,15 @@ function Directory() {
     if (f.mode) args.p_mode = f.mode;
     if (f.fromCountry) { args.p_origin_country = f.fromCountry; if (f.fromCity) args.p_origin_city = f.fromCity; }
     if (f.toCountry) { args.p_destination_country = f.toCountry; if (f.toCity) args.p_destination_city = f.toCity; }
-    setError(null);
     supabase.rpc('search_directory', args).then(({ data, error: err }) => {
       if (cancelled) return;
       if (err) {
         console.error('Directory search failed:', err);
-        setError('We could not load operators. Please try again.');
+        setFailedSearch(searchKey);
         setOperators([]);
         return;
       }
+      setFailedSearch(null);
       setOperators((data ?? []) as DirectoryOperator[]);
     });
     return () => { cancelled = true; };

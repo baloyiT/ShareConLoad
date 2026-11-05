@@ -1,6 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
-import { adminClient, createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
+import { adminClient, createTestUser, deleteTestUser, signInBrowser, sweepTestUsers, type TestUser } from './helpers/frontDoorUsers';
 import { buildEnquiryContactUrl } from '../components/HomeEnquiryForm';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 test.setTimeout(120_000);
 

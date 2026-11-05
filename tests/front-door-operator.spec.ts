@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'fs';
 import path from 'path';
 import {
-  ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS, adminClient, createTestUser, deleteTestUser, failIfDraftTermsOpen, signInBrowser,
+  ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS, adminClient, createTestUser, deleteTestUser, sweepTestUsers, failIfDraftTermsOpen, signInBrowser,
   type TestUser,
 } from './helpers/frontDoorUsers';
 import {
@@ -11,6 +11,11 @@ import {
   PARTICIPATION_TERMS_VERSION,
   participationTermsPlainText,
 } from '../services/participationTerms';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 test.setTimeout(120_000);
 
@@ -425,6 +430,25 @@ test('while the terms are not open, the page says so and nothing can be accepted
   await openHub(page);
   await expect(page.locator('main').getByText('Not open yet', { exact: true })).toBeVisible();
   await expect(page.locator('main').getByRole('link', { name: 'Read the draft' })).toHaveAttribute('href', '/operator/compliance/terms');
+});
+
+test('a rejected document does not count, so the operator is not told they have finished', async ({ page }) => {
+  const user = await newUser('operator', { entityType: 'individual' });
+  const admin = adminClient();
+  const id = user.operatorProfileId!;
+  expect((await admin.from('operator_profiles').update({ trading_name: 'Test Trader', phone_number: '+27 82 000 0004' }).eq('id', id)).error).toBeNull();
+  const { data: category } = await admin.from('service_categories').select('id').eq('slug', 'sea-freight').single();
+  expect((await admin.from('operator_services').insert({ operator_profile_id: id, service_category_id: category?.id })).error).toBeNull();
+  expect((await admin.from('operator_coverage').insert({ operator_profile_id: id, origin_country: 'South Africa', destination_country: 'Ghana' })).error).toBeNull();
+  expect((await admin.from('compliance_documents').insert({
+    operator_profile_id: id, doc_type: 'identity', file_url: `${id}/identity.pdf`, status: 'rejected', admin_notes: 'Too blurry',
+  })).error).toBeNull();
+
+  await signInBrowser(page, user);
+  await openHub(page);
+  await expect(page.getByText('3 of 5 steps complete')).toBeVisible();
+  await expect(page.getByText('You have finished everything you can for now')).toHaveCount(0);
+  await expect(sidebar(page).getByRole('link', { name: 'Documents' })).not.toHaveCSS('color', 'rgb(22, 163, 74)');
 });
 
 test('the hub tells an operator with only the terms left that they have finished for now', async ({ page }) => {

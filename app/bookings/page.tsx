@@ -350,6 +350,11 @@ export default function MyBookingsPage() {
             <p className="text-gray-400 text-sm mb-6 max-w-xs">
               {statusFilter === 'all' ? 'Your bookings will appear here.' : 'Try a different filter to see your other bookings.'}
             </p>
+            {statusFilter === 'all' && (
+              <Link href="/#get-quotes" className="btn text-white font-bold rounded-xl hover:opacity-90" style={{ backgroundColor: '#ff6a00' }}>
+                Get quotes
+              </Link>
+            )}
           </div>
         )}
 

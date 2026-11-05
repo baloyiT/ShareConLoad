@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import { STAGE_3_PUBLIC } from '@/services/releaseFlags';
 import { Container } from '@/components/ContainerCard';
 
 import { ArrowRight, Check, Package } from 'lucide-react';
@@ -132,7 +133,7 @@ export default function ContainerDetailsPage() {
             </p>
           </div>
 
-          {isOpen && (
+          {isOpen && STAGE_3_PUBLIC && (
             <button
               onClick={() => router.push(`/booking/${container.id}`)}
               className="btn text-white font-bold px-8 py-3 rounded-xl text-base shadow-lg hover:opacity-90 transition-opacity shrink-0"
@@ -273,7 +274,13 @@ export default function ContainerDetailsPage() {
                 ))}
             </div>
 
-            {isOpen ? (
+            {!isOpen && (
+              <button disabled className="w-full btn btn-disabled py-3 rounded-xl text-base">
+                No longer available
+              </button>
+            )}
+
+            {isOpen && STAGE_3_PUBLIC && (
               <button
                 onClick={() => router.push(`/booking/${container.id}`)}
                 className="w-full btn text-white font-bold py-3 rounded-xl text-base hover:opacity-90 transition-opacity"
@@ -281,15 +288,13 @@ export default function ContainerDetailsPage() {
               >
                 Book Space
               </button>
-            ) : (
-              <button disabled className="w-full btn btn-disabled py-3 rounded-xl text-base">
-                No longer available
-              </button>
             )}
 
-            <p className="text-xs text-gray-400 text-center mt-3">
-              No payment charged until confirmed
-            </p>
+            {STAGE_3_PUBLIC && (
+              <p className="text-xs text-gray-400 text-center mt-3">
+                No payment charged until confirmed
+              </p>
+            )}
           </div>
 
           {/* Operator card */}

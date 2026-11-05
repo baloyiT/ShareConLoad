@@ -1,5 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
-import { adminClient, createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
+import { readFileSync } from 'fs';
+import { adminClient, createTestUser, deleteTestUser, signInBrowser, sweepTestUsers, type TestUser } from './helpers/frontDoorUsers';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(90_000);
@@ -275,11 +281,67 @@ test('/onboarding offers only Customer and Operator to a user with no other role
   const user = await newUser('customer');
   await signInBrowser(page, user);
   await page.goto('/onboarding');
-  await expect(page.getByRole('heading', { name: 'I Have Container Space' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'I Need Container Space' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'I Am a Freight Operator' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'I Need to Move Freight' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'I Am a Freight Agent' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Measurement Agent' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Transporter' })).toHaveCount(0);
+});
+
+test('the sign-up path does not sell containers or make unsupported claims', async ({ page }) => {
+  for (const route of ['/auth/register', '/auth/login']) {
+    await page.goto(route);
+    await expect(page.getByText('Connected.').first()).toBeVisible({ timeout: 20_000 });
+    const text = await page.locator('body').innerText();
+    expect(text, route).not.toMatch(/container|50\+|thousands|infinite routes|share the load/i);
+  }
+});
+
+test('notifications and the email footer use the new positioning', () => {
+  const service = readFileSync('services/notificationService.ts', 'utf8');
+  const between = service.slice(service.indexOf("case 'user.welcome'"), service.indexOf("case 'operator.compliance_rejected'"));
+  expect(between).not.toMatch(/container|accept bookings|accepting bookings/i);
+  const email = readFileSync('supabase/functions/send-email/index.ts', 'utf8');
+  expect(email).toContain('ShareConLoad · Freight. Connected.');
+  expect(email).not.toMatch(/Shared Container Logistics/);
+});
+
+test('agent pages offer no container booking while Stage 3 is hidden', () => {
+  const dashboard = readFileSync('app/agent/page.tsx', 'utf8');
+  expect(dashboard).not.toMatch(/Browse Containers|Book Container Space|Browse containers/);
+  const bookings = readFileSync('app/agent/bookings/page.tsx', 'utf8');
+  expect(bookings).toMatch(/\{STAGE_3_PUBLIC && \(\s*<Link[\s\S]*?Book Space/);
+  expect(bookings).not.toMatch(/Browse available containers/);
+});
+
+test('an operator with a container sees no Book Space on its page', async ({ page }) => {
+  const user = await newUser('operator');
+  const db = adminClient();
+  const { data: container, error } = await db.from('containers').insert({
+    operator_id: user.id,
+    origin_country: 'South Africa', origin_city: 'Durban',
+    destination_country: 'Ghana', destination_city: 'Tema',
+    departure_date: '2030-01-01',
+    total_capacity_cbm: 10, available_capacity_cbm: 10,
+    load_type: 'LCL', price_per_cbm: 100, currency_code: 'USD', status: 'open',
+  }).select('id').single();
+  expect(error).toBeNull();
+  try {
+    await signInBrowser(page, user);
+    await page.goto(`/container/${container!.id}`);
+    await expect(page.getByText('Durban').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: /book space/i })).toHaveCount(0);
+    await expect(page.getByText('No payment charged until confirmed')).toHaveCount(0);
+  } finally {
+    await db.from('containers').delete().eq('id', container!.id);
+  }
+});
+
+test('a customer with no bookings is pointed to the quote form', async ({ page }) => {
+  const user = await newUser('customer');
+  await signInBrowser(page, user);
+  await page.goto('/bookings');
+  await expect(page.getByRole('link', { name: 'Get quotes' })).toHaveAttribute('href', '/#get-quotes', { timeout: 30_000 });
 });
 
 test('/onboarding keeps the role card a user already holds', async ({ page }) => {

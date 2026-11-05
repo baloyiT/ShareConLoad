@@ -30,20 +30,21 @@ type ContactState =
   | { kind: 'error' }
   | { kind: 'shown'; contact: OperatorContact | null };
 
+// The key starts each operator with fresh state, so nothing has to be reset in an effect.
 export default function DirectoryOperatorPage() {
-  const params = useParams<{ operatorId: string }>();
-  const operatorId = params.operatorId;
-  const [profile, setProfile] = useState<ProfileState>({ kind: 'loading' });
+  const { operatorId } = useParams<{ operatorId: string }>();
+  return <OperatorPageBody key={operatorId} operatorId={operatorId} />;
+}
+
+function OperatorPageBody({ operatorId }: { operatorId: string }) {
+  const [profile, setProfile] = useState<ProfileState>(
+    UUID_RE.test(operatorId) ? { kind: 'loading' } : { kind: 'not_found' },
+  );
   const [contact, setContact] = useState<ContactState>({ kind: 'hidden' });
 
   useEffect(() => {
+    if (!UUID_RE.test(operatorId)) return;
     let cancelled = false;
-    setContact({ kind: 'hidden' });
-    if (!UUID_RE.test(operatorId)) {
-      setProfile({ kind: 'not_found' });
-      return;
-    }
-    setProfile({ kind: 'loading' });
     supabase.rpc('get_directory_operator', { op_id: operatorId }).then(({ data, error }) => {
       if (cancelled) return;
       if (error) {

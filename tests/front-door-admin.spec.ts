@@ -1,6 +1,11 @@
 import { test, expect, Page } from '@playwright/test';
 import { randomBytes } from 'crypto';
-import { adminClient, createTestUser, deleteTestUser, signInBrowser, TestUser } from './helpers/frontDoorUsers';
+import { adminClient, createTestUser, deleteTestUser, signInBrowser, sweepTestUsers, TestUser } from './helpers/frontDoorUsers';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 const tag = randomBytes(4).toString('hex');
 const users: TestUser[] = [];

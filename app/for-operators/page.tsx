@@ -50,7 +50,7 @@ export default function ForOperatorsPage() {
                   Sign up <ArrowRight className="w-4 h-4" />
                 </Link>
               ) : (
-                <Link href="/contact" className={ctaClass}>
+                <Link href="/contact?subject=Operator%20Onboarding" className={ctaClass}>
                   Register your interest <ArrowRight className="w-4 h-4" />
                 </Link>
               )}

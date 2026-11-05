@@ -81,8 +81,8 @@ export default function OnboardingPage() {
             <div className={`bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4 ${operatorHeld && isAuthed ? 'opacity-80' : ''}`}>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#fff7ed' }}><Ship className="w-6 h-6" style={{ color: '#ff6a00' }} /></div>
               <div>
-                <h2 className="text-lg font-extrabold text-gray-800">I Have Container Space</h2>
-                <p className="text-gray-500 text-sm mt-1">List available container space and earn from unused capacity</p>
+                <h2 className="text-lg font-extrabold text-gray-800">I Am a Freight Operator</h2>
+                <p className="text-gray-500 text-sm mt-1">Show customers the services you offer and the routes you cover</p>
               </div>
               {operatorHeld && isAuthed ? (
                 <div className="flex flex-col gap-2 mt-auto">
@@ -103,7 +103,7 @@ export default function OnboardingPage() {
                   className="btn w-full text-white font-bold rounded-xl mt-auto hover:opacity-90"
                   style={{ backgroundColor: '#0b103a' }}
                 >
-                  {isAuthed ? 'Register as Operator' : 'Join as Space Provider'}
+                  {isAuthed ? 'Register as Operator' : 'Join as Operator'}
                 </button>
               )}
             </div>
@@ -112,8 +112,8 @@ export default function OnboardingPage() {
             <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#fff7ed' }}><Package className="w-6 h-6" style={{ color: '#ff6a00' }} /></div>
               <div>
-                <h2 className="text-lg font-extrabold text-gray-800">I Need Container Space</h2>
-                <p className="text-gray-500 text-sm mt-1">Book container space for your cargo quickly and securely</p>
+                <h2 className="text-lg font-extrabold text-gray-800">I Need to Move Freight</h2>
+                <p className="text-gray-500 text-sm mt-1">Find operators for your route and request quotes</p>
               </div>
               {isAuthed ? (
                 <div className="flex flex-col gap-2 mt-auto">

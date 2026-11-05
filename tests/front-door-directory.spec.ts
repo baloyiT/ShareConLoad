@@ -1,6 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
 import { randomBytes } from 'crypto';
-import { adminClient, createTestUser, deleteTestUser, type TestUser } from './helpers/frontDoorUsers';
+import { adminClient, createTestUser, deleteTestUser, sweepTestUsers, type TestUser } from './helpers/frontDoorUsers';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 const tag = randomBytes(4).toString('hex');
 const FROM = `Fromland ${tag}`;

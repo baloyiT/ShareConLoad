@@ -1,8 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import { randomBytes } from 'crypto';
-import { adminClient, createTestUser, deleteTestUser, TestUser } from './helpers/frontDoorUsers';
+import { adminClient, createTestUser, deleteTestUser, sweepTestUsers, TestUser } from './helpers/frontDoorUsers';
 import type { DirectoryOperator, OperatorCoverage } from '../services/freightTypes';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';

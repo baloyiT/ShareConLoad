@@ -135,18 +135,18 @@ function RegisterContent() {
 
         <div className="relative z-10">
           <h2 className="text-3xl font-extrabold text-white leading-snug mb-4">
-            One account.<br />
-            <span style={{ color: '#ff6a00' }}>Infinite routes.</span>
+            Freight.<br />
+            <span style={{ color: '#ff6a00' }}>Connected.</span>
           </h2>
           <p className="text-gray-400 text-sm leading-relaxed mb-8">
-            Ship goods or list container space, switch roles anytime from one account.
+            Find freight operators for your route and request quotes from one account.
           </p>
           <ul className="flex flex-col gap-3">
             {[
-              'Browse containers on 50+ global routes',
-              'Book space and declare goods online',
-              'Switch to operator mode to list your containers',
-              'Track all your shipments in one place',
+              'Find operators by route and service',
+              'Request quotes for your shipment',
+              'See quotes side by side',
+              'Pay your chosen operator directly',
             ].map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm text-gray-300">
                 <Check className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" strokeWidth={2.5} />
@@ -178,7 +178,7 @@ function RegisterContent() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
             <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Create your account</h1>
             <p className="text-gray-400 text-sm mb-6">
-              One account. Ship goods or list container space, switch anytime.
+              One account to find freight operators and request quotes.
             </p>
 
             {errors.submit && (

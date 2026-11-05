@@ -229,7 +229,7 @@ export default function OperatorSidebar({ onClose }: { onClose?: () => void }) {
           onClick={onClose}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to marketplace
+          Back to home
         </Link>
       </div>
     </div>

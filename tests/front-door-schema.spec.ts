@@ -3,11 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
 import path from 'path';
 import {
-  ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS, adminClient, createTestUser, deleteTestUser, failIfDraftTermsOpen, TestUser,
+  ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS, adminClient, createTestUser, deleteTestUser, sweepTestUsers, failIfDraftTermsOpen, TestUser,
 } from './helpers/frontDoorUsers';
 import {
   TRADING_NAME_MAX_LENGTH, TRADING_NAME_VISIBLE_CHARACTER, isBlankTradingName, listingDocTypes, verificationLabel,
 } from '../services/operatorCompliance';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';

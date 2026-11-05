@@ -42,7 +42,7 @@ function buildEmailHtml(title: string, body: string): string {
           <p style="margin:0 0 4px;font-size:12px;color:#94a3b8;">
             Need help? <a href="mailto:support@shareconload.com" style="color:#f97316;text-decoration:none;">support@shareconload.com</a>
           </p>
-          <p style="margin:0;font-size:11px;color:#475569;">© ${year} ShareConLoad · Global Shared Container Logistics</p>
+          <p style="margin:0;font-size:11px;color:#475569;">© ${year} ShareConLoad · Freight. Connected.</p>
         </td>
       </tr>
     </table>

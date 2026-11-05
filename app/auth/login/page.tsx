@@ -95,11 +95,11 @@ function LoginContent() {
         {/* Tagline */}
         <div className="relative z-10">
           <h2 className="text-3xl font-extrabold text-white leading-snug mb-4">
-            Share the Load.<br />
-            <span style={{ color: '#ff6a00' }}>Connect the World.</span>
+            Freight.<br />
+            <span style={{ color: '#ff6a00' }}>Connected.</span>
           </h2>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Join thousands of shippers and carriers moving goods smarter across the globe.
+            Find freight operators for your route and request quotes.
           </p>
 
         </div>

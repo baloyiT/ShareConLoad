@@ -1,4 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { sweepTestUsers } from './helpers/frontDoorUsers';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 // Public pages: no login and no database writes.
 
@@ -100,9 +106,11 @@ test.describe('Front door public pages', () => {
     await page.goto('/for-operators');
     const cta = page.getByRole('link', { name: /register your interest/i });
     await expect(cta).toBeVisible({ timeout: 15_000 });
-    await expect(cta).toHaveAttribute('href', '/contact');
+    await expect(cta).toHaveAttribute('href', '/contact?subject=Operator%20Onboarding');
     await expect(page.getByRole('link', { name: /^sign up/i })).toHaveCount(0);
     await expect(page.getByText(/volume of enquiries/i).first()).toBeVisible();
+    await cta.click();
+    await expect(page.locator('select[name="subject"]')).toHaveValue('Operator Onboarding');
   });
 
   test('terms states operators deliver and are responsible for freight services', async ({ page }) => {

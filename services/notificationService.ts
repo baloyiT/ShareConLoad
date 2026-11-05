@@ -203,14 +203,14 @@ function buildMessage(event: NotificationEvent, payload: NotificationEventMap[ty
       const name = p.fullName ? `, ${p.fullName.split(' ')[0]}` : '';
       return {
         title: `Welcome to ShareConLoad${name}!`,
-        body:  'Your account is active. Browse available containers and book your first shipment, or set up your operator profile to list container space.',
+        body:  'Your account is active. Find freight operators for your route and request quotes.',
       };
     }
     case 'operator.onboarding_submitted': {
       const p = payload as NotificationEventMap['operator.onboarding_submitted'];
       return {
         title: 'Operator Profile Created',
-        body:  `Your operator profile for "${p.legalName}" is set up. Complete your compliance documents to start listing containers and accepting bookings.`,
+        body:  `Your operator profile for "${p.legalName}" is set up. Complete your compliance documents so we can review your listing.`,
       };
     }
     case 'operator.compliance_submitted': {
@@ -223,8 +223,8 @@ function buildMessage(event: NotificationEvent, payload: NotificationEventMap[ty
     case 'operator.compliance_approved': {
       const p = payload as NotificationEventMap['operator.compliance_approved'];
       return {
-        title: 'Compliance Approved — You Are Live!',
-        body:  `Congratulations, ${p.legalName}! Your operator compliance has been approved. You can now list container space and accept bookings on ShareConLoad.`,
+        title: 'Compliance Approved',
+        body:  `Congratulations, ${p.legalName}! Your operator compliance has been approved. Sign in to finish any steps left on your listing.`,
       };
     }
     case 'operator.compliance_rejected': {

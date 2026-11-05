@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/services/supabaseClient';
+import { STAGE_3_PUBLIC } from '@/services/releaseFlags';
 
 type Booking = {
   id: string;
@@ -128,13 +129,15 @@ function AgentBookingsContent() {
             <p className="text-xs text-gray-400 mt-0.5">{bookings.length} booking{bookings.length !== 1 ? 's' : ''} facilitated</p>
           )}
         </div>
-        <Link
-          href="/"
-          className="px-4 py-2 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-opacity"
-          style={{ backgroundColor: '#16a34a' }}
-        >
-          Book Space
-        </Link>
+        {STAGE_3_PUBLIC && (
+          <Link
+            href="/"
+            className="px-4 py-2 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#16a34a' }}
+          >
+            Book Space
+          </Link>
+        )}
       </div>
 
       {loading ? (
@@ -144,8 +147,8 @@ function AgentBookingsContent() {
       ) : bookings.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <p className="text-gray-400 text-sm mb-4">No bookings yet.</p>
-          <Link href="/" className="text-sm font-bold text-green-600 hover:text-green-800">
-            Browse available containers
+          <Link href="/directory" className="text-sm font-bold text-green-600 hover:text-green-800">
+            Find operators
           </Link>
         </div>
       ) : (

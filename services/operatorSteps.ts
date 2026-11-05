@@ -93,7 +93,7 @@ export async function loadOperatorProgress(userId: string): Promise<OperatorProg
   if (!op) return { hasOperatorRole: true, hasOperatorDetails: false, established, steps: none };
 
   const [docs, services, coverage, termsOpen] = await Promise.all([
-    supabase.from('compliance_documents').select('doc_type').eq('operator_profile_id', op.id),
+    supabase.from('compliance_documents').select('doc_type, status').eq('operator_profile_id', op.id),
     supabase.from('operator_services').select('*', { count: 'exact', head: true }).eq('operator_profile_id', op.id),
     supabase.from('operator_coverage').select('*', { count: 'exact', head: true }).eq('operator_profile_id', op.id),
     termsOpenForAcceptance(),
@@ -104,7 +104,10 @@ export async function loadOperatorProgress(userId: string): Promise<OperatorProg
     if (read.error) console.error('Could not load operator progress:', read.error);
   }
 
-  const uploaded = new Set((docs.data ?? []).map((d) => d.doc_type as string));
+  // A rejected document has to be uploaded again, so it does not count.
+  const uploaded = new Set(
+    (docs.data ?? []).filter((d) => d.status !== 'rejected').map((d) => d.doc_type as string),
+  );
   const needed = established ? requiredDocTypes(op.entity_type) : listingDocTypes(op.entity_type);
 
   const done: Record<OperatorStepKey, boolean> = {

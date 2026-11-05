@@ -21,7 +21,7 @@ const STATUS_CONFIG: Record<KycStatus, { label: string; color: string; bg: strin
     color:   '#16a34a',
     bg:      '#f0fdf4',
     icon:    Check,
-    message: 'Your identity has been verified. You can now book container space.',
+    message: 'Your identity has been verified. No further action is needed.',
   },
   rejected: {
     label:   'Action Required',

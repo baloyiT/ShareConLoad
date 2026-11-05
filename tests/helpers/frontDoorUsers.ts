@@ -106,6 +106,32 @@ export async function deleteTestUser(user: Pick<TestUser, 'id' | 'email'>): Prom
   if (error) throw new Error(`deleteUser failed: ${error.message}`);
 }
 
+const SWEEP_AGE_MS = 15 * 60 * 1000;
+
+// Old enough that no run still in progress can be using it.
+export function isStaleTestUser(email: string | undefined, createdAt: string, now: number): boolean {
+  return !!email && TEST_EMAIL_RE.test(email) && now - new Date(createdAt).getTime() > SWEEP_AGE_MS;
+}
+
+// A worker crash skips afterAll, so each spec clears what an earlier run left behind.
+export async function sweepTestUsers(): Promise<void> {
+  const admin = adminClient();
+  const now = Date.now();
+  const perPage = 1000;
+  const stale: { id: string; email: string }[] = [];
+  for (let page = 1; ; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(`listUsers failed: ${error.message}`);
+    for (const u of data.users) {
+      if (isStaleTestUser(u.email, u.created_at, now)) stale.push({ id: u.id, email: u.email as string });
+    }
+    if (data.users.length < perPage) break;
+  }
+  for (const user of stale) {
+    try { await deleteTestUser(user); } catch (err) { console.error('sweep failed', user.email, err); }
+  }
+}
+
 // Set to run the tests that open the real participation terms for a moment.
 export const ALLOW_OPEN_LIVE_TERMS = process.env.ALLOW_OPEN_LIVE_TERMS === '1';
 export const OPENS_LIVE_TERMS =

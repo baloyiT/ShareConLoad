@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { createClient } from '@supabase/supabase-js';
-import { adminClient, createTestUser, deleteTestUser, TestUser } from './helpers/frontDoorUsers';
+import { adminClient, createTestUser, deleteTestUser, isStaleTestUser, sweepTestUsers, TestUser } from './helpers/frontDoorUsers';
 import {
   bearerToken,
   decideEmail,
@@ -16,6 +16,11 @@ import {
 } from '../supabase/functions/_shared/auth';
 import { chargeRetryDecision, chargeState, transferReference } from '../supabase/functions/_shared/payments';
 import { callbackOutcome } from '../services/paymentCallback';
+
+test.beforeAll(async () => {
+  test.setTimeout(120_000);
+  await sweepTestUsers();
+});
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -435,6 +440,26 @@ test.describe('payments table', () => {
       await service.from('bookings').delete().eq('container_id', containerId);
       await service.from('containers').delete().eq('id', containerId);
     }
+  });
+});
+
+test.describe('test user sweep', () => {
+  const now = Date.parse('2030-01-01T12:00:00Z');
+  const old = '2030-01-01T11:00:00Z';
+
+  test('only a test email older than 15 minutes is stale', () => {
+    expect(isStaleTestUser('front-door-test-abc123@example.invalid', old, now)).toBe(true);
+    expect(isStaleTestUser('front-door-test-abc123@example.invalid', '2030-01-01T11:50:00Z', now)).toBe(false);
+    for (const email of ['support@shareconload.com', 'someone@example.invalid', 'front-door-test-abc@gmail.com', undefined]) {
+      expect(isStaleTestUser(email, old, now)).toBe(false);
+    }
+  });
+
+  test('a sweep leaves a user created moments ago', async () => {
+    const user = await newUser('customer');
+    await sweepTestUsers();
+    const { data } = await adminClient().auth.admin.getUserById(user.id);
+    expect(data.user?.email).toBe(user.email);
   });
 });
 
