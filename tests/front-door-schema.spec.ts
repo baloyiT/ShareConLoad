@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
-import { adminClient, createTestUser, deleteTestUser, TestUser } from './helpers/frontDoorUsers';
-import { listingDocTypes, verificationLabel } from '../services/operatorCompliance';
+import { readFileSync } from 'fs';
+import path from 'path';
+import {
+  ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS, adminClient, createTestUser, deleteTestUser, failIfDraftTermsOpen, TestUser,
+} from './helpers/frontDoorUsers';
+import {
+  TRADING_NAME_MAX_LENGTH, TRADING_NAME_VISIBLE_CHARACTER, isBlankTradingName, listingDocTypes, verificationLabel,
+} from '../services/operatorCompliance';
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -10,6 +16,8 @@ const anon = () => createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // 42501 is what the guard triggers raise, and what RLS and a missing grant return.
 const DENIED = '42501';
+
+test.beforeAll(failIfDraftTermsOpen);
 
 const users: TestUser[] = [];
 
@@ -352,12 +360,40 @@ test.describe('Front door schema: trading name guard', () => {
     expect(await tradingName(op.operatorProfileId)).toBe('Set After Verification');
   });
 
-  test('a whitespace-only trading name counts as blank for a verified operator', async () => {
+  test('the database and the form agree on what counts as a blank trading name', async () => {
     const op = await newUser('operator', { entityType: 'individual' });
-    expect((await setOwn(op, '   ')).error).toBeNull();
-    expect((await verify(op)).error).toBeNull();
-    expect((await setOwn(op, 'Real Name')).error).toBeNull();
-    expect(await tradingName(op.operatorProfileId)).toBe('Real Name');
+    const blank = ['', ' ', '   ', '\t', '\n', '\r\n', '\u00A0', '\u00AD', '\u1680', '\u2003', '\u200B', '\u200D',
+      '\u2028', '\u202F', '\u2060', '\u2800', '\u3000', '\u3164', '\uFE0F', '\uFEFF', ' \t\u00A0\u200B '];
+    const visible = ['A', ' A ', '\u00A0A', '.', '7', 'Élan Fret', '貨運', '\u{1F69A}', 'A\u200BB'];
+
+    for (const value of blank) {
+      expect(isBlankTradingName(value), JSON.stringify(value)).toBe(true);
+      const { error } = await setOwn(op, value);
+      expect(error?.code, JSON.stringify(value)).toBe('23514');
+    }
+    for (const value of visible) {
+      expect(isBlankTradingName(value), JSON.stringify(value)).toBe(false);
+      const { error } = await setOwn(op, value);
+      expect(error, JSON.stringify(value)).toBeNull();
+    }
+    expect(isBlankTradingName(null)).toBe(true);
+    expect((await setOwn(op, null)).error).toBeNull();
+
+    const sql = readFileSync(path.join(process.cwd(), 'supabase/migrations/20261104_87_trading_name_check.sql'), 'utf-8');
+    expect(sql).toContain(`trading_name ~ '${TRADING_NAME_VISIBLE_CHARACTER}'`);
+    expect(sql).toContain(`char_length(trading_name) <= ${TRADING_NAME_MAX_LENGTH}`);
+  });
+
+  test('a trading name can be 120 characters, not 121, and the check binds the service role too', async () => {
+    const op = await newUser('operator', { entityType: 'individual' });
+    expect((await setOwn(op, 'x'.repeat(TRADING_NAME_MAX_LENGTH))).error).toBeNull();
+    expect((await setOwn(op, 'x'.repeat(TRADING_NAME_MAX_LENGTH + 1))).error?.code).toBe('23514');
+    // Counted in characters, as char_length does: one emoji is one.
+    expect((await setOwn(op, '\u{1F69A}'.repeat(TRADING_NAME_MAX_LENGTH))).error).toBeNull();
+
+    const { error } = await adminClient().from('operator_profiles')
+      .update({ trading_name: '\u00A0' }).eq('id', op.operatorProfileId ?? '');
+    expect(error?.code).toBe('23514');
   });
 
   test('a verified operator can save other fields without touching the trading name', async () => {
@@ -406,7 +442,7 @@ test.describe('Front door schema: participation terms', () => {
     if (ownsTerms) await adminClient().from('participation_terms').delete().eq('version', OWN_TERMS.version);
   });
 
-  // The terms are closed to acceptance. Opens them for the length of one call, and always closes them.
+  // The terms are closed to acceptance. Opens the real row for one call only, and always closes it.
   async function whileOpen<T>(fn: () => PromiseLike<T>): Promise<T> {
     const admin = adminClient();
     const setOpen = (open: boolean) => admin.from('participation_terms')
@@ -441,6 +477,16 @@ test.describe('Front door schema: participation terms', () => {
     expect(row?.participation_terms_accepted_at).toBeNull();
     expect(row?.participation_terms_version).toBeNull();
     expect(await acceptanceCount(op.operatorProfileId)).toBe(0);
+  });
+
+  test('a run that finds the draft open closes it and fails', async () => {
+    test.skip(!ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS);
+    await whileOpen(async () => {
+      await expect(failIfDraftTermsOpen()).rejects.toThrow('DRAFT TERMS WERE OPEN');
+      const { data } = await adminClient().from('participation_terms')
+        .select('open_for_acceptance').eq('version', terms.version).single();
+      expect(data?.open_for_acceptance).toBe(false);
+    });
   });
 
   test('an operator cannot open the terms themselves', async () => {
@@ -480,6 +526,7 @@ test.describe('Front door schema: participation terms', () => {
   });
 
   test('accepting terms writes the column and one agreement_acceptances row with type operator_participation_terms', async () => {
+    test.skip(!ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS);
     const op = await newUser('operator');
     const { error } = await acceptWhileOpen(op);
     expect(error).toBeNull();
@@ -500,6 +547,7 @@ test.describe('Front door schema: participation terms', () => {
   });
 
   test('accepting terms leaves service_agreement_signed_at null', async () => {
+    test.skip(!ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS);
     const op = await newUser('operator');
     const { error } = await acceptWhileOpen(op);
     expect(error).toBeNull();
@@ -536,6 +584,7 @@ test.describe('Front door schema: participation terms', () => {
   });
 
   test('accepting the same version twice is refused and changes nothing', async () => {
+    test.skip(!ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS);
     const op = await newUser('operator');
     const first = await acceptWhileOpen(op);
     expect(first.error).toBeNull();
@@ -608,7 +657,9 @@ test.describe('Front door schema: participation terms', () => {
     await admin.from('operator_coverage').insert(coverage);
     expect(await isListed()).toBe(false);
 
-    const { error: acceptErr } = await acceptWhileOpen(op);
+    const { error: acceptErr } = await admin.from('operator_profiles')
+      .update({ participation_terms_accepted_at: new Date().toISOString(), participation_terms_version: terms.version })
+      .eq('id', id);
     expect(acceptErr).toBeNull();
     expect(await isListed()).toBe(false);
 

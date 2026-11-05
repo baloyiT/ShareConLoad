@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
 import ComplianceStepper from '@/components/ComplianceStepper';
-import { ID_TYPES } from '@/services/operatorCompliance';
+import { ID_TYPES, TRADING_NAME_MAX_LENGTH, isBlankTradingName } from '@/services/operatorCompliance';
 
 type ProfileForm = {
   entity_type:         string;
@@ -62,7 +62,7 @@ export default function ComplianceProfilePage() {
         });
         setLocked(op.verification_level !== 'registered');
         // A verified operator with no trading name may still add one, once.
-        setTradingLocked(op.verification_level !== 'registered' && !!op.trading_name?.trim());
+        setTradingLocked(op.verification_level !== 'registered' && !isBlankTradingName(op.trading_name));
       }
       setLoading(false);
     }
@@ -80,7 +80,12 @@ export default function ComplianceProfilePage() {
       if (form.entity_type === 'individual' && !form.id_number.trim()) { setError('ID number is required.'); return; }
       if (form.entity_type !== 'individual' && !form.registration_number.trim()) { setError('Registration number is required for companies.'); return; }
     }
-    if (form.entity_type === 'individual' && !form.trading_name.trim()) { setError('Trading name is required.'); return; }
+    const tradingBlank = isBlankTradingName(form.trading_name);
+    if (form.entity_type === 'individual' && tradingBlank) { setError('Trading name is required.'); return; }
+    if (Array.from(form.trading_name.trim()).length > TRADING_NAME_MAX_LENGTH) {
+      setError(`Trading name must be ${TRADING_NAME_MAX_LENGTH} characters or fewer.`);
+      return;
+    }
     if (!profileId) return;
 
     setSaving(true);
@@ -91,7 +96,7 @@ export default function ComplianceProfilePage() {
     const vatNumber = individual ? null : (form.vat_number.trim() || null);
 
     // Identity fields are fixed once verified: the database refuses any change, so never send them.
-    const tradingName = tradingLocked ? {} : { trading_name: form.trading_name.trim() || null };
+    const tradingName = tradingLocked ? {} : { trading_name: tradingBlank ? null : form.trading_name.trim() };
     const updates = locked
       ? { public_description: publicDescription, ...tradingName, ...(individual ? {} : { vat_number: vatNumber }) }
       : {
@@ -132,7 +137,7 @@ export default function ComplianceProfilePage() {
       {error && <div className="alert alert-error text-sm mb-4">{error}</div>}
       {locked && (
         <div className="alert text-sm mb-4">
-          Your legal name, entity type, identity numbers and any trading name are verified and cannot be changed here. To change them, contact support@shareconload.com.
+          Your legal name, entity type, identity numbers{tradingLocked ? ' and trading name' : ''} are verified and cannot be changed here. To change them, contact support@shareconload.com.
         </div>
       )}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
@@ -183,6 +188,9 @@ export default function ComplianceProfilePage() {
             {isIndividual
               ? 'This is the name customers see. Your legal name is not published.'
               : 'If you leave this blank, your registered company name is shown.'}
+            {!tradingLocked && (locked
+              ? ' You are verified, so this name locks as soon as you save it.'
+              : ' This name locks once you are verified.')}
           </p>
           <input
             id="trading_name"
@@ -190,6 +198,7 @@ export default function ComplianceProfilePage() {
             type="text"
             value={form.trading_name}
             onChange={(e) => update('trading_name', e.target.value)}
+            maxLength={TRADING_NAME_MAX_LENGTH}
             className="input input-bordered w-full"
           />
         </div>

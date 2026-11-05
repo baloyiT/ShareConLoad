@@ -39,6 +39,15 @@ export function listingDocTypes(entity: string | null | undefined): string[] {
   return isIndividual(entity) ? ['identity'] : ['identity', 'business_registration'];
 }
 
+// Must match the check on operator_profiles.trading_name in migration _87.
+export const TRADING_NAME_MAX_LENGTH = 120;
+export const TRADING_NAME_VISIBLE_CHARACTER =
+  '[^\\u0001-\\u0020\\u007F-\\u00A0\\u00AD\\u034F\\u061C\\u115F\\u1160\\u1680\\u17B4\\u17B5\\u180E\\u2000-\\u200F\\u2028-\\u202F\\u205F-\\u206F\\u2800\\u3000\\u3164\\uFE00-\\uFE0F\\uFEFF\\uFFA0]';
+
+export function isBlankTradingName(name: string | null | undefined): boolean {
+  return !name || !new RegExp(TRADING_NAME_VISIBLE_CHARACTER, 'u').test(name);
+}
+
 export function verificationLabel(level: VerificationLevel): string | null {
   if (level === 'business_verified') return 'Business verified';
   if (level === 'identity_verified') return 'Identity verified';

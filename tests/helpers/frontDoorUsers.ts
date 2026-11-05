@@ -106,6 +106,28 @@ export async function deleteTestUser(user: Pick<TestUser, 'id' | 'email'>): Prom
   if (error) throw new Error(`deleteUser failed: ${error.message}`);
 }
 
+// Set to run the tests that open the real participation terms for a moment.
+export const ALLOW_OPEN_LIVE_TERMS = process.env.ALLOW_OPEN_LIVE_TERMS === '1';
+export const OPENS_LIVE_TERMS =
+  'Opens the real participation terms in production for a moment. Set ALLOW_OPEN_LIVE_TERMS=1 to run.';
+
+// Draft terms must stay closed. A killed run can leave them open, so close them and stop the run.
+// Limited to draft versions, so that a run never closes terms the founder has approved.
+export async function failIfDraftTermsOpen(): Promise<void> {
+  const { data, error } = await adminClient().from('participation_terms')
+    .update({ open_for_acceptance: false })
+    .eq('open_for_acceptance', true)
+    .like('version', '%-draft')
+    .select('version');
+  if (error) throw new Error(`Could not check the participation terms: ${error.message}`);
+  if ((data ?? []).length > 0) {
+    throw new Error(
+      `DRAFT TERMS WERE OPEN FOR ACCEPTANCE: ${data!.map(t => t.version as string).join(', ')}. `
+      + 'They are closed again now. Check agreement_acceptances for anything recorded while they were open.',
+    );
+  }
+}
+
 export async function signInBrowser(page: Page, user: Pick<TestUser, 'email' | 'password'>): Promise<void> {
   await page.goto('/auth/login');
   await page.locator('input[type="email"]').fill(user.email);

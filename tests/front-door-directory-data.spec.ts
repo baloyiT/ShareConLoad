@@ -103,7 +103,6 @@ test.describe('Front door: public directory data', () => {
   // Display name rules, all on their own route.
   let namedIndividual: TestUser;
   let blankIndividual: TestUser;
-  let spacesIndividual: TestUser;
   let plainCompany: TestUser;
   let tradingCompany: TestUser;
   let customer: TestUser;
@@ -118,7 +117,6 @@ test.describe('Front door: public directory data', () => {
     unverified = await createTestUser('operator');
     namedIndividual = await createTestUser('operator', { entityType: 'individual' });
     blankIndividual = await createTestUser('operator', { entityType: 'individual' });
-    spacesIndividual = await createTestUser('operator', { entityType: 'individual' });
     plainCompany = await createTestUser('operator', { entityType: 'company' });
     tradingCompany = await createTestUser('operator', { entityType: 'company' });
     customer = await createTestUser('customer');
@@ -138,15 +136,14 @@ test.describe('Front door: public directory data', () => {
     const individual = { legal_name: PRIVATE_LEGAL_NAME, verification_level: 'identity_verified' };
     await seedOperator(namedIndividual, { ...individual, trading_name: `  ${TRADING_NAME}  ` }, nameRoute);
     await seedOperator(blankIndividual, individual, nameRoute);
-    await seedOperator(spacesIndividual, { ...individual, trading_name: '   ' }, nameRoute);
-    await seedOperator(plainCompany, { legal_name: COMPANY_LEGAL_NAME, trading_name: '  ' }, nameRoute);
+    await seedOperator(plainCompany, { legal_name: COMPANY_LEGAL_NAME }, nameRoute);
     await seedOperator(tradingCompany, { legal_name: 'Aaa Hidden Registered Name', trading_name: `Mongoose Cargo ${tag}` }, nameRoute);
   });
 
   test.afterAll(async () => {
     test.setTimeout(240_000);
     for (const user of [countryWide, cityOnly, modeless, suspended, unverified, namedIndividual, blankIndividual,
-      spacesIndividual, plainCompany, tradingCompany, customer, adminUser]) {
+      plainCompany, tradingCompany, customer, adminUser]) {
       if (user) await deleteTestUser(user);
     }
   });
@@ -164,16 +161,14 @@ test.describe('Front door: public directory data', () => {
   });
 
   test('an individual with a blank trading name is not listed', async () => {
-    for (const user of [blankIndividual, spacesIndividual]) {
-      const id = user.operatorProfileId ?? '';
-      const listed = await anon().rpc('operator_is_listed', { op_id: id });
-      expect(listed.data).toBe(false);
-      const direct = await anon().rpc('get_directory_operator', { op_id: id });
-      expect(direct.data ?? []).toHaveLength(0);
-      const contact = await anon().rpc('get_operator_contact', { op_id: id });
-      expect(contact.data ?? []).toHaveLength(0);
-      expect(ids(await search({ p_origin_country: NAME_FROM }))).not.toContain(id);
-    }
+    const id = blankIndividual.operatorProfileId ?? '';
+    const listed = await anon().rpc('operator_is_listed', { op_id: id });
+    expect(listed.data).toBe(false);
+    const direct = await anon().rpc('get_directory_operator', { op_id: id });
+    expect(direct.data ?? []).toHaveLength(0);
+    const contact = await anon().rpc('get_operator_contact', { op_id: id });
+    expect(contact.data ?? []).toHaveLength(0);
+    expect(ids(await search({ p_origin_country: NAME_FROM }))).not.toContain(id);
   });
 
   test('a company falls back to legal_name, and a trading name replaces it', async () => {

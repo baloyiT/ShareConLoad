@@ -4,7 +4,7 @@
 // so having containers covers operators with existing bookings too.
 
 import { supabase } from '@/services/supabaseClient';
-import { isIndividual, listingDocTypes, requiredDocTypes } from '@/services/operatorCompliance';
+import { isBlankTradingName, isIndividual, listingDocTypes, requiredDocTypes } from '@/services/operatorCompliance';
 import { PARTICIPATION_TERMS_VERSION } from '@/services/participationTerms';
 
 export type OperatorStepKey =
@@ -97,11 +97,16 @@ export async function loadOperatorProgress(userId: string): Promise<OperatorProg
     termsOpenForAcceptance(),
   ]);
 
+  // A failed read leaves the step not done, which is the safe answer.
+  for (const read of [docs, services, coverage]) {
+    if (read.error) console.error('Could not load operator progress:', read.error);
+  }
+
   const uploaded = new Set((docs.data ?? []).map((d) => d.doc_type as string));
   const needed = established ? requiredDocTypes(op.entity_type) : listingDocTypes(op.entity_type);
 
   const done: Record<OperatorStepKey, boolean> = {
-    profile:   !!op.legal_name && (!isIndividual(op.entity_type) || !!op.trading_name?.trim()),
+    profile:   !!op.legal_name && (!isIndividual(op.entity_type) || !isBlankTradingName(op.trading_name)),
     contact:   !!op.phone_number,
     services:  (services.count ?? 0) > 0 && (coverage.count ?? 0) > 0,
     documents: needed.every((t) => uploaded.has(t)),

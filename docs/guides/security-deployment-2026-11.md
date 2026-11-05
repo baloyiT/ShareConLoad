@@ -115,6 +115,11 @@ The order matters. The old frontend sends `html` to `send-email`, which the new 
 
 Afterwards the signing exception in `_84` can be removed, because the new frontend signs through `generate-agreement-pdf`.
 
+### Before release: participation terms
+
+- Confirm the draft is still closed. `select version, is_current, open_for_acceptance from participation_terms;` must show `open_for_acceptance` false for `0.1-draft`. Some tests open it for a moment when `ALLOW_OPEN_LIVE_TERMS=1` is set, and a killed run could leave it open. Without that variable the specs never open it, and any run closes it and fails if it finds it open.
+- Turning the flag on is not how terms get approved. Approved terms need a new row in `participation_terms` with a new version and the approved text, a change to `PARTICIPATION_TERMS_VERSION` and the text in `services/participationTerms.ts`, and only then `open_for_acceptance` true on the new row. Never open `0.1-draft`: it says draft, and acceptance would record that text.
+
 ## Checks
 
 Base URL: `https://fkhfbifgvebygafsewot.supabase.co/functions/v1/`

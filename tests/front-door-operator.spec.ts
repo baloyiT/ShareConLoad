@@ -1,7 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { adminClient, createTestUser, deleteTestUser, signInBrowser, type TestUser } from './helpers/frontDoorUsers';
+import {
+  ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS, adminClient, createTestUser, deleteTestUser, failIfDraftTermsOpen, signInBrowser,
+  type TestUser,
+} from './helpers/frontDoorUsers';
 import {
   PARTICIPATION_TERMS_CLAUSES,
   PARTICIPATION_TERMS_TITLE,
@@ -19,6 +22,8 @@ async function newUser(...args: Parameters<typeof createTestUser>): Promise<Test
   users.push(user);
   return user;
 }
+
+test.beforeAll(failIfDraftTermsOpen);
 
 // Removes rows even after a partial failure. Containers go first: nothing else references them here.
 test.afterAll(async () => {
@@ -46,7 +51,17 @@ async function seedContainer(user: TestUser): Promise<void> {
   containerIds.push(data!.id as string);
 }
 
-// Opens the live terms for one test only, and always closes them again.
+// The page reads the flag through the API. This shows it the terms as open without touching
+// the real row, so a browser flow never needs them open.
+async function showTermsAsOpen(page: Page): Promise<void> {
+  await page.route('**/rest/v1/participation_terms*', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify([{ version: PARTICIPATION_TERMS_VERSION, open_for_acceptance: true }]),
+  }));
+}
+
+// Opens the real terms around one call only, and always closes them again.
 async function withTermsOpen(fn: () => Promise<void>): Promise<void> {
   const admin = adminClient();
   const setOpen = (open: boolean) => admin.from('participation_terms')
@@ -251,6 +266,12 @@ test('profile step: an individual must give a trading name', async ({ page }) =>
 
   await page.goto('/operator/compliance/profile');
   await expect(page.getByText('Your legal name is not published')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('This name locks once you are verified.')).toBeVisible();
+  await page.getByRole('button', { name: /Save & Continue/ }).click();
+  await expect(page.getByText('Trading name is required.')).toBeVisible();
+
+  // Not a visible character, so still blank.
+  await page.getByLabel(/Trading name/).fill('\u00A0\u200B');
   await page.getByRole('button', { name: /Save & Continue/ }).click();
   await expect(page.getByText('Trading name is required.')).toBeVisible();
 
@@ -282,7 +303,9 @@ test('a verified operator can still save the profile, and locked fields are not 
   page.on('request', req => {
     if (req.method() === 'PATCH' && req.url().includes('/operator_profiles')) sent.push(req.postData() ?? '');
   });
-  // No trading name yet, so a verified individual may still add one.
+  // No trading name yet, so a verified individual may still add one, and is told it then locks.
+  await expect(page.getByText('this name locks as soon as you save it')).toBeVisible();
+  await expect(page.getByText('identity numbers are verified and cannot be changed here')).toBeVisible();
   await page.getByLabel(/Trading name/).fill('Road Runner Freight');
   await page.getByLabel('Public description (shown in the directory)').fill('Road freight.');
   await page.getByRole('button', { name: /Save & Continue/ }).click();
@@ -299,6 +322,8 @@ test('a verified operator can still save the profile, and locked fields are not 
   // Now it is set, it is fixed like the legal name.
   await page.goto('/operator/compliance/profile');
   await expect(page.getByLabel(/Trading name/)).toBeDisabled({ timeout: 30_000 });
+  await expect(page.getByText('identity numbers and trading name are verified and cannot be changed here')).toBeVisible();
+  await expect(page.getByText(/locks/)).toHaveCount(0);
   await page.getByLabel('Public description (shown in the directory)').fill('Road and rail freight.');
   await page.getByRole('button', { name: /Save & Continue/ }).click();
   await page.waitForURL(url => url.pathname === '/operator/compliance/contact', { timeout: 30_000 });
@@ -421,17 +446,24 @@ test('the hub tells an operator with only the terms left that they have finished
 });
 
 test('accepting terms records acceptance and leaves the Stage 3 gate false', async ({ page }) => {
+  test.skip(!ALLOW_OPEN_LIVE_TERMS, OPENS_LIVE_TERMS);
   const user = await newUser('operator');
   await signInBrowser(page, user);
+  await showTermsAsOpen(page);
 
+  await page.goto('/operator/compliance/terms');
+  const accept = page.getByRole('button', { name: 'Accept terms' });
+  await expect(accept).toBeDisabled({ timeout: 30_000 });
+  await page.getByRole('checkbox').check();
+
+  // The real flag is open only for this one click and the call it makes.
   await withTermsOpen(async () => {
-    await page.goto('/operator/compliance/terms');
-    const accept = page.getByRole('button', { name: 'Accept terms' });
-    await expect(accept).toBeDisabled({ timeout: 30_000 });
-    await page.getByRole('checkbox').check();
-    await accept.click();
-    await expect(page.getByText(`You accepted version ${PARTICIPATION_TERMS_VERSION}`)).toBeVisible({ timeout: 30_000 });
+    await Promise.all([
+      page.waitForResponse(res => res.url().includes('/rpc/accept_participation_terms')),
+      accept.click(),
+    ]);
   });
+  await expect(page.getByText(`You accepted version ${PARTICIPATION_TERMS_VERSION}`)).toBeVisible({ timeout: 30_000 });
 
   const admin = adminClient();
   const { data: op } = await admin.from('operator_profiles')
@@ -468,13 +500,13 @@ test('a failed acceptance shows a plain message and records nothing', async ({ p
   await signInBrowser(page, user);
   await page.route('**/rest/v1/rpc/accept_participation_terms', route =>
     route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'This version is not the current terms' }) }));
-  await withTermsOpen(async () => {
-    await page.goto('/operator/compliance/terms');
-    await page.getByRole('checkbox').check({ timeout: 30_000 });
-    await page.getByRole('button', { name: 'Accept terms' }).click();
-    await expect(page.getByText('Could not record your acceptance')).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText('You accepted version')).toHaveCount(0);
-  });
+  await showTermsAsOpen(page);
+  await page.goto('/operator/compliance/terms');
+  await page.getByRole('checkbox').check({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Accept terms' }).click();
+  // Scoped to the alert: the Next dev overlay can quote this line from source.
+  await expect(page.locator('.alert-error').getByText('Could not record your acceptance')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('You accepted version')).toHaveCount(0);
 });
 
 // ── Services & coverage step ────────────────────────────────────────────────
