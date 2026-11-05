@@ -17,6 +17,7 @@ const tag = randomBytes(4).toString('hex');
 const FROM = `Fromland ${tag}`;
 const TO   = `Toland ${tag}`;
 const OTHER = `Otherland ${tag}`;
+const ANY_MODE_FROM = `Anyland ${tag}`;
 
 const PHONE = '+27 11 000 0000';
 const EMAIL = `front-door-public-${tag}@example.invalid`;
@@ -87,10 +88,12 @@ async function viewCount(id: string): Promise<number> {
 }
 
 test.describe('Front door: public directory data', () => {
-  // Country-wide coverage, any mode.
+  // Country-wide coverage with a null mode, and only a sea service.
   let countryWide: TestUser;
   // Two city-specific rows that must not combine into one route.
   let cityOnly: TestUser;
+  // Null-mode coverage and a service with no mode (forwarding), on its own route.
+  let modeless: TestUser;
   let suspended: TestUser;
   let unverified: TestUser;
   let customer: TestUser;
@@ -100,6 +103,7 @@ test.describe('Front door: public directory data', () => {
     test.setTimeout(120_000);
     countryWide = await createTestUser('operator');
     cityOnly = await createTestUser('operator');
+    modeless = await createTestUser('operator');
     suspended = await createTestUser('operator');
     unverified = await createTestUser('operator');
     customer = await createTestUser('customer');
@@ -110,14 +114,15 @@ test.describe('Front door: public directory data', () => {
       { origin_country: FROM, origin_city: 'Alpha', destination_country: OTHER, destination_city: 'Gamma', transport_mode: 'air' },
       { origin_country: OTHER, origin_city: 'Delta', destination_country: TO, destination_city: 'Beta', transport_mode: 'air' },
     ], 'air-freight');
-    const route = [{ origin_country: FROM, destination_country: TO }];
+    await seedOperator(modeless, {}, [{ origin_country: ANY_MODE_FROM, destination_country: TO }], 'forwarding');
+    const route =[{ origin_country: FROM, destination_country: TO }];
     await seedOperator(suspended, { participation_status: 'suspended' }, route);
     await seedOperator(unverified, { verification_level: 'registered' }, route);
   });
 
   test.afterAll(async () => {
     test.setTimeout(120_000);
-    for (const user of [countryWide, cityOnly, suspended, unverified, customer, adminUser]) {
+    for (const user of [countryWide, cityOnly, modeless, suspended, unverified, customer, adminUser]) {
       if (user) await deleteTestUser(user);
     }
   });
@@ -128,6 +133,20 @@ test.describe('Front door: public directory data', () => {
     expect(data ?? []).toHaveLength(0);
 
     const { data: all } = await anon().from('operator_profiles').select('id').limit(5);
+    expect(all ?? []).toHaveLength(0);
+  });
+
+  test('anon cannot select from compliance_documents', async () => {
+    // Removed with the operator: the foreign key cascades.
+    const id = countryWide.operatorProfileId ?? '';
+    const { error: seedErr } = await adminClient().from('compliance_documents')
+      .insert({ operator_profile_id: id, doc_type: 'identity', file_url: `test/${tag}.pdf` });
+    expect(seedErr).toBeNull();
+
+    const { data } = await anon().from('compliance_documents').select('id').eq('operator_profile_id', id);
+    expect(data ?? []).toHaveLength(0);
+
+    const { data: all } = await anon().from('compliance_documents').select('id').limit(5);
     expect(all ?? []).toHaveLength(0);
   });
 
@@ -211,13 +230,30 @@ test.describe('Front door: public directory data', () => {
     const route = { p_origin_country: FROM };
 
     const air = ids(await search({ ...route, p_mode: 'air' }));
-    expect(air.sort()).toEqual([countryWide.operatorProfileId, cityOnly.operatorProfileId].sort());
-
-    const sea = ids(await search({ ...route, p_mode: 'sea' }));
-    expect(sea).toEqual([countryWide.operatorProfileId]);
+    expect(air).toEqual([cityOnly.operatorProfileId]);
 
     const service = ids(await search({ ...route, p_service: 'air-freight' }));
     expect(service).toEqual([cityOnly.operatorProfileId]);
+  });
+
+  test('a sea-only operator with null-mode coverage shows in a sea search, not an air search', async () => {
+    const route = { p_origin_country: FROM };
+    expect(ids(await search({ ...route, p_mode: 'sea' }))).toEqual([countryWide.operatorProfileId]);
+    expect(ids(await search({ ...route, p_mode: 'air' }))).not.toContain(countryWide.operatorProfileId);
+  });
+
+  test('an operator with null-mode coverage and a mode-less service shows in every mode', async () => {
+    for (const mode of ['sea', 'air', 'road', 'rail']) {
+      const found = ids(await search({ p_origin_country: ANY_MODE_FROM, p_mode: mode }));
+      expect(found).toEqual([modeless.operatorProfileId]);
+    }
+  });
+
+  test('an unknown mode returns no rows, even for null-mode coverage', async () => {
+    for (const mode of ['spaceship', '%']) {
+      expect(await search({ p_origin_country: FROM, p_mode: mode })).toEqual([]);
+      expect(await search({ p_origin_country: ANY_MODE_FROM, p_mode: mode })).toEqual([]);
+    }
   });
 
   test('blank filters count as no filter, and hostile input is only ever data', async () => {
@@ -257,8 +293,12 @@ test.describe('Front door: public directory data', () => {
   test('get_operator_contact records one view and creates no lead', async () => {
     const id = countryWide.operatorProfileId ?? '';
     const admin = adminClient();
-    const submissions = async () => (await admin.from('contact_submissions')
-      .select('id', { count: 'exact', head: true })).count;
+    const submissions = async () => {
+      const { count, error } = await admin.from('contact_submissions')
+        .select('id', { count: 'exact', head: true });
+      expect(error).toBeNull();
+      return count;
+    };
 
     const before = await viewCount(id);
     const submissionsBefore = await submissions();

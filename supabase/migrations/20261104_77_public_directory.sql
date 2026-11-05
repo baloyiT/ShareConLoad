@@ -68,9 +68,12 @@ $$;
 
 -- Filters are compared as plain values: no dynamic SQL and no LIKE patterns, so anything a
 -- visitor sends is only data. p_service is a service_categories slug. Blank counts as no filter.
--- Route and mode must all match on the same coverage row. A null city covers the whole country
--- and a null transport_mode covers every mode. A country-wide row needs the country to have been
--- searched for: from a city alone we cannot tell that the city is in that country.
+-- Route and mode must all match on the same coverage row. A null city covers the whole country.
+-- A country-wide row needs the country to have been searched for: from a city alone we cannot
+-- tell that the city is in that country.
+-- An unknown p_mode returns no rows. A coverage row with a null transport_mode matches a mode only
+-- if the operator has an active service in that mode, or one with no mode (such as forwarding):
+-- a customer searching air should not see a sea-only operator.
 -- At most 100 rows, in name order.
 create or replace function public.search_directory(
   p_service             text default null,
@@ -107,6 +110,7 @@ as $$
     from public.operator_profiles op
     cross join f
     where public.operator_is_listed(op.id)
+      and (f.mode is null or f.mode = any(enum_range(null::public.transport_mode)::text[]))
       and (f.service is null or exists (
         select 1
         from public.operator_services s
@@ -119,7 +123,16 @@ as $$
         select 1
         from public.operator_coverage c
         where c.operator_profile_id = op.id
-          and (f.mode is null or c.transport_mode is null or c.transport_mode::text = f.mode)
+          and (f.mode is null
+            or c.transport_mode::text = f.mode
+            or (c.transport_mode is null and exists (
+              select 1
+              from public.operator_services s
+              join public.service_categories sc on sc.id = s.service_category_id
+              where s.operator_profile_id = op.id
+                and sc.is_active
+                and (sc.transport_mode is null or sc.transport_mode::text = f.mode)
+            )))
           and (f.origin_country is null or lower(c.origin_country) = f.origin_country)
           and (f.origin_city is null
             or lower(c.origin_city) = f.origin_city
@@ -150,7 +163,7 @@ as $$
 declare
   v_hourly_cap constant int := 60;
 begin
-  if not public.operator_is_listed(op_id) then
+  if public.operator_is_listed(op_id) is not true then
     return;
   end if;
 
