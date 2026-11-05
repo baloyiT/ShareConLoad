@@ -40,7 +40,7 @@ export async function approveCustomerKyc(kycId: string): Promise<{ error?: strin
     await supabase.from('notifications').insert({
       user_id: profile.user_id,
       title:   'Identity Verified',
-      message: 'Your identity has been verified. You can now book container space on ShareConLoad.',
+      message: 'Your identity has been verified. No further action is needed.',
       type:    'success',
     });
   }

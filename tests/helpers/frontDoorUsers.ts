@@ -127,7 +127,39 @@ export async function sweepTestUsers(): Promise<void> {
     }
     if (data.users.length < perPage) break;
   }
-  for (const user of stale) {
+  await removeUsersAndFreight(stale);
+}
+
+// A booking left by a crash blocks both its users. The operator: containers.operator_id cascades
+// but bookings.container_id is RESTRICT. The customer: payments.payer_id is SET NULL on a NOT NULL
+// column. So bookings and containers go first. Only a booking owned by a user being removed is
+// touched: any other booking stays, and its container and operator stay with it.
+export async function removeUsersAndFreight(users: { id: string; email: string }[]): Promise<void> {
+  if (users.some(u => !TEST_EMAIL_RE.test(u.email))) throw new Error('Refusing to remove a non-test user');
+  if (users.length > 0) {
+    const admin = adminClient();
+    const ids = users.map(u => u.id);
+    const { data: containers, error: containerErr } = await admin.from('containers').select('id').in('operator_id', ids);
+    if (containerErr) console.error('sweep could not list containers', containerErr.message);
+    const containerIds = (containers ?? []).map(c => c.id as string);
+
+    const { data: owned, error: ownedErr } = await admin.from('bookings').select('id').in('customer_id', ids);
+    if (ownedErr) console.error('sweep could not list bookings', ownedErr.message);
+    const bookingIds = (owned ?? []).map(b => b.id as string);
+
+    // pickup_jobs is the one booking child that does not cascade.
+    const steps: [string, string, string[]][] = [
+      ['pickup_jobs', 'booking_id', bookingIds],
+      ['bookings', 'id', bookingIds],
+      ['containers', 'id', containerIds],
+    ];
+    for (const [table, column, values] of steps) {
+      if (values.length === 0) continue;
+      const { error } = await admin.from(table).delete().in(column, values);
+      if (error) console.error(`sweep could not clear ${table}`, error.message);
+    }
+  }
+  for (const user of users) {
     try { await deleteTestUser(user); } catch (err) { console.error('sweep failed', user.email, err); }
   }
 }

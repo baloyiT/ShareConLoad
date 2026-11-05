@@ -1,5 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
-import { adminClient, createTestUser, deleteTestUser, signInBrowser, sweepTestUsers, type TestUser } from './helpers/frontDoorUsers';
+import {
+  adminClient, createTestUser, deleteTestUser, removeUsersAndFreight, signInBrowser, sweepTestUsers, type TestUser,
+} from './helpers/frontDoorUsers';
 
 // Staged payments on a seeded booking. The booking insert fires only the DB triggers, and every
 // Edge Function call from the browser is stubbed, so Paystack is never reached.
@@ -89,6 +91,77 @@ test.afterAll(async () => {
   for (const user of users) {
     try { await deleteTestUser(user); } catch (err) { console.error('cleanup failed', user.email, err); }
   }
+});
+
+// What a crashed run leaves: an open container and a booking on it, with no afterAll to remove them.
+async function strandedSeed(operator: TestUser, customer: TestUser) {
+  const db = adminClient();
+  const { data: container, error: containerErr } = await db.from('containers').insert({
+    operator_id: operator.id,
+    origin_country: 'South Africa', origin_city: 'Durban',
+    destination_country: 'Ghana', destination_city: 'Tema',
+    departure_date: '2030-01-01',
+    total_capacity_cbm: 10, available_capacity_cbm: 10,
+    load_type: 'LCL', price_per_cbm: 100, currency_code: 'USD', status: 'open',
+  }).select('id').single();
+  expect(containerErr).toBeNull();
+  const { data: booking, error: bookingErr } = await db.from('bookings').insert({
+    container_id: container!.id, customer_id: customer.id, total_cbm: 1, total_price: 100, status: 'pending',
+  }).select('id').single();
+  expect(bookingErr).toBeNull();
+  return { containerId: container!.id as string, bookingId: booking!.id as string };
+}
+
+async function rowCount(table: string, id: string): Promise<number> {
+  const { data, error } = await adminClient().from(table).select('id').eq('id', id);
+  expect(error).toBeNull();
+  return (data ?? []).length;
+}
+
+async function userExists(id: string): Promise<boolean> {
+  const { data } = await adminClient().auth.admin.getUserById(id);
+  return !!data.user;
+}
+
+test.describe('sweeping what a crash left behind', () => {
+  test('the booking blocks both users until it is removed, and the sweep step clears everything', async () => {
+    const operator = await createTestUser('operator');
+    const customer = await createTestUser('customer');
+    const { containerId, bookingId } = await strandedSeed(operator, customer);
+
+    await expect(deleteTestUser(operator)).rejects.toThrow(/deleteUser failed/);
+    await expect(deleteTestUser(customer)).rejects.toThrow(/deleteUser failed/);
+    expect(await userExists(operator.id)).toBe(true);
+    expect(await userExists(customer.id)).toBe(true);
+
+    await removeUsersAndFreight([operator, customer]);
+    expect(await rowCount('bookings', bookingId)).toBe(0);
+    expect(await rowCount('containers', containerId)).toBe(0);
+    const { data: payments } = await adminClient().from('payments').select('id').eq('booking_id', bookingId);
+    expect(payments).toEqual([]);
+    expect(await userExists(operator.id)).toBe(false);
+    expect(await userExists(customer.id)).toBe(false);
+  });
+
+  test('a booking owned by someone outside the sweep is left alone', async () => {
+    const operator = await createTestUser('operator');
+    const outsider = await createTestUser('customer');
+    const { containerId, bookingId } = await strandedSeed(operator, outsider);
+
+    await removeUsersAndFreight([operator]);
+    expect(await rowCount('bookings', bookingId)).toBe(1);
+    expect(await rowCount('containers', containerId)).toBe(1);
+    expect(await userExists(operator.id)).toBe(true);
+
+    await removeUsersAndFreight([operator, outsider]);
+    expect(await userExists(operator.id)).toBe(false);
+    expect(await userExists(outsider.id)).toBe(false);
+  });
+
+  test('it refuses a list holding a non-test email', async () => {
+    await expect(removeUsersAndFreight([{ id: '00000000-0000-0000-0000-000000000000', email: 'support@shareconload.com' }]))
+      .rejects.toThrow(/non-test/);
+  });
 });
 
 test('a booking gets three pending stages at 20, 50 and 30 percent of the total', async () => {

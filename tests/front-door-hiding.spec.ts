@@ -301,6 +301,9 @@ test('notifications and the email footer use the new positioning', () => {
   const service = readFileSync('services/notificationService.ts', 'utf8');
   const between = service.slice(service.indexOf("case 'user.welcome'"), service.indexOf("case 'operator.compliance_rejected'"));
   expect(between).not.toMatch(/container|accept bookings|accepting bookings/i);
+  for (const file of ['actions/operatorActions.ts', 'actions/adminCustomerActions.ts']) {
+    expect(readFileSync(file, 'utf8'), file).not.toMatch(/listing containers|book container space/i);
+  }
   const email = readFileSync('supabase/functions/send-email/index.ts', 'utf8');
   expect(email).toContain('ShareConLoad · Freight. Connected.');
   expect(email).not.toMatch(/Shared Container Logistics/);

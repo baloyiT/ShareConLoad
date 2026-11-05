@@ -93,7 +93,7 @@ export async function createOperatorProfile(
   // Fire onboarding notification (DB + email) before redirect
   const legalName = (formData.get('legal_name') as string) ?? '';
   const notifTitle = 'Operator Profile Created';
-  const notifBody  = `Your operator profile for "${legalName}" is set up. Complete your compliance documents to start listing containers and accepting bookings.`;
+  const notifBody  = `Your operator profile for "${legalName}" is set up. Complete your compliance documents so we can review your listing.`;
 
   await supabase.from('notifications').insert({
     recipient_id: user.id,
