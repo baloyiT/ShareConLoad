@@ -654,7 +654,8 @@ test('a failed service save puts the box back and shows a plain message', async 
   await page.route('**/rest/v1/operator_services*', route =>
     route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'boom' }) }));
   await page.getByLabel('Sea freight').check({ noWaitAfter: true });
-  await expect(page.getByText('We could not save that change. Please try again.')).toBeVisible();
+  // By the alert, because the dev error overlay can print the same text from the source.
+  await expect(page.locator('.alert-error', { hasText: 'We could not save that change. Please try again.' })).toBeVisible();
   await expect(page.getByLabel('Sea freight')).not.toBeChecked();
   await expect(page.getByLabel('Sea freight')).toBeEnabled();
   const { data } = await adminClient().from('operator_services').select('id').eq('operator_profile_id', user.operatorProfileId!);
