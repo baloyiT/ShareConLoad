@@ -3,7 +3,9 @@
 **Project:** ShareConLoad (`fkhfbifgvebygafsewot`)
 **Purpose:** Deploy the Edge Function security fixes from Task S safely, in order.
 
-Paystack is on LIVE keys. Migrations `_80` to `_84` are already applied. Everything below is still to do.
+Paystack is on LIVE keys. Stage 1 is done, and migrations reach `_88`. Everything from Stage 2 on is still to do.
+
+Before Stage 3, confirm `_88` is live: `select tgname from pg_trigger where tgname = 'guard_compliance_document_fields';` must return one row.
 
 ## Source
 
@@ -17,6 +19,7 @@ Paystack is on LIVE keys. Migrations `_80` to `_84` are already applied. Everyth
 - **Never redeploy `paystack-webhook` without `--no-verify-jwt`.** Paystack sends no JWT, so every webhook would be refused and payments would stop being recorded. It deploys once, in Stage 3.
 - Every function needs `supabase/functions/_shared/` with it. The CLI bundles it automatically. If deploying with the MCP tool, include `../_shared/auth.ts` and `../_shared/payments.ts` in the files.
 - Do not enable `pg_net`. See "Scheduled payouts" below.
+- **Never run `supabase db push`.** The CLI reads the digits before the first `_` as the version, so files named `20261104_NN_name.sql` all share one version, and the versions recorded in the database are timestamps that do not match them. A push would refuse, or try to run migrations that are already applied. Apply each file by itself with the `apply_migration` tool or in the SQL editor.
 
 ## `verify_jwt` values
 
@@ -75,9 +78,9 @@ Do both of these after each deploy, before any check against that function. The 
 
 Also confirm `_shared/auth.ts` is in the file list for functions that import it, and `_shared/payments.ts` for those that import that.
 
-## Stage 1: deploy now
+## Stage 1: done
 
-None of these depends on the frontend. Deploy each with the command above, in this order:
+Kept as a record. None of these depends on the frontend. They were deployed with the commands above, in this order:
 
 1. `process-refund`
 2. `trigger-payout`
@@ -113,6 +116,8 @@ The order matters. The old frontend sends `html` to `send-email`, which the new 
 5. Deploy `initialize-payment`.
 6. Deploy `paystack-webhook`, **with `--no-verify-jwt`** (`verify_jwt` false). Straight after, confirm `verify_jwt` is false in `list_edge_functions` and check the next delivery in the Paystack dashboard.
 
+**Run steps 1 to 3 back to back on the same day.** `send-email` stays an open relay until step 3: the deployed version sends anything to anyone who calls it. It cannot go earlier, because the live frontend sends `html`, which the new function refuses. Don't start step 1 unless step 3 can follow straight after. Step 3 also ships the new email footer.
+
 Afterwards the signing exception in `_84` can be removed, because the new frontend signs through `generate-agreement-pdf`.
 
 ### Before release: participation terms
@@ -144,6 +149,20 @@ Use each `Authorization: Bearer` value in turn: the anon key, then a customer's 
 | paystack-webhook | `{}`, no signature | 401 | 401 | 401 |
 
 The admin results of 404 and 400 are the positive checks: they prove a real admin gets past the gate.
+
+### One live send, after `send-email` is deployed
+
+The table above only proves what is refused. Freight enquiry alerts are a logged-out send to support, and if they fail the customer still sees success and nothing tells you, because the page only logs to the browser console. So do this once, and only once, because it sends a real email:
+
+```bash
+curl -X POST https://fkhfbifgvebygafsewot.supabase.co/functions/v1/send-email \
+  -H "Authorization: Bearer <anon key>" \
+  -H "apikey: <anon key>" \
+  -H "Content-Type: application/json" \
+  -d '{"to":"support@shareconload.com","subject":"Deployment check","title":"Deployment check","body":"Anonymous send check after deploying send-email."}'
+```
+
+Pass: the answer is a success, and the email arrives in the support@shareconload.com inbox. Check the inbox, not only the answer.
 
 Then check by hand:
 
@@ -182,6 +201,26 @@ The live Paystack account has OTP for transfers switched on, so `trigger-payout`
 5. A good answer is `{"success":true,...}`. The `transfer.success` webhook then marks the payout `completed`.
 
 The anon key or service role key will not work here: only a signed-in admin's token. The same token works for the admin column under Checks.
+
+## Measurement agent payouts need an admin call
+
+The measurement agent page used to start the payout when a job finished. `trigger-measurement-agent-payout` is now admin-only, so completing a job pays nothing until an admin calls it. There is no screen for this yet, and the service stays hidden until Stage 3.
+
+List completed jobs with no payout started:
+
+```sql
+select j.id, j.measurement_agent_profile_id, j.quoted_fee, j.completed_at
+from public.measurement_jobs j
+where j.status = 'completed'
+  and not exists (
+    select 1 from public.audit_logs a
+    where a.action = 'measurement_agent.payout_triggered'
+      and a.target_id::text = j.id::text
+  )
+order by j.completed_at;
+```
+
+The function writes that audit row, so a job paid before the audit row existed would also be listed. Check the Paystack dashboard before paying an old job. For each job, call the function with an admin token from the section above and `{"jobId":"<id>"}`, then finalise the transfer with the OTP. This moves real money.
 
 ## Retrying a failed payout
 
