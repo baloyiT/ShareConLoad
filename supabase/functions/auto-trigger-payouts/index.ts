@@ -118,11 +118,17 @@ serve(async (req: Request) => {
 
     // ── Batch-load active disputes ─────────────────────────────────────────────
     const bookingIds = [...new Set(pendingPayouts.map((p: any) => p.booking_id as string))];
-    const { data: disputeRows } = await supabase
+    const { data: disputeRows, error: disputeErr } = await supabase
       .from('disputes')
       .select('booking_id')
       .in('booking_id', bookingIds)
       .not('status', 'in', '("resolved","closed")');
+
+    // Fail closed: one lookup covers the batch, so no payout in it can go ahead.
+    if (disputeErr) {
+      console.error('[auto-trigger-payouts] dispute lookup failed:', disputeErr.message);
+      return json({ error: 'Could not check for active disputes. No payouts were sent.' }, 500);
+    }
     const activeDisputeBookingIds = new Set((disputeRows ?? []).map((d: any) => d.booking_id as string));
 
     // ── Process each payout ────────────────────────────────────────────────────

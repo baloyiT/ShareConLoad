@@ -132,7 +132,7 @@ serve(async (req: Request) => {
     if (!opProfile.paystack_recipient_code) return json({ error: 'Operator has no registered bank account' }, 400);
 
     // ── Check for active disputes ──────────────────────────────────────────────
-    const { data: activeDispute } = await supabase
+    const { data: activeDispute, error: disputeErr } = await supabase
       .from('disputes')
       .select('id')
       .eq('booking_id', payout.booking_id)
@@ -140,6 +140,11 @@ serve(async (req: Request) => {
       .limit(1)
       .maybeSingle();
 
+    // Fail closed: without an answer we cannot say the booking is free of disputes.
+    if (disputeErr) {
+      console.error('[trigger-payout] dispute lookup failed:', disputeErr.message);
+      return json({ error: 'Could not check for active disputes. Payout stopped.' }, 500);
+    }
     if (activeDispute) return json({ error: 'Cannot pay out while an active dispute exists' }, 400);
 
     // ── Calculate commission using live config + booking USD total ─────────────
