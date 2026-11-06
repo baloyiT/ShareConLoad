@@ -40,19 +40,20 @@ export default function NewSupportTicketPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login?next=/support/new'); return; }
 
-      const { data: profile, error: pErr } = await supabase
+      // A user can have several profile rows; a ticket belongs to the customer one.
+      const { data: profileRows, error: pErr } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+        .select('id, role_type')
+        .eq('user_id', user.id);
 
+      const profile = profileRows?.find((p) => p.role_type === 'customer') ?? profileRows?.[0];
       if (pErr || !profile) { setError('Profile not found. Please complete onboarding.'); setLoading(false); return; }
       setProfileId(profile.id);
 
       const { data: bookingRows } = await supabase
         .from('bookings')
         .select('id, containers(origin_city, destination_city)')
-        .eq('customer_id', profile.id)
+        .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
 
       setBookings(
