@@ -19,6 +19,7 @@ function snap(page: Page, name: string) {
 
 // Helper: sign in and return Supabase client with user session
 async function signIn(email: string, password: string) {
+  test.skip(!password, 'Set the TEST_*_PASSWORD variables to run this test.');
   const client = createClient(SUPABASE_URL, SUPABASE_ANON);
   const { data, error } = await client.auth.signInWithPassword({ email, password });
   if (error || !data.session) throw new Error(`Sign-in failed for ${email}: ${error?.message}`);
@@ -26,11 +27,11 @@ async function signIn(email: string, password: string) {
 }
 
 const CUSTOMER_EMAIL = process.env.TEST_CUSTOMER_EMAIL    ?? 'customer.shareconload@gmail.com';
-const CUSTOMER_PASS  = process.env.TEST_CUSTOMER_PASSWORD ?? 'TestCustomer@2026!';
+const CUSTOMER_PASS  = process.env.TEST_CUSTOMER_PASSWORD ?? '';
 const OPERATOR_EMAIL = process.env.TEST_OPERATOR_EMAIL    ?? 'mercy.affulbaloyi@gmail.com';
-const OPERATOR_PASS  = process.env.TEST_OPERATOR_PASSWORD ?? 'TestOperator@2026!';
+const OPERATOR_PASS  = process.env.TEST_OPERATOR_PASSWORD ?? '';
 const AGENT_EMAIL    = process.env.TEST_AGENT_EMAIL       ?? 'justice_baloyi@yahoo.com';
-const AGENT_PASS     = process.env.TEST_AGENT_PASSWORD    ?? 'TestAgent@2026!';
+const AGENT_PASS     = process.env.TEST_AGENT_PASSWORD    ?? '';
 
 test.describe('TC-RLS — Anon access', () => {
   test('RLS-05 — anon cannot insert a booking', async ({ page }) => {

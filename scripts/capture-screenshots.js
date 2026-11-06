@@ -36,7 +36,7 @@ async function captureCustomer(browser) {
   await page.waitForSelector('input[type="email"]');
   await ss(page, 'customer', '01-login');
 
-  await login(page, 'customer.shareconload@gmail.com', 'TestCustomer@2026!');
+  await login(page, 'customer.shareconload@gmail.com', process.env.TEST_CUSTOMER_PASSWORD);
 
   await page.goto(`${BASE}/`);
   await page.waitForTimeout(2000);
@@ -101,7 +101,7 @@ async function captureOperator(browser) {
   await page.waitForSelector('input[type="email"]');
   await ss(page, 'operator', '01-login');
 
-  await login(page, 'mercy.affulbaloyi@gmail.com', 'TestOperator@2026!');
+  await login(page, 'mercy.affulbaloyi@gmail.com', process.env.TEST_OPERATOR_PASSWORD);
 
   await page.goto(`${BASE}/operator`);
   await page.waitForTimeout(2000);
@@ -141,7 +141,7 @@ async function captureAgent(browser) {
   await page.waitForSelector('input[type="email"]');
   await ss(page, 'agent', '01-login');
 
-  await login(page, 'justice_baloyi@yahoo.com', 'TestAgent@2026!');
+  await login(page, 'justice_baloyi@yahoo.com', process.env.TEST_AGENT_PASSWORD);
 
   await page.goto(`${BASE}/agent`);
   await page.waitForTimeout(2000);

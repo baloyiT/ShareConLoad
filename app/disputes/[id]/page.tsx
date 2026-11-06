@@ -30,6 +30,7 @@ type Evidence = {
   file_name: string;
   description: string | null;
   created_at: string;
+  signedUrl?: string;
 };
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -60,6 +61,19 @@ const RESOLVED_STATUSES = new Set(['resolved_customer', 'resolved_operator', 'cl
 const UPLOAD_CLOSED     = new Set(['resolved_customer', 'resolved_operator', 'closed']);
 
 const STORAGE_BUCKET = 'dispute-evidence';
+
+// The bucket is private, and file_url still holds the public-style address. An address outside the
+// bucket gets no link, because the client wrote it.
+async function withSignedUrls(rows: Evidence[]): Promise<Evidence[]> {
+  const marker = `/object/public/${STORAGE_BUCKET}/`;
+  return Promise.all(rows.map(async (row) => {
+    const idx = row.file_url.indexOf(marker);
+    if (idx < 0) return row;
+    const path = decodeURIComponent(row.file_url.slice(idx + marker.length));
+    const { data } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, 3600);
+    return { ...row, signedUrl: data?.signedUrl };
+  }));
+}
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -119,7 +133,7 @@ export default function DisputeDetailPage() {
         setError('Dispute not found or access denied.');
       } else {
         setDispute(disputeRes.data as unknown as Dispute);
-        setEvidence((evidenceRes.data ?? []) as Evidence[]);
+        setEvidence(await withSignedUrls((evidenceRes.data ?? []) as Evidence[]));
       }
       setLoading(false);
     }
@@ -170,7 +184,7 @@ export default function DisputeDetailPage() {
       .eq('dispute_id', disputeId)
       .order('created_at', { ascending: true });
 
-    setEvidence((refreshed ?? []) as Evidence[]);
+    setEvidence(await withSignedUrls((refreshed ?? []) as Evidence[]));
     setUploadFile(null);
     setUploadDesc('');
     setUploadSuccess(true);
@@ -306,7 +320,7 @@ export default function DisputeDetailPage() {
               {evidence.map((ev) => (
                 <a
                   key={ev.id}
-                  href={ev.file_url}
+                  href={ev.signedUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors group"

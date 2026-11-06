@@ -6,7 +6,8 @@ const AUTH_FILE = 'tests/.auth/operator-user.json';
 
 setup('authenticate as operator test user', async ({ page }) => {
   const email    = process.env.TEST_OPERATOR_EMAIL    ?? 'mercy.affulbaloyi@gmail.com';
-  const password = process.env.TEST_OPERATOR_PASSWORD ?? 'TestOperator@2026!';
+  const password = process.env.TEST_OPERATOR_PASSWORD;
+  if (!password) throw new Error('Set TEST_OPERATOR_PASSWORD to run this setup.');
 
   await page.goto('/auth/login');
   await page.locator('input[type="email"]').fill(email);

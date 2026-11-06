@@ -6,7 +6,8 @@ const AUTH_FILE = 'tests/.auth/customer-user.json';
 
 setup('authenticate as customer test user', async ({ page }) => {
   const email    = process.env.TEST_CUSTOMER_EMAIL    ?? 'customer.shareconload@gmail.com';
-  const password = process.env.TEST_CUSTOMER_PASSWORD ?? 'TestCustomer@2026!';
+  const password = process.env.TEST_CUSTOMER_PASSWORD;
+  if (!password) throw new Error('Set TEST_CUSTOMER_PASSWORD to run this setup.');
 
   await page.goto('/auth/login');
   await page.locator('input[type="email"]').fill(email);

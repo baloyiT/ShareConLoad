@@ -6,7 +6,8 @@ const AUTH_FILE = 'tests/.auth/agent-user.json';
 
 setup('authenticate as agent test user', async ({ page }) => {
   const email    = process.env.TEST_AGENT_EMAIL    ?? 'justice_baloyi@yahoo.com';
-  const password = process.env.TEST_AGENT_PASSWORD ?? 'TestAgent@2026!';
+  const password = process.env.TEST_AGENT_PASSWORD;
+  if (!password) throw new Error('Set TEST_AGENT_PASSWORD to run this setup.');
 
   await page.goto('/auth/login');
   await expect(page.locator('h1')).toContainText('Welcome back');

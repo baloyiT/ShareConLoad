@@ -64,6 +64,5 @@ where email in (
 );
 
 -- ============================================================
--- After running this script, recreate test users with:
---   node tests/create-test-users.mjs
+-- After running this script, front-door specs create their own users.
 -- ============================================================

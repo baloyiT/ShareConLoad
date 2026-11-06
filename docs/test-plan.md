@@ -13,7 +13,7 @@
 | Requirement | Command / Action |
 |-------------|-----------------|
 | Dev server running | `npm run dev` (port 3000) |
-| Test users provisioned | `node tests/create-test-users.mjs` |
+| Test users provisioned | Front-door specs create their own users (`tests/helpers/frontDoorUsers.ts`). Older specs need the accounts in section 1.2 |
 | `.env.local` configured | See section 1.3 |
 | Playwright installed | `npx playwright install` |
 | Run all automated tests | `npx playwright test` |
@@ -23,9 +23,9 @@
 | Role | Email | Password | State |
 |------|-------|----------|-------|
 | Admin | justice.baloyi@gmail.com | (production creds) | is_admin=true |
-| Operator | mercy.affulbaloyi@gmail.com | TestOperator@2026! | compliance approved |
-| Agent | justice_baloyi@yahoo.com | TestAgent@2026! | KYC approved |
-| Customer (verified) | customer.shareconload@gmail.com | TestCustomer@2026! | KYC verified |
+| Operator | mercy.affulbaloyi@gmail.com | (from `.env.local`) | compliance approved |
+| Agent | justice_baloyi@yahoo.com | (from `.env.local`) | KYC approved |
+| Customer (verified) | customer.shareconload@gmail.com | (from `.env.local`) | KYC verified |
 
 ### 1.3 Environment Variables
 
@@ -34,11 +34,11 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 TEST_AGENT_EMAIL=justice_baloyi@yahoo.com
-TEST_AGENT_PASSWORD=TestAgent@2026!
+TEST_AGENT_PASSWORD=
 TEST_OPERATOR_EMAIL=mercy.affulbaloyi@gmail.com
-TEST_OPERATOR_PASSWORD=TestOperator@2026!
+TEST_OPERATOR_PASSWORD=
 TEST_CUSTOMER_EMAIL=customer.shareconload@gmail.com
-TEST_CUSTOMER_PASSWORD=TestCustomer@2026!
+TEST_CUSTOMER_PASSWORD=
 TEST_ADMIN_EMAIL=justice.baloyi@gmail.com
 TEST_ADMIN_PASSWORD=
 ```
@@ -526,7 +526,6 @@ These require sandbox credentials or interactive flows:
 ```
 tests/
   auth.setup.ts                  # saves agent auth state (existing)
-  create-test-users.mjs          # provisions test accounts via admin API
   agent-onboarding.spec.ts       # 8 agent KYC onboarding tests (existing, passing)
   fixtures/                      # shared PDF fixtures for upload tests
     freight-forwarder-license.pdf
