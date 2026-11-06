@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { createClient } from '@supabase/supabase-js';
-import { adminClient, createTestUser, deleteTestUser, isStaleTestUser, sweepTestUsers, TestUser } from './helpers/frontDoorUsers';
+import { adminClient, createTestUser, deleteTestUser, isStaleTestUser, signInBrowser, sweepTestUsers, TestUser } from './helpers/frontDoorUsers';
 import {
   bearerToken,
   decideEmail,
@@ -634,7 +634,7 @@ test.describe('document status guard', () => {
     // Exactly what actions/customerKycActions.ts sends, on this branch and in production.
     const saveDetails = () => customer.client.from('customer_kyc').update(details()).eq('profile_id', customer.profileId);
     const saveDocs = () => customer.client.from('customer_kyc').update({
-      id_document_url: 'https://example.invalid/id.pdf',
+      id_document_url: `${SUPABASE_URL}/storage/v1/object/public/customer-kyc/${customer.id}/id_document_url_1.pdf`,
       proof_of_address_url: null,
       status: 'pending_review',
       submitted_at: new Date().toISOString(),
@@ -1112,5 +1112,650 @@ test.describe('Edge Function authorisation', () => {
       const code = readFileSync(join(process.cwd(), file), 'utf-8');
       expect(code).not.toContain('buildEmailHtml');
     }
+  });
+});
+
+test.describe('security list', () => {
+  const anon = () => createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: false } });
+  const png = () => new Blob(['front door test'], { type: 'image/png' });
+  type Client = TestUser['client'];
+
+  test.describe('storage access', () => {
+    let owner: TestUser;
+    let stranger: TestUser;
+    let admin: TestUser;
+    let shipper: TestUser;
+    let agent: TestUser;
+    let agentProfileId: string;
+    let jobId: string;
+    let containerId: string;
+    let bookingId: string;
+    let disputeId: string;
+    const created: { bucket: string; path: string }[] = [];
+
+    // Tracked before the attempt, because an exploit that still works leaves a file behind.
+    async function put(client: Client, bucket: string, path: string, upsert: boolean) {
+      created.push({ bucket, path });
+      const { error } = await client.storage.from(bucket).upload(path, png(), { upsert });
+      return error;
+    }
+
+    async function canRead(client: Client, bucket: string, path: string) {
+      const { data, error } = await client.storage.from(bucket).createSignedUrl(path, 60);
+      return !error && !!data?.signedUrl;
+    }
+
+    test.beforeAll(async () => {
+      test.setTimeout(120_000);
+      owner = await newUser('customer');
+      stranger = await newUser('customer');
+      admin = await newUser('admin');
+      shipper = await newUser('customer');
+      agent = await newUser('customer');
+      const operator = await newUser('operator');
+      const db = adminClient();
+
+      const { data: agentProfile, error: profileErr } = await db.from('profiles')
+        .insert({ user_id: agent.id, role_type: 'measurement_agent' }).select('id').single();
+      expect(profileErr).toBeNull();
+      const { data: measurementAgent, error: agentErr } = await db.from('measurement_agent_profiles').insert({
+        profile_id: agentProfile!.id, full_name: 'Front Door Test', base_city: 'Durban', base_country: 'South Africa',
+      }).select('id').single();
+      expect(agentErr).toBeNull();
+      agentProfileId = measurementAgent!.id as string;
+
+      const { data: job, error: jobErr } = await db.from('measurement_jobs').insert({
+        shipper_profile_id: shipper.profileId, measurement_agent_profile_id: agentProfileId,
+        pickup_address: '1 Test Road', pickup_city: 'Durban', pickup_country: 'South Africa',
+        quoted_fee: 1, status: 'assigned',
+      }).select('id').single();
+      expect(jobErr).toBeNull();
+      jobId = job!.id as string;
+
+      const { data: container, error: containerErr } = await db.from('containers').insert({
+        operator_id: operator.id,
+        origin_country: 'South Africa', origin_city: 'Durban',
+        destination_country: 'Ghana', destination_city: 'Tema',
+        departure_date: '2030-01-01',
+        total_capacity_cbm: 10, available_capacity_cbm: 10,
+        load_type: 'LCL', price_per_cbm: 100, currency_code: 'USD', status: 'open',
+      }).select('id').single();
+      expect(containerErr).toBeNull();
+      containerId = container!.id as string;
+
+      const { data: booking, error: bookingErr } = await db.from('bookings').insert({
+        container_id: containerId, customer_id: owner.id, total_cbm: 1, total_price: 1000, status: 'pending',
+      }).select('id').single();
+      expect(bookingErr).toBeNull();
+      bookingId = booking!.id as string;
+
+      const { data: dispute, error: disputeErr } = await db.from('disputes').insert({
+        booking_id: bookingId, raised_by: owner.id, submitted_by: owner.profileId,
+        dispute_type: 'cargo_damage', description: 'Front door test',
+      }).select('id').single();
+      expect(disputeErr).toBeNull();
+      disputeId = dispute!.id as string;
+    });
+
+    test.afterAll(async () => {
+      test.setTimeout(60_000);
+      const db = adminClient();
+      for (const { bucket, path } of created.splice(0)) {
+        const { error } = await db.storage.from(bucket).remove([path]);
+        if (error) console.error('could not remove test object', bucket, path, error.message);
+      }
+      if (jobId) await db.from('measurement_jobs').delete().eq('id', jobId);
+      if (bookingId) await db.from('bookings').delete().eq('id', bookingId);
+      if (containerId) await db.from('containers').delete().eq('id', containerId);
+    });
+
+    test.describe('agent-documents', () => {
+      const bucket = 'agent-documents';
+      const ownPath = () => `${owner.id}/doc_license_${Date.now()}.png`;
+
+      test('the owner uploads as onboarding does and reads it back', async () => {
+        const path = ownPath();
+        expect(await put(owner.client, bucket, path, true)).toBeNull();
+        expect(await canRead(owner.client, bucket, path)).toBe(true);
+      });
+
+      test('an admin can read it', async () => {
+        const path = ownPath();
+        expect(await put(owner.client, bucket, path, true)).toBeNull();
+        expect(await canRead(admin.client, bucket, path)).toBe(true);
+      });
+
+      test('another signed-in user and an anonymous visitor cannot read it', async () => {
+        const path = ownPath();
+        expect(await put(owner.client, bucket, path, true)).toBeNull();
+        expect(await canRead(stranger.client, bucket, path)).toBe(false);
+        expect(await canRead(anon(), bucket, path)).toBe(false);
+      });
+
+      test('nobody can upload into another user\'s folder', async () => {
+        expect(await put(stranger.client, bucket, `${owner.id}/planted_${Date.now()}.png`, false)).not.toBeNull();
+        expect(await put(anon(), bucket, `${owner.id}/planted_anon_${Date.now()}.png`, false)).not.toBeNull();
+      });
+    });
+
+    test.describe('measurement-report-photos', () => {
+      const bucket = 'measurement-report-photos';
+      const photoPath = (name: string) => `${agentProfileId}/${jobId}/${name}.png`;
+
+      test('the assigned agent uploads as the job page does and reads it back', async () => {
+        const path = photoPath('front');
+        expect(await put(agent.client, bucket, path, true)).toBeNull();
+        expect(await canRead(agent.client, bucket, path)).toBe(true);
+      });
+
+      test('the shipper of the job and an admin can read it', async () => {
+        const path = photoPath('side');
+        expect(await put(agent.client, bucket, path, true)).toBeNull();
+        expect(await canRead(shipper.client, bucket, path)).toBe(true);
+        expect(await canRead(admin.client, bucket, path)).toBe(true);
+      });
+
+      test('another signed-in user and an anonymous visitor cannot read it', async () => {
+        const path = photoPath('back');
+        expect(await put(agent.client, bucket, path, true)).toBeNull();
+        expect(await canRead(stranger.client, bucket, path)).toBe(false);
+        expect(await canRead(anon(), bucket, path)).toBe(false);
+      });
+    });
+
+    test.describe('dispute-evidence', () => {
+      const bucket = 'dispute-evidence';
+      const evidencePath = () => `${disputeId}/${Date.now()}.png`;
+
+      test('the bucket is private', async () => {
+        const { data, error } = await adminClient().storage.getBucket(bucket);
+        expect(error).toBeNull();
+        expect(data?.public).toBe(false);
+      });
+
+      test('the person who raised the dispute uploads as the page does and reads it back', async () => {
+        const path = evidencePath();
+        expect(await put(owner.client, bucket, path, false)).toBeNull();
+        expect(await canRead(owner.client, bucket, path)).toBe(true);
+      });
+
+      test('an admin can read it', async () => {
+        const path = evidencePath();
+        expect(await put(owner.client, bucket, path, false)).toBeNull();
+        expect(await canRead(admin.client, bucket, path)).toBe(true);
+      });
+
+      test('another signed-in user cannot read it, and its public address is dead', async () => {
+        const path = evidencePath();
+        expect(await put(owner.client, bucket, path, false)).toBeNull();
+        expect(await canRead(stranger.client, bucket, path)).toBe(false);
+        const { data } = owner.client.storage.from(bucket).getPublicUrl(path);
+        expect((await fetch(data.publicUrl)).ok).toBe(false);
+      });
+
+      test('another signed-in user cannot upload to the dispute, or to no dispute at all', async () => {
+        expect(await put(stranger.client, bucket, `${disputeId}/planted_${Date.now()}.png`, false)).not.toBeNull();
+        expect(await put(stranger.client, bucket, `${stranger.id}/loose_${Date.now()}.png`, false)).not.toBeNull();
+      });
+
+      test('the dispute page opens evidence through a signed link', async ({ page }) => {
+        test.setTimeout(120_000);
+        const path = evidencePath();
+        expect(await put(owner.client, bucket, path, false)).toBeNull();
+        const { data: url } = owner.client.storage.from(bucket).getPublicUrl(path);
+        const { error } = await adminClient().from('dispute_evidence').insert([
+          { dispute_id: disputeId, uploaded_by: owner.profileId, file_url: url.publicUrl, file_name: 'real.png' },
+          { dispute_id: disputeId, uploaded_by: owner.profileId, file_url: 'https://example.invalid/x.png', file_name: 'outside.png' },
+        ]);
+        expect(error).toBeNull();
+
+        await signInBrowser(page, owner);
+        await page.goto(`/disputes/${disputeId}`);
+        const link = page.locator('a', { hasText: 'real.png' });
+        await expect(link).toHaveAttribute('href', /\/object\/sign\/dispute-evidence\//);
+        expect((await fetch((await link.getAttribute('href')) ?? '')).ok).toBe(true);
+
+        await expect(page.getByText('outside.png')).toBeVisible();
+        await expect(page.locator('a[href*="example.invalid"]')).toHaveCount(0);
+      });
+    });
+  });
+
+  test.describe('role profile guards', () => {
+    let admin: TestUser;
+
+    test.beforeAll(async () => {
+      test.setTimeout(60_000);
+      admin = await newUser('admin');
+    });
+
+    test.describe('agent_profiles', () => {
+      let agent: TestUser;
+      let profileId: string;
+
+      // Exactly what actions/agentActions.ts sends, on this branch and in production.
+      const step1 = (status: string) => ({
+        profile_id: profileId,
+        business_name: 'Front Door Test',
+        contact_person: null,
+        phone_number: null,
+        country: 'South Africa',
+        operating_corridors: [],
+        years_in_operation: null,
+        service_description: null,
+        status,
+      });
+      const update = (values: Record<string, unknown>) =>
+        agent.client.from('agent_profiles').update(values).eq('profile_id', profileId);
+
+      async function row() {
+        const { data, error } = await adminClient().from('agent_profiles')
+          .select('*').eq('profile_id', profileId).maybeSingle();
+        expect(error).toBeNull();
+        return data as Record<string, unknown> | null;
+      }
+
+      async function seed(extra: Record<string, unknown>) {
+        const { error } = await adminClient().from('agent_profiles').insert({ ...step1('draft'), ...extra });
+        expect(error).toBeNull();
+      }
+
+      test.beforeAll(async () => {
+        test.setTimeout(60_000);
+        agent = await newUser('customer');
+        const { data, error } = await agent.client.from('profiles')
+          .insert({ user_id: agent.id, role_type: 'agent' }).select('id').single();
+        expect(error).toBeNull();
+        profileId = data!.id as string;
+      });
+
+      test.beforeEach(async () => {
+        await adminClient().from('agent_profiles').delete().eq('profile_id', profileId);
+      });
+
+      for (const extra of [
+        { status: 'approved' },
+        { status: 'rejected' },
+        { status: 'pending_review' },
+        { rejection_reason: 'self-set' },
+      ] as Record<string, unknown>[]) {
+        test(`a client cannot insert with ${JSON.stringify(extra)}`, async () => {
+          const { error } = await agent.client.from('agent_profiles').insert({ ...step1('draft'), ...extra });
+          expect(error?.code).toBe(DENIED);
+          expect(await row()).toBeNull();
+        });
+      }
+
+      test('the whole onboarding still works, up to submitting for review', async () => {
+        const { error: insertErr } = await agent.client.from('agent_profiles').insert(step1('draft'));
+        expect(insertErr).toBeNull();
+        for (const values of [
+          step1('draft'),
+          { license_number: 'L1', license_authority: 'A', license_expiry: '2030-01-01', registration_number: 'R1' },
+          { doc_license_url: 'x', doc_business_reg_url: null, doc_identity_url: 'y', doc_proof_address_url: null },
+          { bank_name: 'B', bank_account_holder: 'H', bank_account_number: '1', bank_branch_code: '2' },
+          { status: 'pending_review' },
+        ]) {
+          const { error } = await update(values);
+          expect(error).toBeNull();
+        }
+        expect((await row())?.status).toBe('pending_review');
+      });
+
+      for (const from of ['draft', 'pending_review', 'rejected']) {
+        test(`a client cannot approve a ${from} application`, async () => {
+          await seed({ status: from });
+          const { error } = await update({ status: 'approved' });
+          expect(error?.code).toBe(DENIED);
+          expect((await row())?.status).toBe(from);
+        });
+      }
+
+      test('a client cannot write the rejection reason', async () => {
+        await seed({ status: 'rejected', rejection_reason: 'From the admin' });
+        const { error } = await update({ rejection_reason: null });
+        expect(error?.code).toBe(DENIED);
+      });
+
+      test('a client cannot change an approved row to rejected', async () => {
+        await seed({ status: 'approved' });
+        const { error } = await update({ status: 'rejected' });
+        expect(error?.code).toBe(DENIED);
+      });
+
+      test('a rejected agent can start again and resubmit', async () => {
+        await seed({ status: 'rejected', rejection_reason: 'From the admin' });
+        expect((await update(step1('draft'))).error).toBeNull();
+        expect((await update({ status: 'pending_review' })).error).toBeNull();
+        expect((await row())?.status).toBe('pending_review');
+      });
+
+      test('an approved agent can edit step 1 and stays approved', async () => {
+        await seed({ status: 'approved' });
+        const { error } = await update({ ...step1('approved'), business_name: 'Edited' });
+        expect(error).toBeNull();
+        expect(await row()).toMatchObject({ status: 'approved', business_name: 'Edited' });
+      });
+
+      test('an admin can approve and reject, as the signed-in admin', async () => {
+        await seed({ status: 'pending_review' });
+        const decide = (values: Record<string, unknown>) =>
+          admin.client.from('agent_profiles').update(values).eq('profile_id', profileId);
+        expect((await decide({ status: 'rejected', rejection_reason: 'No' })).error).toBeNull();
+        expect((await decide({ status: 'approved', rejection_reason: null })).error).toBeNull();
+        expect((await row())?.status).toBe('approved');
+      });
+    });
+
+    for (const { table, roleType, fields, reviewFields } of [
+      {
+        table: 'measurement_agent_profiles',
+        roleType: 'measurement_agent',
+        // Exactly what actions/measurementAgentActions.ts sends, on this branch and in production.
+        fields: {
+          full_name: 'Front Door Test', phone_number: '1', base_city: 'Durban', base_country: 'South Africa',
+          id_document_url: 'x', selfie_url: 'y', equipment_photo_url: 'z',
+        },
+        reviewFields: [
+          { certification_test_passed: true },
+          { service_agreement_signed_at: '2030-01-01T00:00:00Z' },
+        ],
+      },
+      {
+        table: 'transporter_profiles',
+        roleType: 'transporter',
+        // Exactly what actions/transporterActions.ts sends, on this branch and in production.
+        fields: {
+          full_name: 'Front Door Test', phone_number: '1', base_city: 'Durban', base_country: 'South Africa',
+          vehicle_type: 'bakkie', vehicle_capacity_kg: null, vehicle_capacity_cbm: null,
+          vehicle_registration_number: 'R', drivers_licence_url: 'a', vehicle_ownership_url: 'b',
+          vehicle_photo_1_url: 'c', vehicle_photo_2_url: 'd', vehicle_photo_3_url: 'e', vehicle_photo_4_url: 'f',
+        },
+        reviewFields: [],
+      },
+    ] as { table: string; roleType: string; fields: Record<string, unknown>; reviewFields: Record<string, unknown>[] }[]) {
+      test.describe(table, () => {
+        let user: TestUser;
+        let profileId: string;
+
+        const body = () => ({ profile_id: profileId, ...fields });
+
+        async function row() {
+          const { data, error } = await adminClient().from(table)
+            .select('*').eq('profile_id', profileId).maybeSingle();
+          expect(error).toBeNull();
+          return data as Record<string, unknown> | null;
+        }
+
+        test.beforeAll(async () => {
+          test.setTimeout(60_000);
+          user = await newUser('customer');
+          const { data, error } = await user.client.from('profiles')
+            .insert({ user_id: user.id, role_type: roleType }).select('id').single();
+          expect(error).toBeNull();
+          profileId = data!.id as string;
+        });
+
+        test.beforeEach(async () => {
+          await adminClient().from(table).delete().eq('profile_id', profileId);
+        });
+
+        for (const extra of [
+          { status: 'approved' },
+          { status: 'rejected' },
+          { status: 'suspended' },
+          { rejection_reason: 'self-set' },
+          { payout_enabled: true },
+          { payout_hold: true },
+          { paystack_recipient_code: 'RCP_front_door_test' },
+          { average_rating: 5 },
+          { total_jobs_completed: 99 },
+          ...reviewFields,
+        ] as Record<string, unknown>[]) {
+          test(`a client cannot insert with ${JSON.stringify(extra)}`, async () => {
+            const { error } = await user.client.from(table).insert({ ...body(), ...extra });
+            expect(error?.code).toBe(DENIED);
+            expect(await row()).toBeNull();
+          });
+        }
+
+        test('onboarding still inserts the application as pending', async () => {
+          const { error } = await user.client.from(table).insert(body());
+          expect(error).toBeNull();
+          expect(await row()).toMatchObject({ status: 'pending', payout_enabled: false });
+        });
+
+        test('a client still cannot change the row afterwards', async () => {
+          expect((await adminClient().from(table).insert(body())).error).toBeNull();
+          await user.client.from(table).update({ status: 'approved', payout_enabled: true }).eq('profile_id', profileId);
+          expect(await row()).toMatchObject({ status: 'pending', payout_enabled: false });
+        });
+
+        test('an admin can approve and reject, as the signed-in admin', async () => {
+          expect((await adminClient().from(table).insert(body())).error).toBeNull();
+          const decide = (values: Record<string, unknown>) =>
+            admin.client.from(table).update(values).eq('profile_id', profileId);
+          expect((await decide({ status: 'rejected', rejection_reason: 'No' })).error).toBeNull();
+          expect((await decide({ status: 'approved', rejection_reason: null })).error).toBeNull();
+          expect((await row())?.status).toBe('approved');
+        });
+
+        test('the service role can set the payout fields', async () => {
+          expect((await adminClient().from(table).insert(body())).error).toBeNull();
+          const { error } = await adminClient().from(table)
+            .update({ payout_enabled: true, paystack_recipient_code: 'RCP_front_door_test' }).eq('profile_id', profileId);
+          expect(error).toBeNull();
+        });
+      });
+    }
+  });
+
+  test.describe('file address guards', () => {
+    test.describe('compliance_documents.file_url', () => {
+      let operator: TestUser;
+      let other: TestUser;
+      let admin: TestUser;
+      const docType = 'tax_clearance';
+
+      const upload = (fileUrl: string) => operator.client.from('compliance_documents').upsert(
+        {
+          operator_profile_id: operator.operatorProfileId,
+          doc_type: docType,
+          file_url: fileUrl,
+          status: 'under_review',
+          admin_notes: null,
+          uploaded_at: new Date().toISOString(),
+        },
+        { onConflict: 'operator_profile_id,doc_type' },
+      ).select('id').single();
+
+      test.beforeAll(async () => {
+        test.setTimeout(60_000);
+        operator = await newUser('operator');
+        other = await newUser('operator');
+        admin = await newUser('admin');
+      });
+
+      test.beforeEach(async () => {
+        await adminClient().from('compliance_documents').delete().eq('operator_profile_id', operator.operatorProfileId ?? '');
+      });
+
+      test('the path the page builds is accepted, first time and on a re-upload', async () => {
+        const path = `${operator.operatorProfileId}/${docType}.pdf`;
+        expect((await upload(path)).error).toBeNull();
+        expect((await upload(path)).error).toBeNull();
+      });
+
+      for (const [name, build] of [
+        ['another operator\'s file', (o: TestUser, x: TestUser) => `${x.operatorProfileId}/identity.pdf`],
+        ['a path with no folder', () => 'identity.pdf'],
+        ['a climb out of the folder', (o: TestUser, x: TestUser) => `${o.operatorProfileId}/../${x.operatorProfileId}/identity.pdf`],
+        ['a nested path', (o: TestUser) => `${o.operatorProfileId}/a/identity.pdf`],
+      ] as [string, (o: TestUser, x: TestUser) => string][]) {
+        test(`insert refuses ${name}`, async () => {
+          const { error } = await upload(build(operator, other));
+          expect(error?.code).toBe(DENIED);
+        });
+
+        test(`update refuses ${name}`, async () => {
+          expect((await upload(`${operator.operatorProfileId}/${docType}.pdf`)).error).toBeNull();
+          const { error } = await operator.client.from('compliance_documents')
+            .update({ file_url: build(operator, other) }).eq('operator_profile_id', operator.operatorProfileId ?? '');
+          expect(error?.code).toBe(DENIED);
+        });
+      }
+
+      test('an admin and the service role are not limited', async () => {
+        expect((await upload(`${operator.operatorProfileId}/${docType}.pdf`)).error).toBeNull();
+        const set = (client: Client, fileUrl: string) => client.from('compliance_documents')
+          .update({ file_url: fileUrl }).eq('operator_profile_id', operator.operatorProfileId ?? '');
+        expect((await set(admin.client, 'moved-by-admin.pdf')).error).toBeNull();
+        expect((await set(adminClient(), `${operator.operatorProfileId}/service_agreement_v1_1.pdf`)).error).toBeNull();
+      });
+    });
+
+    test.describe('customer_kyc addresses', () => {
+      let customer: TestUser;
+      let other: TestUser;
+      let admin: TestUser;
+
+      const objectUrl = (ownerId: string, name: string, bucket = 'customer-kyc') =>
+        `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${ownerId}/${name}`;
+      const update = (values: Record<string, unknown>) =>
+        customer.client.from('customer_kyc').update({ ...values, status: 'pending_review' }).eq('profile_id', customer.profileId);
+
+      test.beforeAll(async () => {
+        test.setTimeout(60_000);
+        customer = await newUser('customer');
+        other = await newUser('customer');
+        admin = await newUser('admin');
+      });
+
+      test.beforeEach(async () => {
+        const db = adminClient();
+        await db.from('customer_kyc').delete().eq('profile_id', customer.profileId);
+        const { error } = await db.from('customer_kyc').insert({
+          profile_id: customer.profileId, full_name: 'Front Door Test', id_type: 'passport', id_number: 'A1',
+        });
+        expect(error).toBeNull();
+      });
+
+      test('what the documents page sends is accepted', async () => {
+        const { error } = await update({
+          id_document_url: objectUrl(customer.id, 'id_document_url_1.pdf'),
+          proof_of_address_url: null,
+        });
+        expect(error).toBeNull();
+        expect((await update({
+          id_document_url: objectUrl(customer.id, 'id_document_url_2.pdf'),
+          proof_of_address_url: objectUrl(customer.id, 'proof_of_address_url_2.my%20scan'),
+        })).error).toBeNull();
+      });
+
+      test('saving the details step leaves the addresses alone', async () => {
+        expect((await update({ id_document_url: objectUrl(customer.id, 'id.pdf') })).error).toBeNull();
+        expect((await update({ full_name: 'Edited' })).error).toBeNull();
+      });
+
+      for (const column of ['id_document_url', 'proof_of_address_url']) {
+        for (const [name, build] of [
+          ['another user\'s file', (c: TestUser, o: TestUser) => objectUrl(o.id, 'id.pdf')],
+          ['another bucket', (c: TestUser) => objectUrl(c.id, 'id.pdf', 'compliance-documents')],
+          ['an outside address', () => 'https://example.invalid/id.pdf'],
+          ['a climb out of the folder', (c: TestUser, o: TestUser) => objectUrl(c.id, `../${o.id}/id.pdf`)],
+          ['an encoded climb', (c: TestUser, o: TestUser) => objectUrl(c.id, `..%2F${o.id}%2Fid.pdf`)],
+        ] as [string, (c: TestUser, o: TestUser) => string][]) {
+          test(`${column} refuses ${name}`, async () => {
+            const { error } = await update({ [column]: build(customer, other) });
+            expect(error?.code).toBe(DENIED);
+          });
+        }
+      }
+
+      test('an insert is checked too', async () => {
+        await adminClient().from('customer_kyc').delete().eq('profile_id', customer.profileId);
+        const { error } = await customer.client.from('customer_kyc').insert({
+          profile_id: customer.profileId, full_name: 'Front Door Test', id_type: 'passport', id_number: 'A1',
+          id_document_url: objectUrl(other.id, 'id.pdf'), status: 'pending_review',
+        });
+        expect(error?.code).toBe(DENIED);
+      });
+
+      test('an admin is not limited', async () => {
+        const { error } = await admin.client.from('customer_kyc')
+          .update({ id_document_url: 'https://example.invalid/id.pdf' }).eq('profile_id', customer.profileId);
+        expect(error).toBeNull();
+      });
+    });
+  });
+
+  test.describe('anonymous access', () => {
+    let customer: TestUser;
+    let agent: TestUser;
+    let agentProfileId: string;
+
+    const jobCount = async () => {
+      const { data, error } = await adminClient().from('measurement_agent_profiles')
+        .select('total_jobs_completed').eq('id', agentProfileId).single();
+      expect(error).toBeNull();
+      return data?.total_jobs_completed as number;
+    };
+
+    test.beforeAll(async () => {
+      test.setTimeout(60_000);
+      customer = await newUser('customer');
+      agent = await newUser('customer');
+      const db = adminClient();
+      const { data: profile, error: profileErr } = await db.from('profiles')
+        .insert({ user_id: agent.id, role_type: 'measurement_agent' }).select('id').single();
+      expect(profileErr).toBeNull();
+      const { data, error } = await db.from('measurement_agent_profiles').insert({
+        profile_id: profile!.id, full_name: 'Front Door Test', base_city: 'Durban', base_country: 'South Africa',
+      }).select('id').single();
+      expect(error).toBeNull();
+      agentProfileId = data!.id as string;
+    });
+
+    test('fire_departure_notices cannot be called by a visitor or a signed-in user', async () => {
+      expect((await anon().rpc('fire_departure_notices')).error?.code).toBe(DENIED);
+      expect((await customer.client.rpc('fire_departure_notices')).error?.code).toBe(DENIED);
+    });
+
+    test('increment_agent_jobs cannot be called by a visitor', async () => {
+      const before = await jobCount();
+      expect((await anon().rpc('increment_agent_jobs', { agent_id: agentProfileId })).error?.code).toBe(DENIED);
+      expect(await jobCount()).toBe(before);
+    });
+
+    test('the agent page can still count a finished job', async () => {
+      const before = await jobCount();
+      const { error } = await agent.client.rpc('increment_agent_jobs', { agent_id: agentProfileId });
+      expect(error).toBeNull();
+      expect(await jobCount()).toBe(before + 1);
+    });
+
+    test('operator_rating_summary is closed to visitors and open to signed-in users', async () => {
+      expect((await anon().from('operator_rating_summary').select('user_id').limit(1)).error?.code).toBe(DENIED);
+      expect((await customer.client.from('operator_rating_summary').select('user_id').limit(1)).error).toBeNull();
+    });
+  });
+
+  test.describe('hard-coded passwords', () => {
+    const known = new RegExp(['Customer', 'Operator', 'Agent', 'Admin'].map(r => `Test${r}@2026`).join('|'));
+
+    test('none are left in the test setup, scripts or guides', () => {
+      for (const file of [
+        'tests/rls.spec.ts', 'tests/admin.setup.ts', 'tests/auth.setup.ts', 'tests/customer.setup.ts',
+        'tests/operator.setup.ts', 'scripts/capture-screenshots.js', 'docs/test-plan.md',
+        'docs/superpowers/plans/2026-06-20-user-guides.md',
+        'Test Case/Agent/profile.json', 'Test Case/Customer/profile.json', 'Test Case/Operator/profile.json',
+      ]) {
+        expect(readFileSync(join(process.cwd(), file), 'utf-8'), file).not.toMatch(known);
+      }
+    });
+
+    test('the script that reset real accounts to a known password is gone', () => {
+      expect(existsSync(join(process.cwd(), 'tests/create-test-users.mjs'))).toBe(false);
+    });
   });
 });
