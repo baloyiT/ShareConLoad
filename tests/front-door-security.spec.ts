@@ -1311,8 +1311,8 @@ test.describe('security list', () => {
         expect(await put(owner.client, bucket, path, false)).toBeNull();
         const { data: url } = owner.client.storage.from(bucket).getPublicUrl(path);
         const { error } = await adminClient().from('dispute_evidence').insert([
-          { dispute_id: disputeId, uploaded_by: owner.id, file_url: url.publicUrl, file_name: 'real.png' },
-          { dispute_id: disputeId, uploaded_by: owner.id, file_url: 'https://example.invalid/x.png', file_name: 'outside.png' },
+          { dispute_id: disputeId, uploaded_by: owner.profileId, file_url: url.publicUrl, file_name: 'real.png' },
+          { dispute_id: disputeId, uploaded_by: owner.profileId, file_url: 'https://example.invalid/x.png', file_name: 'outside.png' },
         ]);
         expect(error).toBeNull();
 

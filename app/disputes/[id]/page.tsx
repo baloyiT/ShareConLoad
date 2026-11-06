@@ -104,12 +104,13 @@ export default function DisputeDetailPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace(`/auth/login?next=/disputes/${disputeId}`); return; }
 
-      const { data: profile } = await supabase
+      // A user can have several profile rows; a dispute belongs to the customer one.
+      const { data: profileRows } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+        .select('id, role_type')
+        .eq('user_id', user.id);
 
+      const profile = profileRows?.find((p) => p.role_type === 'customer') ?? profileRows?.[0];
       if (!profile) { setError('Profile not found.'); setLoading(false); return; }
       setProfileId(profile.id);
 
