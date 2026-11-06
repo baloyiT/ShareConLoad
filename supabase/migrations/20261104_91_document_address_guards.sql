@@ -10,6 +10,9 @@
 --     The admin page cuts the path out of it after /object/public/customer-kyc/ and decodes it once,
 --     so an encoded climb is refused as well as a plain one. The host is left open: only the path
 --     is ever used. proof_of_address_url may be null.
+-- URL parsers treat a backslash as a slash and %2e as a dot, so <own id>/.%2e\<other id>\file would
+-- reach another folder. Compliance file names are limited to plain characters, and KYC refuses all
+-- of those forms, because no client produces them.
 -- Only a new or changed address is checked. All 5 compliance rows and both KYC rows comply today.
 
 create or replace function public.guard_compliance_document_fields()
@@ -23,7 +26,7 @@ begin
   end if;
 
   if (tg_op = 'INSERT' or new.file_url is distinct from old.file_url)
-    and (new.file_url !~ ('^' || new.operator_profile_id::text || '/[^/]+$')
+    and (new.file_url !~ ('^' || new.operator_profile_id::text || '/[A-Za-z0-9_.-]+$')
       or position('..' in new.file_url) > 0) then
     raise exception 'Documents must sit in your own folder'
       using errcode = '42501';
@@ -57,7 +60,7 @@ set search_path = public
 as $$
 declare
   v_own_file text;
-  v_climb constant text := '\.\.|%2f|%5c|%2e%2e';
+  v_climb constant text := '\.\.|\\|%2e|%2f|%5c';
 begin
   if current_user not in ('authenticated', 'anon') or public.is_admin() then
     return new;
