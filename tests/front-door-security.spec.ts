@@ -1155,6 +1155,13 @@ test.describe('security list', () => {
       const operator = await newUser('operator');
       const db = adminClient();
 
+      // createTestUser adds a second customer row to the one on_auth_user_created makes. A real customer
+      // has one, and the disputes policies raise 21000 on two, so a denial here could be that error.
+      for (const user of [owner, stranger]) {
+        const { error } = await db.from('profiles').delete().eq('user_id', user.id).neq('id', user.profileId);
+        expect(error).toBeNull();
+      }
+
       const { data: agentProfile, error: profileErr } = await db.from('profiles')
         .insert({ user_id: agent.id, role_type: 'measurement_agent' }).select('id').single();
       expect(profileErr).toBeNull();
@@ -1304,8 +1311,8 @@ test.describe('security list', () => {
         expect(await put(owner.client, bucket, path, false)).toBeNull();
         const { data: url } = owner.client.storage.from(bucket).getPublicUrl(path);
         const { error } = await adminClient().from('dispute_evidence').insert([
-          { dispute_id: disputeId, uploaded_by: owner.profileId, file_url: url.publicUrl, file_name: 'real.png' },
-          { dispute_id: disputeId, uploaded_by: owner.profileId, file_url: 'https://example.invalid/x.png', file_name: 'outside.png' },
+          { dispute_id: disputeId, uploaded_by: owner.id, file_url: url.publicUrl, file_name: 'real.png' },
+          { dispute_id: disputeId, uploaded_by: owner.id, file_url: 'https://example.invalid/x.png', file_name: 'outside.png' },
         ]);
         expect(error).toBeNull();
 
