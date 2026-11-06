@@ -100,8 +100,8 @@ export default function TransporterJobDetailPage() {
       .single();
     if (shipperProfile) {
       await supabase.from('notifications').insert({
-        user_id: shipperProfile.user_id,
-        type: 'pickup_collected',
+        recipient_id: shipperProfile.user_id,
+        event: 'pickup_collected',
         title: 'Your cargo has been collected',
         body: 'Your pickup has been collected and is on its way to the warehouse.',
         metadata: { job_id: job.id },
@@ -146,8 +146,8 @@ export default function TransporterJobDetailPage() {
           .single();
         if (profile) {
           await supabase.from('notifications').insert({
-            user_id: profile.user_id,
-            type: 'pickup_delivered',
+            recipient_id: profile.user_id,
+            event: 'pickup_delivered',
             title: 'Cargo delivered to warehouse',
             body: 'A pickup has been completed and the cargo has arrived at the warehouse.',
             metadata: { job_id: job.id, booking_id: job.booking_id },

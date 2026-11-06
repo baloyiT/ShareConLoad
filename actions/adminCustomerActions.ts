@@ -38,10 +38,10 @@ export async function approveCustomerKyc(kycId: string): Promise<{ error?: strin
 
   if (profile?.user_id) {
     await supabase.from('notifications').insert({
-      user_id: profile.user_id,
+      recipient_id: profile.user_id,
       title:   'Identity Verified',
-      message: 'Your identity has been verified. No further action is needed.',
-      type:    'success',
+      body: 'Your identity has been verified. No further action is needed.',
+      event: 'customer.kyc_approved',
     });
   }
 
@@ -76,10 +76,10 @@ export async function rejectCustomerKyc(kycId: string, reason: string): Promise<
 
   if (profile?.user_id) {
     await supabase.from('notifications').insert({
-      user_id: profile.user_id,
+      recipient_id: profile.user_id,
       title:   'Identity Verification Update',
-      message: `Your identity verification was not approved. Reason: ${reason}. Please resubmit with the correct documents.`,
-      type:    'warning',
+      body: `Your identity verification was not approved. Reason: ${reason}. Please resubmit with the correct documents.`,
+      event: 'customer.kyc_rejected',
     });
   }
 

@@ -46,10 +46,10 @@ export async function assignMeasurementAgent(
 
     if (profile?.user_id) {
       await supabase.from('notifications').insert({
-        user_id: profile.user_id,
-        type:    'measurement_job_assigned',
+        recipient_id: profile.user_id,
+        event: 'measurement_job_assigned',
         title:   'You have a new measurement job',
-        message: 'A measurement job has been assigned to you. Check your jobs list.',
+        body: 'A measurement job has been assigned to you. Check your jobs list.',
       });
     }
   }

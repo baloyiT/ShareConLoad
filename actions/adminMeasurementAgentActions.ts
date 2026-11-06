@@ -38,10 +38,10 @@ export async function approveMeasurementAgent(measurementAgentProfileId: string)
 
   if (profile?.user_id) {
     await supabase.from('notifications').insert({
-      user_id: profile.user_id,
+      recipient_id: profile.user_id,
       title:   'Measurement Agent Application Approved',
-      message: 'Congratulations! Your measurement agent application has been approved. You can now access the Measurement Agent Portal.',
-      type:    'success',
+      body: 'Congratulations! Your measurement agent application has been approved. You can now access the Measurement Agent Portal.',
+      event: 'measurement_agent.application_approved',
     });
   }
 
@@ -76,10 +76,10 @@ export async function rejectMeasurementAgent(measurementAgentProfileId: string, 
 
   if (profile?.user_id) {
     await supabase.from('notifications').insert({
-      user_id: profile.user_id,
+      recipient_id: profile.user_id,
       title:   'Measurement Agent Application Update',
-      message: `Your measurement agent application was not approved. Reason: ${reason}. You may resubmit after addressing the issues.`,
-      type:    'warning',
+      body: `Your measurement agent application was not approved. Reason: ${reason}. You may resubmit after addressing the issues.`,
+      event: 'measurement_agent.application_rejected',
     });
   }
 

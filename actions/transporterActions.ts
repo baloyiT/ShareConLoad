@@ -62,10 +62,10 @@ export async function createTransporterProfile(
   const { error: notifError } = await supabase
     .from('notifications')
     .insert({
-      user_id: user.id,
+      recipient_id: user.id,
       title:   'Application Received',
-      message: 'Your transporter application has been submitted and is under review.',
-      type:    'info',
+      body: 'Your transporter application has been submitted and is under review.',
+      event: 'transporter.application_submitted',
     });
 
   if (notifError) {

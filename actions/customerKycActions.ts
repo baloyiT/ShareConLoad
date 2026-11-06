@@ -89,10 +89,10 @@ export async function saveCustomerKycDocs(
   if (error) return { error: error.message };
 
   await supabase.from('notifications').insert({
-    user_id: user.id,
+    recipient_id: user.id,
     title:   'Identity Verification Submitted',
-    message: 'Your identity verification documents have been submitted and are under review. You will be notified once approved.',
-    type:    'info',
+    body: 'Your identity verification documents have been submitted and are under review. You will be notified once approved.',
+    event: 'customer.kyc_submitted',
   });
 
   redirect('/onboarding/customer/status');

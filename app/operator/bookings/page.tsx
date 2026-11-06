@@ -616,8 +616,8 @@ export default function OperatorBookingsPage() {
     }
 
     await supabase.from('notifications').insert({
-      user_id:  booking.customer_id,
-      type:     'booking.cbm_reconciled',
+      recipient_id: booking.customer_id,
+      event:    'booking.cbm_reconciled',
       title:    'Cargo received at warehouse',
       body:     notifBody,
       metadata: { booking_id: booking.id, actual_cbm: actualCbm, reconciliation_status: reconciliationStatus },

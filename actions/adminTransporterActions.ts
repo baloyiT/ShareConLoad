@@ -38,10 +38,10 @@ export async function approveTransporter(transporterProfileId: string): Promise<
 
   if (profile?.user_id) {
     await supabase.from('notifications').insert({
-      user_id: profile.user_id,
+      recipient_id: profile.user_id,
       title:   'Transporter Application Approved',
-      message: 'Congratulations! Your transporter application has been approved. You can now access the Transporter Portal.',
-      type:    'success',
+      body: 'Congratulations! Your transporter application has been approved. You can now access the Transporter Portal.',
+      event: 'transporter.application_approved',
     });
   }
 
@@ -76,10 +76,10 @@ export async function rejectTransporter(transporterProfileId: string, reason: st
 
   if (profile?.user_id) {
     await supabase.from('notifications').insert({
-      user_id: profile.user_id,
+      recipient_id: profile.user_id,
       title:   'Transporter Application Update',
-      message: `Your transporter application was not approved. Reason: ${reason}. You may resubmit after addressing the issues.`,
-      type:    'warning',
+      body: `Your transporter application was not approved. Reason: ${reason}. You may resubmit after addressing the issues.`,
+      event: 'transporter.application_rejected',
     });
   }
 

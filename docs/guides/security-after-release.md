@@ -66,12 +66,12 @@ drop policy if exists "Customers update own KYC docs" on storage.objects;
 
 These calls send to the user themselves and keep working on `Users can insert own notifications`: `app/auth/callback/page.tsx:25`, `app/booking/[containerId]/page.tsx:400`, `app/operator/compliance/agreement/page.tsx:98`, `actions/operatorActions.ts:98`.
 
-**Inserts that never arrive.** These write `notifications` directly with `user_id`, `message` and `type`. The table has `recipient_id`, `event` and `body` instead, and none of them checks the error, so they fail silently today. No test covers them.
+**Direct inserts.** Until Task S3 these used `user_id`, `message` and `type`, which the table does not have, so they never arrived. On this branch they use `recipient_id`, `event` and `body`, and `tests/front-door-disputes.spec.ts` checks each one against the live table. They run as the signed-in user and none of them checks the error.
 
-- To another user: `app/operator/bookings/page.tsx:618`, `app/transporter/jobs/[id]/page.tsx:102` and `:148`, `actions/adminMeasurementJobActions.ts:48`, and both inserts in each of `actions/adminAgentActions.ts`, `adminCustomerActions.ts`, `adminMeasurementAgentActions.ts` and `adminTransporterActions.ts`.
-- To the user themselves: `actions/agentActions.ts:199`, `actions/customerKycActions.ts:91`, `actions/measurementAgentActions.ts:56`, `actions/transporterActions.ts:63`.
+- To another user. Once this branch is live these depend on `authenticated_insert_notifications`, so they must move to the `notify` function below before that policy is dropped, or they stop arriving with no error: `app/operator/bookings/page.tsx:618`, `app/transporter/jobs/[id]/page.tsx:102` and `:148`, `actions/adminMeasurementJobActions.ts:48`, and both inserts in each of `actions/adminAgentActions.ts`, `adminCustomerActions.ts`, `adminMeasurementAgentActions.ts` and `adminTransporterActions.ts`.
+- To the user themselves, which keep working on `Users can insert own notifications`: `actions/agentActions.ts:199`, `actions/customerKycActions.ts:91`, `actions/measurementAgentActions.ts:56`, `actions/transporterActions.ts:63`.
 
-So an agent, measurement agent, transporter or KYC customer is never told the admin's decision in the app. Decide whether to fix these in the same work. Moving the cross-user ones onto `notify()` is the natural fix.
+The events are `agent.application_*`, `customer.kyc_*`, `measurement_agent.application_*` and `transporter.application_*` (`_approved`, `_rejected`, `_submitted`), plus `booking.cbm_reconciled`, `pickup_collected`, `pickup_delivered` and `measurement_job_assigned`. The cross-user ones need adding to the table above when this work starts.
 
 **Smallest design: one Edge Function that chooses the recipient.**
 

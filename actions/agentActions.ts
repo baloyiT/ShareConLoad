@@ -197,10 +197,10 @@ export async function submitAgentApplication(
   if (error) return { error: error.message };
 
   await supabase.from('notifications').insert({
-    user_id: user.id,
+    recipient_id: user.id,
     title:   'Application Submitted',
-    message: 'Your freight agent application has been submitted and is under review. We will notify you once a decision has been made.',
-    type:    'info',
+    body: 'Your freight agent application has been submitted and is under review. We will notify you once a decision has been made.',
+    event: 'agent.application_submitted',
   }).select().maybeSingle();
 
   redirect('/onboarding/agent/status');

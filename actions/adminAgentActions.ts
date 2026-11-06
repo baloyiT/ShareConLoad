@@ -38,10 +38,10 @@ export async function approveAgent(agentProfileId: string): Promise<{ error?: st
 
   if (profile?.user_id) {
     await supabase.from('notifications').insert({
-      user_id: profile.user_id,
+      recipient_id: profile.user_id,
       title:   'Agent Application Approved',
-      message: 'Congratulations! Your freight agent application has been approved. You can now access the Agent Portal.',
-      type:    'success',
+      body: 'Congratulations! Your freight agent application has been approved. You can now access the Agent Portal.',
+      event: 'agent.application_approved',
     });
   }
 
@@ -76,10 +76,10 @@ export async function rejectAgent(agentProfileId: string, reason: string): Promi
 
   if (profile?.user_id) {
     await supabase.from('notifications').insert({
-      user_id: profile.user_id,
+      recipient_id: profile.user_id,
       title:   'Agent Application Update',
-      message: `Your freight agent application was not approved. Reason: ${reason}. You may resubmit after addressing the issues.`,
-      type:    'warning',
+      body: `Your freight agent application was not approved. Reason: ${reason}. You may resubmit after addressing the issues.`,
+      event: 'agent.application_rejected',
     });
   }
 
