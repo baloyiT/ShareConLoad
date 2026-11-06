@@ -15,6 +15,8 @@ type BookingOption = {
 
 type Priority = 'low' | 'medium' | 'high' | 'critical';
 
+const SUPPORT_EMAIL = 'support@shareconload.com';
+
 const PRIORITIES: { value: Priority; label: string; color: string }[] = [
   { value: 'low',      label: 'Low',      color: '#6b7280' },
   { value: 'medium',   label: 'Medium',   color: '#f59e0b' },
@@ -26,6 +28,7 @@ export default function NewSupportTicketPage() {
   const router = useRouter();
 
   const [profileId,   setProfileId]   = useState<string | null>(null);
+  const [userEmail,   setUserEmail]   = useState('');
   const [bookings,    setBookings]    = useState<BookingOption[]>([]);
   const [bookingId,   setBookingId]   = useState('');
   const [subject,     setSubject]     = useState('');
@@ -39,6 +42,7 @@ export default function NewSupportTicketPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login?next=/support/new'); return; }
+      setUserEmail(user.email ?? 'no email on file');
 
       // A user can have several profile rows; a ticket belongs to the customer one.
       const { data: profileRows, error: pErr } = await supabase
@@ -86,7 +90,25 @@ export default function NewSupportTicketPage() {
     });
 
     if (insertErr) { setError(insertErr.message); setSubmitting(false); return; }
+    await alertSupport();
     router.push('/bookings');
+  }
+
+  // The ticket is already saved, so an alert failure is only logged. The server escapes the text.
+  async function alertSupport() {
+    try {
+      const { error: alertError } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: SUPPORT_EMAIL,
+          subject: 'New support ticket',
+          title: 'New support ticket',
+          body: `From: ${userEmail}\nPriority: ${priority}\nBooking: ${bookingId ? `#${bookingId.slice(0, 8).toUpperCase()}` : 'none'}\n\n${subject.trim()}\n\n${description.trim()}`,
+        },
+      });
+      if (alertError) console.error('Support ticket alert failed:', alertError);
+    } catch (err) {
+      console.error('Support ticket alert failed:', err);
+    }
   }
 
   return (
