@@ -927,6 +927,19 @@ test.describe('Edge Function authorisation', () => {
     expect(check).toBeLessThan(firstEffect(code));
   });
 
+  for (const name of ['trigger-payout', 'auto-trigger-payouts']) {
+    test(`${name} stops the payout when the dispute lookup fails`, () => {
+      const code = handler(name);
+      const lookup = code.indexOf(".from('disputes')");
+      expect(lookup).toBeGreaterThan(-1);
+      const afterLookup = code.slice(lookup);
+      expect(code.slice(0, lookup)).toMatch(/error: disputeErr \} = await supabase\s*$/);
+      const guard = afterLookup.search(/if \(disputeErr\) \{[^}]*return json\(\{ error:[^}]*\}, 500\);/);
+      expect(guard).toBeGreaterThan(-1);
+      expect(lookup + guard).toBeLessThan(code.indexOf('paystackRes = await fetch('));
+    });
+  }
+
   for (const [name, owner] of [
     ['verify-payment', 'customer_id !== auth.user.id'],
     ['verify-pickup-payment', '.eq(\'id\', job.shipper_profile_id)'],

@@ -20,6 +20,8 @@ let operator: TestUser;
 let customerProfileId: string;
 let operatorRowId: string;
 let bookingId: string;
+let strangerBookingId: string;
+let seededDisputeId: string;
 let disputeId: string;
 
 async function newUser(role: 'customer' | 'operator'): Promise<TestUser> {
@@ -69,10 +71,23 @@ test.beforeAll(async () => {
   expect(containerErr).toBeNull();
 
   const { data: booking, error: bookingErr } = await db.from('bookings').insert({
-    container_id: container!.id, customer_id: owner.id, total_cbm: 1, total_price: 1000, status: 'confirmed',
+    container_id: container!.id, customer_id: owner.id, total_cbm: 1, total_price: 1000, status: 'goods_received',
   }).select('id').single();
   expect(bookingErr).toBeNull();
   bookingId = booking!.id as string;
+
+  const { data: strangerBooking, error: strangerBookingErr } = await db.from('bookings').insert({
+    container_id: container!.id, customer_id: stranger.id, total_cbm: 1, total_price: 1000, status: 'confirmed',
+  }).select('id').single();
+  expect(strangerBookingErr).toBeNull();
+  strangerBookingId = strangerBooking!.id as string;
+
+  const { data: seeded, error: seededErr } = await db.from('disputes').insert({
+    booking_id: bookingId, raised_by: owner.id, submitted_by: customerProfileId,
+    dispute_type: 'cargo_damage', description: 'Seeded', status: 'resolved', resolution_notes: 'Seeded resolution',
+  }).select('id').single();
+  expect(seededErr).toBeNull();
+  seededDisputeId = seeded!.id as string;
 });
 
 test.afterAll(async () => {
@@ -109,7 +124,8 @@ test.describe('a customer with two profile rows', () => {
       expect(error, dispute_type).toBeNull();
       disputeId ??= data!.id as string;
     }
-    const { data: rows, error } = await owner.client.from('disputes').select('id').eq('booking_id', bookingId);
+    const { data: rows, error } = await owner.client
+      .from('disputes').select('id').eq('booking_id', bookingId).like('description', 'Front door test%');
     expect(error).toBeNull();
     expect(rows).toHaveLength(PAGE_DISPUTE_TYPES.length);
   });
@@ -218,8 +234,130 @@ test.describe('a stranger', () => {
   });
 });
 
+test.describe('what a customer may write', () => {
+  const dispute = () => ({
+    booking_id: bookingId, submitted_by: customerProfileId,
+    dispute_type: 'cargo_damage', description: 'Front door forged',
+  });
+
+  test('cannot open a dispute that is already resolved', async () => {
+    const { error } = await owner.client.from('disputes').insert({ ...dispute(), status: 'resolved' });
+    expect(error?.code).toBe('42501');
+  });
+
+  test('cannot name someone else as the raiser', async () => {
+    const { error } = await owner.client.from('disputes').insert({ ...dispute(), raised_by: stranger.id });
+    expect(error?.code).toBe('42501');
+  });
+});
+
+test.describe('insurance claim ownership', () => {
+  test('a stranger cannot claim on someone else\'s booking', async () => {
+    const { error } = await stranger.client.from('insurance_claims').insert({
+      booking_id: bookingId, submitted_by: stranger.profileId, claim_type: 'cargo_damage',
+    });
+    expect(error?.code).toBe('42501');
+  });
+
+  test('a stranger cannot tie their claim to someone else\'s dispute', async () => {
+    const { error } = await stranger.client.from('insurance_claims').insert({
+      booking_id: strangerBookingId, dispute_id: seededDisputeId,
+      submitted_by: stranger.profileId, claim_type: 'cargo_damage',
+    });
+    expect(error?.code).toBe('42501');
+  });
+
+  test('a customer can claim on their own booking with no dispute', async () => {
+    const { error } = await stranger.client.from('insurance_claims').insert({
+      booking_id: strangerBookingId, submitted_by: stranger.profileId, claim_type: 'cargo_damage',
+    });
+    expect(error).toBeNull();
+    await adminClient().from('insurance_claims').delete().eq('booking_id', strangerBookingId);
+  });
+});
+
+test.describe('support tickets', () => {
+  test('a two-row user can file and read a ticket, and a stranger cannot read it', async () => {
+    const { error: readErr } = await owner.client.from('support_tickets').select('id');
+    expect(readErr).toBeNull();
+
+    // requester_id and category are required, and neither page ref sends them yet. This
+    // tests the policy only; the page is listed as a separate bug in the report.
+    const { data, error } = await owner.client.from('support_tickets').insert({
+      submitted_by: customerProfileId, requester_id: owner.id, category: 'other',
+      subject: 'Front door test', description: 'Front door test',
+    }).select('id').single();
+    expect(error).toBeNull();
+
+    const seen = await stranger.client.from('support_tickets').select('id').eq('id', data!.id);
+    expect(seen.error).toBeNull();
+    expect(seen.data).toEqual([]);
+    await adminClient().from('support_tickets').delete().eq('id', data!.id);
+  });
+
+  test('a stranger cannot file a ticket in the name of the customer', async () => {
+    const { error } = await stranger.client.from('support_tickets').insert({
+      submitted_by: customerProfileId, requester_id: stranger.id, category: 'other', subject: 'Front door test',
+    });
+    expect(error?.code).toBe('42501');
+  });
+});
+
+test.describe('role profile tables', () => {
+  for (const [table, extra] of [
+    ['transporter_profiles', { vehicle_type: 'bakkie' }],
+    ['measurement_agent_profiles', {}],
+  ] as const) {
+    test(`${table}: the owner reads their row and a stranger cannot read or forge one`, async () => {
+      const row = { full_name: 'Front Door Test', base_city: 'Durban', base_country: 'South Africa', ...extra };
+      const { data, error } = await adminClient().from(table)
+        .insert({ ...row, profile_id: customerProfileId }).select('id').single();
+      expect(error).toBeNull();
+      try {
+        const own = await owner.client.from(table).select('id').eq('id', data!.id);
+        expect(own.error).toBeNull();
+        expect(own.data).toHaveLength(1);
+
+        const other = await stranger.client.from(table).select('id').eq('id', data!.id);
+        expect(other.error).toBeNull();
+        expect(other.data).toEqual([]);
+
+        const forged = await stranger.client.from(table).insert({ ...row, profile_id: operatorRowId });
+        expect(forged.error?.code).toBe('42501');
+      } finally {
+        await adminClient().from(table).delete().eq('id', data!.id);
+      }
+    });
+  }
+});
+
+test.describe('dispute page source', () => {
+  const read = (file: string) => readFileSync(join(process.cwd(), file), 'utf8');
+
+  test('the live resolved status closes the dispute page', () => {
+    const code = read('app/disputes/[id]/page.tsx');
+    expect(code).toMatch(/RESOLVED_STATUSES\s*=\s*new Set\(\[[^\]]*'resolved'/);
+    expect(code).toMatch(/UPLOAD_CLOSED\s*=\s*new Set\(\[[^\]]*'resolved'/);
+    expect(code).toMatch(/^\s*resolved:\s*\{ label: 'Resolved'/m);
+  });
+
+  test('the picker offers goods_received bookings', () => {
+    expect(read('app/disputes/new/page.tsx')).toMatch(/\.in\('status', \[[^\]]*'goods_received'/);
+  });
+});
+
 test.describe('in the browser', () => {
-  test('the customer opens a dispute, attaches evidence and sees it; a stranger cannot', async ({ page, browser }) => {
+  test('a resolved dispute shows as resolved with its notes and takes no uploads @browser', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.route('**/functions/v1/**', route => route.fulfill({ status: 200, json: { ok: true } }));
+    await signInBrowser(page, owner);
+    await page.goto(`/disputes/${seededDisputeId}`);
+    await expect(page.getByText('Seeded resolution')).toBeVisible();
+    await expect(page.getByText('Resolved', { exact: true }).first()).toBeVisible();
+    await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  });
+
+  test('the customer opens a dispute, attaches evidence and sees it; a stranger cannot @browser', async ({ page, browser }) => {
     test.setTimeout(180_000);
     // No Edge Function call may leave the test: no Paystack, no email.
     await page.route('**/functions/v1/**', route => route.fulfill({ status: 200, json: { ok: true } }));
