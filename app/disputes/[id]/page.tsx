@@ -52,13 +52,12 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   submitted:          { label: 'Submitted',        color: '#f59e0b', bg: '#fffbeb' },
   under_review:       { label: 'Under Review',     color: '#3b82f6', bg: '#eff6ff' },
   awaiting_evidence:  { label: 'Awaiting Evidence',color: '#ff6a00', bg: '#fff7ed' },
-  resolved_customer:  { label: 'Resolved',         color: '#22c55e', bg: '#f0fdf4' },
-  resolved_operator:  { label: 'Resolved',         color: '#22c55e', bg: '#f0fdf4' },
+  resolved:           { label: 'Resolved',         color: '#22c55e', bg: '#f0fdf4' },
   closed:             { label: 'Closed',           color: '#6b7280', bg: '#f9fafb' },
 };
 
-const RESOLVED_STATUSES = new Set(['resolved_customer', 'resolved_operator', 'closed']);
-const UPLOAD_CLOSED     = new Set(['resolved_customer', 'resolved_operator', 'closed']);
+const RESOLVED_STATUSES = new Set(['resolved', 'closed']);
+const UPLOAD_CLOSED     = new Set(['resolved', 'closed']);
 
 const STORAGE_BUCKET = 'dispute-evidence';
 

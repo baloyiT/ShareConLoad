@@ -59,7 +59,7 @@ function NewDisputeForm() {
         .from('bookings')
         .select('id, status, containers(origin_city, destination_city)')
         .eq('customer_id', user.id)
-        .in('status', ['confirmed', 'loaded', 'in_transit', 'delivered'])
+        .in('status', ['confirmed', 'goods_received', 'loaded', 'in_transit', 'delivered'])
         .order('created_at', { ascending: false });
 
       setBookings(
@@ -122,7 +122,7 @@ function NewDisputeForm() {
             <label className="text-sm font-semibold text-gray-700">Booking</label>
             {bookings.length === 0 ? (
               <p className="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3">
-                No eligible bookings found. Disputes can be raised for confirmed, loaded, in-transit, or delivered shipments.
+                No eligible bookings found. Disputes can be raised for confirmed, received, loaded, in-transit, or delivered shipments.
               </p>
             ) : (
               <select
