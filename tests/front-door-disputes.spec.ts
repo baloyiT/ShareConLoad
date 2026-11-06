@@ -108,6 +108,9 @@ test.afterAll(async () => {
   } catch (err) {
     console.error('evidence cleanup failed', err);
   }
+  // submitted_by and requester_id are set to null when a user goes, so these must go first.
+  const { error: ticketErr } = await db.from('support_tickets').delete().in('requester_id', users.map(u => u.id));
+  if (ticketErr) console.error('could not remove test tickets', ticketErr.message);
   await removeUsersAndFreight(users);
 });
 
@@ -281,13 +284,19 @@ test.describe('support tickets', () => {
     const { error: readErr } = await owner.client.from('support_tickets').select('id');
     expect(readErr).toBeNull();
 
-    // requester_id and category are required, and neither page ref sends them yet. This
-    // tests the policy only; the page is listed as a separate bug in the report.
+    // Exactly what app/support/new/page.tsx sends, on this branch and in production.
     const { data, error } = await owner.client.from('support_tickets').insert({
-      submitted_by: customerProfileId, requester_id: owner.id, category: 'other',
-      subject: 'Front door test', description: 'Front door test',
+      submitted_by: customerProfileId,
+      booking_id: null,
+      subject: 'Front door test',
+      description: 'Front door test',
+      priority: 'medium',
     }).select('id').single();
     expect(error).toBeNull();
+
+    const mine = await owner.client.from('support_tickets').select('requester_id, category, status').eq('id', data!.id);
+    expect(mine.error).toBeNull();
+    expect(mine.data).toEqual([{ requester_id: owner.id, category: 'general', status: 'open' }]);
 
     const seen = await stranger.client.from('support_tickets').select('id').eq('id', data!.id);
     expect(seen.error).toBeNull();
@@ -298,6 +307,29 @@ test.describe('support tickets', () => {
   test('a stranger cannot file a ticket in the name of the customer', async () => {
     const { error } = await stranger.client.from('support_tickets').insert({
       submitted_by: customerProfileId, requester_id: stranger.id, category: 'other', subject: 'Front door test',
+    });
+    expect(error?.code).toBe('42501');
+  });
+});
+
+test.describe('what a ticket may claim', () => {
+  const ticket = () => ({ submitted_by: stranger.profileId, subject: 'Front door forged', category: 'general' });
+
+  test('a stranger cannot name someone else as the requester', async () => {
+    const { error } = await stranger.client.from('support_tickets').insert({ ...ticket(), requester_id: owner.id });
+    expect(error?.code).toBe('42501');
+  });
+
+  test('a stranger cannot file a ticket on someone else\'s booking', async () => {
+    const { error } = await stranger.client.from('support_tickets').insert({
+      ...ticket(), requester_id: stranger.id, booking_id: bookingId,
+    });
+    expect(error?.code).toBe('42501');
+  });
+
+  test('a customer cannot file a ticket that is already resolved', async () => {
+    const { error } = await stranger.client.from('support_tickets').insert({
+      ...ticket(), requester_id: stranger.id, status: 'resolved',
     });
     expect(error?.code).toBe('42501');
   });
@@ -347,6 +379,33 @@ test.describe('dispute page source', () => {
 });
 
 test.describe('in the browser', () => {
+  test('the customer files a support ticket on their booking; a stranger cannot read it @browser', async ({ page }) => {
+    test.setTimeout(120_000);
+    // No Edge Function call may leave the test: no email.
+    await page.route('**/functions/v1/**', route => route.fulfill({ status: 200, json: { ok: true } }));
+    const subject = `Front door browser ticket ${Date.now()}`;
+
+    await signInBrowser(page, owner);
+    await page.goto('/support/new');
+    await page.getByPlaceholder('Brief summary of your issue').fill(subject);
+    await page.locator('form select').selectOption(bookingId);
+    await page.locator('form textarea').fill('Front door browser test');
+    await page.getByRole('button', { name: 'Submit Ticket' }).click();
+    await page.waitForURL(url => url.pathname === '/bookings');
+
+    const mine = await owner.client.from('support_tickets')
+      .select('id, submitted_by, requester_id, booking_id').eq('subject', subject);
+    expect(mine.error).toBeNull();
+    expect(mine.data).toHaveLength(1);
+    expect(mine.data![0]).toMatchObject({
+      submitted_by: customerProfileId, requester_id: owner.id, booking_id: bookingId,
+    });
+
+    const seen = await stranger.client.from('support_tickets').select('id').eq('subject', subject);
+    expect(seen.error).toBeNull();
+    expect(seen.data).toEqual([]);
+  });
+
   test('a resolved dispute shows as resolved with its notes and takes no uploads @browser', async ({ page }) => {
     test.setTimeout(120_000);
     await page.route('**/functions/v1/**', route => route.fulfill({ status: 200, json: { ok: true } }));
